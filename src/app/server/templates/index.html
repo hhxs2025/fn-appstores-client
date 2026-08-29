@@ -1235,7 +1235,7 @@
         background: rgba(80, 70, 40, 0.92);
     }
 
-    /* ===== 关于页面（核心修改） ===== */
+    /* ===== 关于页面 ===== */
     .about-container {
         width: 100%;
         max-width: 100%;
@@ -1306,16 +1306,6 @@
     .theme-toggle-btn:hover {
         background: var(--hover-bg);
         border-color: var(--border-hover);
-    }
-
-    /* ===== 🆕 公告内容区域 ===== */
-    #noticeContent {
-        font-size: 13px;
-        color: var(--text-secondary);
-        line-height: 1.8;
-        padding: 4px 0;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
     }
 
     /* ===== 深色模式 ===== */
@@ -1467,6 +1457,51 @@
         background: #2a3a5a;
     }
 
+    /* ===== 关于页公告轮播图（v2.4.0） ===== */
+    .nb-wrapper {
+        background: #161b22;
+        border-radius: 8px;
+        padding: 16px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .nb-board {
+        background: linear-gradient(145deg, #1c2333, #131a26);
+        border-radius: 8px;
+        overflow: hidden;
+        height: 420px;
+        display: flex;
+        flex-direction: column;
+    }
+    .nb-top {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+        min-height: 0;
+        height: 100%;
+    }
+    .nb-carousel {
+        flex: 0 0 75%;
+        height: 100%;
+        background: #0b1018;
+        position: relative;
+        overflow: hidden;
+        border-right: 2px solid rgba(255, 255, 255, 0.08);
+    }
+    .nb-text {
+        flex: 0 0 25%;
+        padding: 16px 12px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        background: linear-gradient(135deg, #1a2236, #131c2e);
+        gap: 2px;
+        color: #c9d1d9;
+        font-size: 13px;
+        line-height: 1.6;
+        overflow-y: auto;
+    }
+
     /* ===== 响应式 ===== */
     @media (min-width: 1400px) {
         .app-grid {
@@ -1515,6 +1550,28 @@
 
         .about-card {
             padding: 12px 14px;
+        }
+
+        .nb-board {
+            height: auto;
+            min-height: 420px;
+        }
+        .nb-top {
+            flex-direction: column;
+            height: auto;
+        }
+        .nb-carousel {
+            flex: 0 0 auto;
+            width: 100%;
+            height: 200px;
+            border-right: none;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+        }
+        .nb-text {
+            flex: 0 0 auto;
+            width: 100%;
+            padding: 14px 16px;
+            gap: 4px;
         }
     }
 
@@ -1602,6 +1659,13 @@
         .about-card p {
             font-size: 12px;
         }
+
+        .nb-board {
+            min-height: 360px;
+        }
+        .nb-carousel {
+            height: 150px;
+        }
     }
 
     @media (max-width: 400px) {
@@ -1632,6 +1696,10 @@
         .detail-tab {
             padding: 4px 8px;
             font-size: 10px;
+        }
+
+        .nb-carousel {
+            height: 120px;
         }
     }
 </style>
@@ -2222,8 +2290,22 @@
                 versionHtml += ' <span class="installed-badge">✓</span>';
             }
 
-            // 来源标签
-            var sourceLabel = app._source_name ? '<span style="font-size:8px;color:var(--text-muted);background:var(--bg);padding:0 6px;border-radius:3px;margin-left:4px;">' + app._source_name + '</span>' : '';
+            // ===== 来源标签（v2.4.0 认证标识） =====
+            var sourceLabel = '';
+            if (app._source_name) {
+                var displayName = app._source_name;
+                var prefix = '';
+                var isOfficial = app._source_id === 'official';
+                var isUserAdded = app._source_id && app._source_id.startsWith('source_') && !isOfficial;
+
+                if (isOfficial) {
+                    prefix = 'FN软仓官方源';
+                    displayName = '';
+                } else if (!isUserAdded && app._source_id) {
+                    prefix = '✅FN-';
+                }
+                sourceLabel = '<span class="source-tag" style="font-size:8px;color:var(--text-muted);background:var(--bg);padding:0 6px;border-radius:3px;margin-left:4px;">' + prefix + displayName + '</span>';
+            }
 
             var tagsHtml = '';
             var tags = getTagsArray(app.tags);
@@ -2235,21 +2317,17 @@
                 '<div class="top">' +
                 '<div class="icon">' + (app.icon ? '<img src="' + app.icon + '" alt="' + app.name + '">' : '·') + '</div>' +
                 '<div class="info">' +
-                '<div class="name">' + app.name + ' ' + versionHtml + sourceLabel + '</div>' +
+                '<div class="name">' + app.name + ' ' + versionHtml + '</div>' +
                 '<div class="author">' + (app.author || '未知') + '</div>' +
+                sourceLabel +
                 '</div>' +
                 '</div>' +
                 tagsHtml +
                 '<div class="desc">' + (app.desc || '暂无描述') + '</div>' +
-                // ===== 新增下载统计 =====
-               '<div class="actions" onclick="event.stopPropagation();" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                '<div class="actions" onclick="event.stopPropagation();" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
                       '<div style="display:flex;gap:4px;flex-wrap:wrap;">' + btnHtml + '</div>' +
                       '<span style="font-size:10px;color:var(--text-muted);margin-left:auto;white-space:nowrap;">📥 ' + (app.downloads || 0) + '</span>' +
                 '</div>' +
-                // ===== 新增结束 =====
-                // ===== 删除了下面这一行 =====
-                // '<div class="actions" onclick="event.stopPropagation();">' + btnHtml + '</div>' +
-                // ===== 删除结束 =====
                 '<div class="progress-container" id="progress-' + app.id + '">' +
                         '<div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar-' + app.id + '" style="width:0%;"></div></div>' +
                         '<div class="progress-text"><span class="status-msg" id="progressMsg-' + app.id + '">准备中...</span></div>' +
@@ -2489,7 +2567,6 @@
     var reconnectTimer = null;
 
     function connectWS() {
-                              
         var url = window.location.origin.replace(/^http/,'ws') + '/ws';
         try {
             if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
@@ -2732,17 +2809,14 @@
                 htmlContent = '<p>无配置项，点击确认安装</p>';
             } else {
                 items.forEach(function (item) {
-                    // ===== 先处理 tips 类型 =====
                     if (item.type === 'tips') {
-                        // 优先使用 helpText，若为空则尝试 label，再尝试 initValue，最后默认“提示信息”
                         var tipText = item.helpText || item.label || item.initValue || '提示信息';
                         htmlContent += '<div class="wizard-field">';
                         htmlContent += '<div class="hint" style="margin-bottom:8px;">' + tipText + '</div>';
                         htmlContent += '</div>';
-                        return; // 跳过后续 label 和输入框渲染
+                        return;
                     }
 
-                    // ===== 非 tips 类型 =====
                     var required = item.rules && item.rules.some(function (r) { return r.required; });
                     htmlContent += '<div class="wizard-field">';
                     htmlContent += '<label>' + (item.label || item.field) + (required ? ' <span class="required">*</span>' : '') + '</label>';
@@ -2760,11 +2834,9 @@
                         var checked = item.initValue === 'true' || item.initValue === true;
                         htmlContent += '<div style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="wizard_' + item.field + '" name="' + item.field + '"' + (checked ? ' checked' : '') + '> ' + item.label + '</div>';
                     } else {
-                        // 未知类型默认文本输入
                         htmlContent += '<input type="text" id="wizard_' + item.field + '" name="' + item.field + '" value="' + (item.initValue || '') + '">';
                     }
 
-                    // 如果非 tips 类型有 helpText，作为辅助提示
                     if (item.helpText && item.type !== 'tips') {
                         htmlContent += '<div class="hint">' + item.helpText + '</div>';
                     }
@@ -2997,26 +3069,71 @@
     }
 
     // ================================================================
-    // 📢 公告板（v2.2.0）
+    // 📢 公告板（v2.4.0 新格式：carousel + desc + interval）
     // ================================================================
     async function loadNotice() {
         var container = document.getElementById('aboutContent');
-      
-        console.log('loadNotice 被调用了'); 
 
         try {
             var resp = await fetch(API_BASE + '/api/notice');
             var data = await resp.json();
 
-            console.log('公告数据:', data);
-
-            if (data.enabled && data.content) {
+            // 兼容旧版 content 格式
+            if (data.content && !data.carousel) {
                 container.innerHTML = data.content;
+                return;
+            }
+
+            if (data.enabled && data.carousel && data.carousel.length > 0 && data.desc) {
+                var baseUrl = window.location.origin;
+                var images = data.carousel.map(function(url) {
+                    if (url.startsWith('/')) {
+                        url = baseUrl + url;
+                    }
+                    return url;
+                });
+
+                var count = images.length;
+                var trackWidth = count * 100 + '%';
+                var slideWidth = 100 / count + '%';
+
+                // ===== 读取间隔时间，默认 5 秒 =====
+                var interval = data.interval || 5;
+                var totalDuration = count * interval;
+
+                // 生成轮播图 HTML
+                var slidesHtml = images.map(function(url) {
+                    return '<div class="carousel-slide" style="background-image:url(' + url + ');flex:0 0 ' + slideWidth + ';height:100%;background-size:cover;background-position:center;"></div>';
+                }).join('');
+
+                // 生成 CSS 关键帧（自动轮播）
+                var keyframes = '';
+                var step = 100 / count;
+                for (var i = 0; i < count; i++) {
+                    var start = i * step;
+                    var end = (i + 1) * step;
+                    var offset = i * 100;
+                    keyframes += start + '%{transform:translateX(-' + offset + '%);}';
+                    keyframes += end + '%{transform:translateX(-' + offset + '%);}';
+                }
+                keyframes += '100%{transform:translateX(0%);}';
+
+                var styleTag = document.createElement('style');
+                styleTag.textContent = '.carousel-track-about{display:flex;height:100%;width:' + trackWidth + ';animation:slideShowAbout ' + totalDuration + 's infinite ease-in-out;}.carousel-slide{flex:0 0 ' + slideWidth + ';height:100%;background-size:cover;background-position:center;}@keyframes slideShowAbout{' + keyframes + '}';
+
+                var html = '<div class="nb-wrapper"><div class="nb-board"><div class="nb-top"><div class="nb-carousel"><div class="carousel-track carousel-track-about">' + slidesHtml + '</div></div><div class="nb-text">' + data.desc + '</div></div></div></div>';
+
+                var wrapper = document.createElement('div');
+                wrapper.innerHTML = html;
+                wrapper.appendChild(styleTag);
+                container.innerHTML = wrapper.innerHTML;
+
+            } else if (data.enabled && data.desc && (!data.carousel || data.carousel.length === 0)) {
+                container.innerHTML = '<div class="nb-wrapper"><div class="nb-board"><div class="nb-top" style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;"><div class="nb-text" style="flex:1;padding:16px 20px;text-align:center;">' + data.desc + '</div></div></div></div>';
             } else {
                 container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">暂无公告</div>';
             }
         } catch (e) {
-            console.error('加载公告失败:', e);  
             container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">加载失败</div>';
         }
     }
@@ -3030,9 +3147,7 @@
         setTimeout(function() {
             loadApps();
         }, 300);
-        //loadLogs();//
-        loadNotice();  // 🆕 加载公告
-        // 源管理已独立，会在切换Tab时通过 switchTab 调用 loadSources
+        loadNotice();
     });
 </script>
 {% endblock %}
