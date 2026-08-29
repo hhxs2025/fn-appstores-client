@@ -1,7 +1,7 @@
 appname=fn-appstores-client
-version=2.2.3
+version=2.5.0
 display_name=FN软仓
-desc="""`<p>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。它让用户可以方便地发现、安装和管理非官方的飞牛应用，同时也为开发者提供了一个简单开放的应用发布渠道。</p><p><strong>2.2.2版更新说明:</strong></p><p>1.公告板改为支持多源读取。</p><p>2.源管理列表增加缓存机制(5分钟有效期),首次或缓存过期时自动探测,点击"刷新"按钮强制更新,页面加载速度大幅提升;</p><p>3.源管理列表项增加左右边距，界面更美观;</p><p>4.清理关于页残留的废弃样式。</p>`"""
+desc="""`<p>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。它让用户可以方便地发现、安装和管理非官方的飞牛应用，同时也为开发者提供了一个简单开放的应用发布渠道。</p><p><strong>核心功能:</strong></p><p><strong>1.应用页:</strong>支持应用列表分页、应用卡片基本信息显示、应用弹窗预览图显示、README一键直达。</p><p><strong>2.源管理:</strong>内置应用源，支持添加应用源，支持自添加应用源启用与禁用，应用源缓存5分钟(可手动强制刷新);</p><p><strong>3.关于页:</strong>支持公告实时接收功能。</p><p><strong>4.副标题区:</strong>支持应用上架申请，支持FN软仓应用源查询，支持明暗主题切换。</p><h4>2.5.0更新内容:</h4><p>1.导航栏移到左侧,规避与手机端虚拟导航按钮重叠问题;</p><p>2.关于页改名首页，已安装和可更新筛选迁移到首页，同时新增热度榜、新应用快捷卡片;</p><p>3.新增设置页，顶部应用接入通道、应用源查询通道移到设置页，同时恢复1.x版本时的日志导出按钮</p>"""
 platform=x86
 source=thirdparty
 maintainer=晦华先生
@@ -17,4 +17,4 @@ disable_authorization_path=false
 <p><a href="https://gitee.com/hhxs2025/fn-appstores/issues">应用接入通道</a></p>"""
 <ul style="list-style-type: disc
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse
-checksum=963fd30a1bb606b440f9b7dfa654b97a
+checksum=a127136c233e5bc184ee81012c7f1bf6

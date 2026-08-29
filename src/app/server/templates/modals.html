@@ -1,0 +1,403 @@
+<style>
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(60,60,60,0.3);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+        background: var(--card-bg);
+        border-radius: 10px;
+        max-width: 480px;
+        width: 100%;
+        max-height: 85vh;
+        overflow-y: auto;
+        padding: 20px 24px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        animation: modalIn 0.2s;
+    }
+    @keyframes modalIn {
+        from { opacity:0; transform:scale(0.98) translateY(6px); }
+        to { opacity:1; transform:scale(1) translateY(0); }
+    }
+    .modal-close { float: right; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); line-height: 1; padding: 0 4px; }
+    .modal-close:hover { color: var(--text-primary); }
+    .modal-title { font-size: 16px; font-weight: 500; color: var(--text-primary); margin-bottom: 14px; }
+
+    .modal-overlay-detail {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(60,60,60,0.3);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+    .modal-overlay-detail.active { display: flex; }
+    .modal-content-detail {
+        background: var(--card-bg);
+        border-radius: 10px;
+        width: 640px;
+        max-width: 94vw;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 20px 28px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        animation: modalIn 0.2s;
+    }
+    .modal-close-detail { float: right; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); line-height: 1; padding: 0 4px; }
+    .modal-close-detail:hover { color: var(--text-primary); }
+    .modal-icon-detail {
+        width: 48px; height: 48px;
+        border-radius: 8px;
+        background: #e8eaed;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 6px;
+    }
+    .modal-icon-detail img { width: 100%; height: 100%; object-fit: cover; }
+    .modal-title-detail { font-size: 18px; font-weight: 500; color: var(--text-primary); }
+    .modal-version-detail { font-size: 12px; color: var(--text-muted); margin-left: 6px; }
+    .modal-author-detail { font-size: 12px; color: var(--text-secondary); margin: 2px 0 4px; }
+    .modal-desc-detail {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        padding: 10px 14px;
+        background: #f8fafc;
+        border-radius: 6px;
+        margin: 6px 0 10px;
+        border-left: 2px solid #e5e7eb;
+    }
+    .modal-desc-detail p { margin: 0 0 6px; }
+
+    .detail-tabs {
+        display: flex;
+        gap: 0;
+        margin: 10px 0 8px;
+        border-bottom: 1px solid var(--border);
+    }
+    .detail-tab {
+        padding: 6px 16px;
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-radius: 0;
+    }
+    .detail-tab:hover { color: var(--text-primary); background: #f5f5f5; }
+    .detail-tab.active { color: var(--text-primary); border-bottom-color: #2563ea; font-weight: 500; }
+
+    .detail-panel { display: none; min-height: 60px; max-height: 300px; overflow-y: auto; padding: 4px 0; }
+    .detail-panel.active { display: block; }
+    .detail-panel .modal-desc-detail { margin: 0; }
+
+    .modal-screenshots-detail { margin: 10px 0; }
+    .modal-screenshots-detail .screenshot-title { font-size: 12px; font-weight: 400; color: var(--text-secondary); margin-bottom: 6px; }
+
+    .carousel-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: 6px;
+        background: #e8eaed;
+        min-height: 80px;
+        display: none;
+    }
+    .carousel-track { display: flex; transition: transform 0.35s ease; }
+    .carousel-track img {
+        width: 100%;
+        flex-shrink: 0;
+        max-height: 220px;
+        object-fit: contain;
+        background: #f8f5f0;
+        cursor: pointer;
+    }
+
+    .carousel-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(60,60,60,0.3);
+        color: white;
+        border: none;
+        width: 26px; height: 26px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 14px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s;
+        z-index: 5;
+    }
+    .carousel-btn:hover { background: rgba(60,60,60,0.5); }
+    .carousel-btn.prev { left: 6px; }
+    .carousel-btn.next { right: 6px; }
+    .carousel-btn.show { display: flex; }
+
+    .carousel-dots { display: flex; justify-content: center; gap: 4px; padding: 5px 0 2px; }
+    .carousel-dots .dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #d0c8c0;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s;
+        padding: 0;
+    }
+    .carousel-dots .dot.active { background: #8a8a8a; width: 16px; border-radius: 3px; }
+
+    .modal-stats-detail {
+        display: flex;
+        gap: 14px;
+        font-size: 11px;
+        color: var(--text-muted);
+        padding: 6px 0;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        margin: 4px 0 10px;
+        flex-wrap: wrap;
+    }
+
+    .modal-actions-detail {
+        display: flex;
+        gap: 6px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+    }
+    .modal-actions-detail .btn {
+        padding: 4px 20px;
+        border: 1px solid #d5d7dd;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 400;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: transparent;
+        color: var(--text-secondary);
+        flex: none;
+        min-width: 80px;
+        text-align: center;
+    }
+    .modal-actions-detail .btn-primary { background: #2563ea; color: #fff; border: none; }
+    .modal-actions-detail .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .modal-actions-detail .btn-danger { background: transparent; color: #b55a5a; border: 1px solid #e8d0d0; }
+    .modal-actions-detail .btn-danger:hover:not(:disabled) { background: #f5e8e8; border-color: #d0b0b0; }
+    .modal-actions-detail .btn-secondary { background: #e6f0e6; color: #4a7a5a; border: none; cursor: default; }
+    .modal-actions-detail .btn-repo {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid #d5d7dd;
+        padding: 4px 20px;
+        border-radius: 4px;
+        font-size: 12px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+    }
+    .modal-actions-detail .btn-repo:hover { background: #e8eaed; border-color: #b8bac2; }
+
+    .modal-overlay-image {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(30,30,30,0.85);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+    .modal-overlay-image.active { display: flex; }
+    .modal-content-image {
+        background: #1a1a1a;
+        border-radius: 10px;
+        max-width: 94vw;
+        max-height: 94vh;
+        padding: 12px 16px 16px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        animation: modalIn 0.2s;
+        position: relative;
+    }
+    .modal-close-image {
+        position: absolute;
+        top: -10px; right: -10px;
+        background: rgba(60,60,60,0.7);
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #fff;
+        z-index: 10;
+        line-height: 1;
+        padding: 4px 10px;
+        border-radius: 50%;
+        width: 34px; height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-close-image:hover { background: rgba(100,100,100,0.9); }
+    .image-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        max-height: 82vh;
+        position: relative;
+    }
+    .image-container img { max-width: 100%; max-height: 82vh; object-fit: contain; border-radius: 4px; background: #111; }
+    .image-nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(60,60,60,0.4);
+        color: white;
+        border: none;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s;
+        z-index: 5;
+    }
+    .image-nav-btn:hover { background: rgba(80,80,80,0.6); }
+    .image-nav-btn.prev { left: -16px; }
+    .image-nav-btn.next { right: -16px; }
+    .image-counter { text-align: center; font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 6px; }
+
+    .wizard-field { margin-bottom: 10px; }
+    .wizard-field label { display: block; font-size: 12px; font-weight: 400; margin-bottom: 2px; color: var(--text-secondary); }
+    .wizard-field input, .wizard-field select, .wizard-field textarea {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #d5d7dd;
+        border-radius: 4px;
+        font-size: 12px;
+        outline: none;
+        background: var(--card-bg);
+        color: var(--text-primary);
+        transition: all 0.2s;
+    }
+    .wizard-field input:focus, .wizard-field select:focus, .wizard-field textarea:focus { border-color: #b0a8a0; box-shadow: 0 0 0 2px rgba(0,0,0,0.03); }
+    .wizard-field .hint { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .wizard-field .required { color: #b55a5a; margin-left: 2px; }
+
+    body.dark-mode .modal-content-detail { background: #1e2a45; color: var(--text-primary); }
+    body.dark-mode .modal-desc-detail { background: #16213e; }
+    body.dark-mode .modal-overlay-detail { background: rgba(0,0,0,0.6); }
+    body.dark-mode .modal-overlay { background: rgba(0,0,0,0.6); }
+    body.dark-mode .modal-content { background: #1e2a45; color: var(--text-primary); }
+    body.dark-mode .modal-close, body.dark-mode .modal-close-detail { color: var(--text-muted); }
+    body.dark-mode .modal-close:hover, body.dark-mode .modal-close-detail:hover { color: var(--text-primary); }
+    body.dark-mode .detail-tab { color: var(--text-secondary); }
+    body.dark-mode .detail-tab:hover { color: var(--text-primary); background: #2a3a5a; }
+    body.dark-mode .detail-tab.active { color: var(--text-primary); border-bottom-color: #4a8ad4; }
+    body.dark-mode .modal-actions-detail .btn-repo { border-color: #2a3a5a; color: var(--text-secondary); }
+    body.dark-mode .modal-actions-detail .btn-repo:hover { background: #2a3a5a; }
+
+    @media (max-width: 768px) {
+        .modal-content-detail { padding: 16px; max-width: 98vw; }
+        .detail-panel { max-height: 200px; }
+    }
+
+    @media (max-width: 550px) {
+        .modal-content { max-width: 100%; margin: 10px; padding: 14px; }
+        .modal-content-detail { max-width: 100%; margin: 10px; padding: 14px; }
+        .carousel-track img { max-height: 140px; }
+        .detail-tab { padding: 4px 10px; font-size: 11px; }
+        .detail-panel { max-height: 150px; }
+    }
+</style>
+
+<!-- 公告详情弹窗 -->
+<div class="modal-overlay" id="noticeDetailModal" onclick="if(event.target===this) closeNoticeDetail()">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeNoticeDetail()">✕</button>
+        <div class="modal-title" id="noticeDetailTitle">📢 公告详情</div>
+        <div id="noticeDetailBody" style="font-size:13px;color:var(--text-secondary);line-height:1.8;max-height:60vh;overflow-y:auto;">加载中...</div>
+    </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-overlay-detail" id="detailModal" onclick="if(event.target===this) closeDetail()">
+    <div class="modal-content-detail">
+        <button class="modal-close-detail" onclick="closeDetail()">✕</button>
+        <div class="modal-icon-detail" id="modalIcon">·</div>
+        <div><span class="modal-title-detail" id="modalTitle">应用名</span><span class="modal-version-detail" id="modalVersion">v1.0.0</span></div>
+        <div class="modal-author-detail" id="modalAuthor">作者</div>
+        <div class="modal-tags-detail" id="modalTags"></div>
+        <div class="detail-tabs">
+            <button class="detail-tab active" data-tab="desc" onclick="switchDetailTab('desc')">说明</button>
+            <button class="detail-tab" data-tab="screenshots" onclick="switchDetailTab('screenshots')">预览</button>
+        </div>
+        <div class="detail-tab-content">
+            <div class="detail-panel active" id="panel-desc"><div class="modal-desc-detail" id="modalDesc">描述</div></div>
+            <div class="detail-panel" id="panel-screenshots" style="display:none;">
+                <div class="modal-screenshots-detail">
+                    <div class="screenshot-title">应用预览</div>
+                    <div class="carousel-container" id="carouselContainer">
+                        <div class="carousel-track" id="carouselTrack"></div>
+                        <button class="carousel-btn prev" id="carouselPrev" onclick="carouselPrev()">‹</button>
+                        <button class="carousel-btn next" id="carouselNext" onclick="carouselNext()">›</button>
+                        <div class="carousel-dots" id="carouselDots"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-stats-detail" id="modalStats">
+            <span>版本 <span id="modalVersionInfo">--</span></span>
+            <span>来源 <span id="modalSource">本地</span></span>
+        </div>
+        <div class="modal-actions-detail" id="modalActions">
+            <button class="btn btn-primary" id="modalInstallBtn" onclick="modalInstall()">安装</button>
+            <a href="#" id="modalRepoBtn" target="_blank" class="btn-repo" style="display:none;">查看 README</a>
+        </div>
+    </div>
+</div>
+
+<!-- 大图预览弹窗 -->
+<div class="modal-overlay-image" id="imageModal" onclick="if(event.target===this) closeImageModal()">
+    <div class="modal-content-image">
+        <button class="modal-close-image" onclick="closeImageModal()">✕</button>
+        <div class="image-container">
+            <button class="image-nav-btn prev" id="imagePrevBtn" onclick="imagePrev()">‹</button>
+            <img id="modalImage" src="" alt="应用截图">
+            <button class="image-nav-btn next" id="imageNextBtn" onclick="imageNext()">›</button>
+        </div>
+        <div class="image-counter" id="imageCounter">1 / 1</div>
+    </div>
+</div>
+
+<!-- 向导安装弹窗 -->
+<div class="modal-overlay" id="wizardModal" onclick="if(event.target===this) closeWizard()">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeWizard()">✕</button>
+        <div class="modal-title" id="wizardTitle">安装向导</div>
+        <div id="wizardBody"></div>
+        <div style="margin-top:12px;display:flex;gap:6px;">
+            <button class="btn btn-primary" id="wizardSubmitBtn" onclick="submitWizard()">确认安装</button>
+            <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);" onclick="closeWizard()">取消</button>
+        </div>
+        <div id="wizardStatus" style="margin-top:6px;font-size:11px;color:var(--text-muted);"></div>
+    </div>
+</div>

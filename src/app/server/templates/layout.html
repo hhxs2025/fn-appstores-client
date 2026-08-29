@@ -1,41 +1,30 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="referrer" content="no-referrer">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}FN软仓{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+    <title>FN软仓</title>
     <style>
-        /* ===== 全局样式保持不变 ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* ===== 全局重置 & 基础变量 ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
             --bg: #f3f3f3;
             --content-bg: #f8fafc;
             --card-bg: #ffffff;
+            --sidebar-bg: #f0f2f5;
             --text-primary: #3c3c3c;
             --text-secondary: #6b6b6b;
             --text-muted: #a0a0a0;
             --border: #e5e7eb;
-            --shadow: rgba(0, 0, 0, 0.02);
-            --radius: 8px;
             --blue: #2563ea;
-            --blue-hover: #1d4ed8;
-            --green: #6b9b7a;
-            --red: #c47a7a;
-            --yellow: #c4a06a;
+            --sidebar-width: 140px;
+            --max-width: 1500px;
+            --nav-item-height: 40px;
         }
 
-        html,
-        body {
-            height: 100%;
-            overflow: hidden;
-        }
+        html, body { height: 100%; overflow: hidden; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -47,80 +36,44 @@
             overflow: hidden;
             margin: 0;
             padding: 0;
-            transition: background 0.25s ease, color 0.25s ease;
+            transition: background 0.25s, color 0.25s;
         }
 
-        /* 头部 */
+        /* ===== 顶部栏 ===== */
         .header {
-            background: #f8fafc;
-            padding: 8px 16px 6px;
+            background: var(--card-bg);
+            padding: 6px 16px 4px;
             flex-shrink: 0;
-            border-bottom: 1px solid #e5e7eb;
-            transition: background 0.25s ease, border-color 0.25s ease;
-        }
-
-        .header-top {
+            border-bottom: 1px solid var(--border);
             display: flex;
-            align-items: baseline;
-            gap: 8px;
-            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
+            height: 44px;
+            z-index: 100;
         }
-
-        .header-top .app-name {
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--text-primary);
-            letter-spacing: 0.5px;
-            transition: color 0.25s ease;
-        }
-
-        .header-top .app-version {
-            font-size: 9%;
-            color: var(--text-muted);
-            font-weight: 400;
-            transition: color 0.25s ease;
-        }
-
-        .header-top .update-badge {
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-left .hamburger {
             display: none;
-            background: var(--yellow);
-            color: #fff;
-            font-size: 8px;
-            padding: 0 10px;
-            border-radius: 12px;
+            background: none;
+            border: none;
+            font-size: 20px;
             cursor: pointer;
-            line-height: 16px;
-            font-weight: 500;
+            color: var(--text-secondary);
+            padding: 4px;
         }
+        .header-left .app-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+        .header-left .app-version { font-size: 11px; color: var(--text-muted); font-weight: 400; }
 
-        .header-top .update-badge:hover {
-            opacity: 0.8;
-        }
-
-        .header-bottom {
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             font-size: 9px;
             color: var(--text-muted);
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 4px;
-            margin-top: 2px;
-            transition: color 0.25s ease;
         }
-
-        .header-bottom .sep {
-            color: #d5d5dd;
-            transition: color 0.25s ease;
-        }
-
-        .header-bottom a {
-            color: var(--text-secondary);
-            text-decoration: none;
-        }
-
-        .header-bottom a:hover {
-            color: var(--text-primary);
-        }
+        .header-right .sep { color: #d5d5dd; }
+        .header-right a { color: var(--text-secondary); text-decoration: none; }
+        .header-right a:hover { color: var(--text-primary); }
 
         .theme-btn-header {
             background: none;
@@ -132,34 +85,76 @@
             display: inline-flex;
             align-items: center;
             gap: 2px;
-            transition: color 0.25s ease;
+        }
+        .theme-btn-header:hover { color: var(--text-secondary); }
+
+        /* ===== 主体布局 ===== */
+        .app-layout {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            width: 100%;
         }
 
-        .theme-btn-header:hover {
+        /* ===== 左侧导航 ===== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            padding: 12px 0 8px;
+            overflow-y: auto;
+            z-index: 50;
+        }
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 0 8px;
+            flex: 1;
+        }
+        .sidebar-nav .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            height: var(--nav-item-height);
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
             color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            text-align: left;
+        }
+        .sidebar-nav .nav-item:hover { background: rgba(0,0,0,0.05); color: var(--text-primary); }
+        .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.1); color: var(--blue); }
+        .sidebar-nav .nav-item .label { flex: 1; }
+
+        .sidebar-footer {
+            padding: 8px 12px 0;
+            border-top: 1px solid var(--border);
+            margin-top: 8px;
+            font-size: 10px;
+            color: var(--text-muted);
         }
 
-        .theme-btn-header .theme-icon {
-            font-size: 11px;
-        }
-
-        .theme-btn-header .theme-label {
-            font-size: 9px;
-        }
-
-        /* 内容区 */
-        .container {
+        /* ===== 内容区 ===== */
+        .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 0 16px 0;
             overflow: hidden;
-            max-width: 1600px;
-            margin: 0 auto;
-            width: 100%;
-            min-height: 0;
-            background: #f8fafc;
-            transition: background 0.25s ease;
+            background: var(--content-bg);
+            padding: 0 20px 0;
+            min-width: 0;
         }
 
         .tab-content {
@@ -168,317 +163,167 @@
             flex-direction: column;
             min-height: 0;
             overflow: hidden;
+            padding: 4px 0 8px;
         }
+        .tab-content.active { display: flex; }
 
-        .tab-content.active {
-            display: flex;
-        }
-
-        /* 底部导航 */
-        .bottom-nav {
-            display: flex;
-            flex-shrink: 0;
-            background: #f3f3f3;
-            border-top: 1px solid #e5e7eb;
-            padding: 6px 16px 8px;
-            margin: 0 -16px;
-            gap: 2px;
-            transition: background 0.25s ease, border-color 0.25s ease;
-        }
-
-        .nav-btn {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 6px 8px;
-            cursor: pointer;
-            color: var(--text-muted);
-            text-align: center;
-            border-radius: var(--radius);
-            transition: all 0.25s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .nav-btn .nav-icon {
-            font-size: 16px;
-            line-height: 1;
-        }
-
-        .nav-btn .nav-label {
-            font-size: 11px;
-            line-height: 1;
-        }
-
-        .nav-btn:hover {
-            color: var(--text-secondary);
-            background: #e8eaed;
-        }
-
-        .nav-btn.active {
-            color: var(--text-primary);
-            background: #e8eaed;
-            font-weight: 500;
-        }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 56px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--text-primary);
-            color: #f5f0eb;
-            padding: 6px 18px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 400;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-            opacity: 0;
-            transition: all 0.35s ease;
-            z-index: 999;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .toast.success {
-            background: var(--green);
-            color: #fff;
-        }
-
-        .toast.error {
-            background: var(--red);
-            color: #fff;
-        }
-
-        .toast.warning {
-            background: var(--yellow);
-            color: #fff;
-        }
-
-        ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #d5d5dd;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #b8bac2;
-        }
-
-        /* 深色模式 */
+        /* ===== 深色模式 ===== */
         body.dark-mode {
             --bg: #1a1a2e;
             --content-bg: #16213e;
             --card-bg: #1e2a45;
+            --sidebar-bg: #141c30;
             --border: #2a3a5a;
             --text-primary: #e8e8f0;
             --text-secondary: #a8b8d0;
             --text-muted: #6a7a9a;
         }
+        body.dark-mode .header { background: #16213e; border-bottom-color: var(--border); }
+        body.dark-mode .sidebar { background: #141c30; border-right-color: var(--border); }
+        body.dark-mode .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); }
+        body.dark-mode .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: #60a5fa; }
+        body.dark-mode .sidebar-footer { border-top-color: var(--border); }
 
-        body.dark-mode .header {
-            background: #16213e;
-            border-bottom-color: #2a3a5a;
+        /* ===== 滚动条 ===== */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d5d5dd; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b8bac2; }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: rgba(40,40,40,0.92);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { background: rgba(40,70,40,0.92); }
+        .toast.error { background: rgba(80,40,40,0.92); }
+        .toast.warning { background: rgba(80,70,40,0.92); }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 1100px) {
+            .sidebar { width: 48px; }
+            .sidebar-footer { display: none; }
+            .sidebar-nav { padding: 0 4px; }
+            .sidebar-nav .nav-item { font-size: 0; padding: 0 8px; justify-content: center; }
+            .sidebar-nav .nav-item .label { display: none; }
+            .sidebar-nav .nav-item[data-tab="home"]::after { content: "首"; font-size: 16px; font-weight: 600; }
+            .sidebar-nav .nav-item[data-tab="apps"]::after { content: "应"; font-size: 16px; font-weight: 600; }
+            .sidebar-nav .nav-item[data-tab="sources"]::after { content: "源"; font-size: 16px; font-weight: 600; }
+            .sidebar-nav .nav-item[data-tab="settings"]::after { content: "设"; font-size: 16px; font-weight: 600; }
+            .main-content { padding: 0 12px; }
         }
 
-        body.dark-mode .header-top .app-name {
-            color: #e8e8f0;
-        }
-
-        body.dark-mode .header-top .app-version {
-            color: #6a7a9a;
-        }
-
-        body.dark-mode .header-bottom {
-            color: #6a7a9a;
-        }
-
-        body.dark-mode .header-bottom .sep {
-            color: #3a4a6a;
-        }
-
-        body.dark-mode .theme-btn-header {
-            color: #6a7a9a;
-        }
-
-        body.dark-mode .theme-btn-header:hover {
-            color: #a8b8d0;
-        }
-
-        body.dark-mode .container {
-            background: #16213e;
-        }
-
-        body.dark-mode .bottom-nav {
-            background: #1a1a2e;
-            border-top-color: #2a3a5a;
-        }
-
-        body.dark-mode .nav-btn {
-            color: #6a7a9a;
-        }
-
-        body.dark-mode .nav-btn:hover {
-            background: #2a3a5a;
-            color: #a8b8d0;
-        }
-
-        body.dark-mode .nav-btn.active {
-            background: #2a3a5a;
-            color: #e8e8f0;
-        }
-
-        body.dark-mode .toast {
-            background: rgba(30, 30, 50, 0.95);
-            color: #e8e8f0;
-        }
-
-        body.dark-mode ::-webkit-scrollbar-thumb {
-            background: #3a4a6a;
-        }
-
-        body.dark-mode ::-webkit-scrollbar-thumb:hover {
-            background: #4a5a7a;
-        }
-
-        /* 响应式 */
         @media (max-width: 768px) {
-            .container {
-                padding: 0 8px;
+            .header-left .hamburger { display: block; }
+            .header-right { font-size: 8px; gap: 4px; }
+            .header-right .sep { display: none; }
+            .sidebar {
+                position: fixed; top: 0; left: 0;
+                height: 100vh; width: 100px;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 16px rgba(0,0,0,0.1);
+                z-index: 200;
+                padding-top: 12px;
             }
-            .bottom-nav {
-                padding: 4px 8px 6px;
-                margin: 0 -8px;
+            .sidebar.open { transform: translateX(0); }
+            .sidebar .sidebar-nav .nav-item { font-size: 14px; justify-content: flex-start; padding: 0 12px; }
+            .sidebar .sidebar-nav .nav-item .label { display: inline; flex: 1; }
+            .sidebar .sidebar-nav .nav-item::after { display: none; }
+            .sidebar .sidebar-footer { display: block; }
+            .sidebar-overlay {
+                display: none;
+                position: fixed; top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(0,0,0,0.3);
+                z-index: 150;
             }
-            .header {
-                padding: 6px 8px 4px;
-            }
-            .header-top .app-name {
-                font-size: 14px;
-            }
-            .header-bottom {
-                font-size: 8px;
-            }
-            .nav-btn .nav-icon {
-                font-size: 14px;
-            }
-            .nav-btn .nav-label {
-                font-size: 10px;
-            }
-            .theme-btn-header .theme-icon {
-                font-size: 10px;
-            }
-            .theme-btn-header .theme-label {
-                font-size: 8px;
-            }
+            .sidebar-overlay.active { display: block; }
+            .main-content { padding: 0 8px; }
+            .header { padding: 4px 8px; height: 44px; }
+            .header-left .app-name { font-size: 14px; }
+            .header-left .app-version { font-size: 10px; }
         }
 
         @media (max-width: 480px) {
-            .container {
-                padding: 0 4px;
-            }
-            .bottom-nav {
-                padding: 3px 4px 5px;
-                margin: 0 -4px;
-            }
-            .header {
-                padding: 4px 4px 3px;
-            }
-            .header-top .app-name {
-                font-size: 13px;
-            }
-            .header-bottom {
-                font-size: 7px;
-            }
-            .nav-btn .nav-icon {
-                font-size: 13px;
-            }
-            .nav-btn .nav-label {
-                font-size: 9px;
-            }
-            .theme-btn-header .theme-icon {
-                font-size: 9px;
-            }
-            .theme-btn-header .theme-label {
-                font-size: 7px;
-            }
+            .header { height: 40px; padding: 3px 6px; }
+            .header-left .app-name { font-size: 13px; }
+            .header-left .app-version { font-size: 9px; }
+            .header-right { font-size: 7px; }
+            .header-right a { display: none; }
+            .main-content { padding: 0 4px; }
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-
 <body>
 
     <header class="header">
-        <div class="header-top">
+        <div class="header-left">
+            <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">☰</button>
             <span class="app-name">FN软仓</span>
-            <span class="app-version" id="appVersion">2.4.1</span>
-            <span class="update-badge" id="updateBadge" onclick="goUpdate()">有新版本</span>
+            <span class="app-version" id="appVersion">2.5.1</span>
         </div>
-        <div class="header-bottom">
+        <div class="header-right">
             <span>飞牛第三方应用市场</span>
             <span class="sep">·</span>
-            <span>开源共建</span>
-            <span class="sep">·</span>
             <span>开发者:晦华先生</span>
-            <span class="sep">·</span>
-            <a href="https://f.wps.cn/g/L7KeYADl/" target="_blank" style="color:var(--text-secondary);text-decoration:none;">📝 应用接入</a>
-            <span class="sep">·</span>
-            <a href="https://gitee.com/hhxs2025/fn-appstores/raw/master/源.md" target="_blank" style="color:var(--text-secondary);text-decoration:none;">📡 官方源查询</a>
-            <span class="sep">·</span>
-            <button class="theme-btn-header" onclick="toggleTheme()">
-                <span class="theme-icon" id="themeIconHeader">🌙</span>
-                <span class="theme-label" id="themeLabelHeader">深色</span>
-            </button>
-            <span id="updateNotice" style="display:none; color:#b55a5a; margin-left:10px; font-weight:500;">
-                ⚠️ 发现应用更新，若更新失败请先在官方应用中心卸载旧版再安装
-            </span>
         </div>
     </header>
 
-    <div class="container">
-        {% block content %}{% endblock %}
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="home" onclick="switchTab('home')"><span class="label">首&nbsp;&nbsp;&nbsp;页</span></button>
+                <button class="nav-item" data-tab="apps" onclick="switchTab('apps')"><span class="label">应&nbsp;&nbsp;&nbsp;用</span></button>
+                <button class="nav-item" data-tab="sources" onclick="switchTab('sources')"><span class="label">源管理</span></button>
+                <button class="nav-item" data-tab="settings" onclick="switchTab('settings')"><span class="label">设&nbsp;&nbsp;&nbsp;置</span></button>
+            </nav>
+            <div class="sidebar-footer">FN软仓 v2.5.1-MIT</div>
+        </aside>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
     </div>
 
     <div class="toast" id="toast"></div>
 
-    <!-- ===== 底部导航 ===== -->
-    <div class="bottom-nav">
-        <button class="nav-btn active" data-tab="apps" onclick="switchTab('apps')">
-            <span class="nav-icon">□</span>
-            <span class="nav-label">应用</span>
-        </button>
-        <button class="nav-btn" data-tab="sources" onclick="switchTab('sources')">
-            <span class="nav-icon">⊕</span>
-            <span class="nav-label">源管理</span>
-        </button>
-        <button class="nav-btn" data-tab="about" onclick="switchTab('about')">
-            <span class="nav-icon">○</span>
-            <span class="nav-label">关于</span>
-        </button>
-    </div>
-
     <script>
+        // ================================================================
+        // 侧边栏控制
+        // ================================================================
+        function toggleSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+
         // ================================================================
         // 主题切换
         // ================================================================
-        function getTheme() {
-            return localStorage.getItem('fnsoft_theme') || 'light';
-        }
+        function getTheme() { return localStorage.getItem('fnsoft_theme') || 'light'; }
 
         function setTheme(theme) {
             localStorage.setItem('fnsoft_theme', theme);
@@ -493,62 +338,34 @@
             }
         }
 
-        function toggleTheme() {
-            var current = getTheme();
-            setTheme(current === 'dark' ? 'light' : 'dark');
-        }
+        function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
 
-        function initTheme() {
-            var theme = getTheme();
-            setTheme(theme);
-        }
+        function initTheme() { setTheme(getTheme()); }
 
         // ================================================================
         // 标签页切换
         // ================================================================
         function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(function (el) {
-                el.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-btn').forEach(function (el) {
-                el.classList.remove('active');
-            });
+            document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.sidebar-nav .nav-item').forEach(function(el) { el.classList.remove('active'); });
+
             var target = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
             if (target) target.classList.add('active');
-            document.querySelector('.nav-btn[data-tab="' + tab + '"]').classList.add('active');
 
-            if (tab === 'apps') {
-                if (typeof restoreAppsView === 'function') {
-                    restoreAppsView();
-                } else if (typeof loadApps === 'function') {
-                    loadApps();
-                }
-            }
-            if (tab === 'sources') {
-                if (typeof loadSources === 'function') {
-                    loadSources();
-                }
-            }
-        }
+            var navBtn = document.querySelector('.sidebar-nav .nav-item[data-tab="' + tab + '"]');
+            if (navBtn) navBtn.classList.add('active');
 
-        // ================================================================
-        // Toast
-        // ================================================================
-        function showToast(msg, type) {
-            var toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.className = 'toast show ' + (type || '');
-            var durations = {success: 2500, error: 4000, warning: 3000, info: 2000};
-            var duration = durations[type] || 3000;
-            clearTimeout(toast._timer);
-            toast._timer = setTimeout(function () {toast.classList.remove('show');}, duration);
+            closeSidebar();
+
+            if (tab === 'apps' && typeof restoreAppsView === 'function') restoreAppsView();
+            if (tab === 'sources' && typeof loadSources === 'function') loadSources();
+            if (tab === 'home' && typeof loadHome === 'function') loadHome();
         }
 
         // ================================================================
         // WebSocket
         // ================================================================
         var ws = null;
-        var wsReady = false;
         var reconnectTimer = null;
 
         function connectWS() {
@@ -556,101 +373,50 @@
             try {
                 if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
                 ws = new WebSocket(url);
-                ws.onopen = function () {console.log('WebSocket 已连接'); wsReady = true;};
-                ws.onmessage = function (e) {
+                ws.onopen = function() { console.log('WebSocket 已连接'); };
+                ws.onmessage = function(e) {
                     try {
                         var msg = JSON.parse(e.data);
-                        if (typeof handleWsMessage === 'function') {
-                            handleWsMessage(msg);
-                        }
-                    } catch (err) {
-                        console.warn('解析WS消息失败:', err);
-                    }
+                        if (typeof handleWsMessage === 'function') handleWsMessage(msg);
+                    } catch (err) { console.warn('WS消息解析失败:', err); }
                 };
-                ws.onclose = function () {
+                ws.onclose = function() {
                     console.log('WebSocket 已断开');
-                    wsReady = false;
                     ws = null;
                     if (reconnectTimer) clearTimeout(reconnectTimer);
                     reconnectTimer = setTimeout(connectWS, 3000);
                 };
-                ws.onerror = function () {ws.close();};
+                ws.onerror = function() { ws.close(); };
             } catch (e) {
-                wsReady = false;
                 if (reconnectTimer) clearTimeout(reconnectTimer);
                 reconnectTimer = setTimeout(connectWS, 3000);
             }
         }
 
         // ================================================================
-        // 检查更新
-        // ================================================================
-        async function checkUpdate() {
-            try {
-                var resp = await fetch('/api/check-update');
-                var data = await resp.json();
-                if (data.has_update) {
-                    var badge = document.getElementById('updateBadge');
-                    badge.style.display = 'inline';
-                    badge.title = '发现新版本 ' + data.version;
-                    window._updateUrl = data.download_url;
-                    console.log('发现新版本:', data.version);
-                }
-            } catch (e) {
-                console.log('检查更新失败:', e);
-            }
-        }
-
-        function goUpdate() {
-            if (window._updateUrl) {
-                window.open(window._updateUrl, '_blank');
-                showToast('正在跳转下载页面...', 'info');
-            } else {
-                window.open('https://gitee.com/hhxs2025/fn-appstores/releases', '_blank');
-            }
-        }
-
-        // ================================================================
-        // 页面可见性监听
-        // ================================================================
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                var activeTab = document.querySelector('.nav-btn.active');
-                if (activeTab && activeTab.dataset.tab === 'apps') {
-                    if (typeof restoreAppsView === 'function') {
-                        restoreAppsView();
-                    } else if (typeof loadApps === 'function') {
-                        loadApps();
-                    }
-                }
-            }
-        });
-
-        // ================================================================
         // 初始化
         // ================================================================
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             initTheme();
             connectWS();
-            if (typeof loadApps === 'function') {
-                setTimeout(function() {
-                    loadApps();
-                }, 300);
-            }
-            if (typeof loadLogs === 'function') {
-                loadLogs();
-            }
-            setTimeout(function () {
-                if (typeof checkUpdate === 'function') {
-                    checkUpdate();
-                    setInterval(checkUpdate, 3600000);
+            switchTab('home');
+            setTimeout(function() {
+                if (typeof loadHome === 'function') loadHome();
+                if (typeof loadApps === 'function') loadApps();
+                if (typeof loadSources === 'function') loadSources();
+            }, 300);
+            document.addEventListener('click', function(e) {
+                var sidebar = document.getElementById('sidebar');
+                var ham = document.getElementById('hamburgerBtn');
+                if (window.innerWidth <= 768) {
+                    if (!sidebar.contains(e.target) && e.target !== ham && !ham.contains(e.target)) {
+                        closeSidebar();
+                    }
                 }
-            }, 2000);
+            });
         });
     </script>
 
     {% block extra_js %}{% endblock %}
-
 </body>
-
 </html>

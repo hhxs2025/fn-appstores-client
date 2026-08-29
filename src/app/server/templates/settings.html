@@ -1,0 +1,169 @@
+<style>
+    .settings-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 8px 0;
+        overflow-y: auto;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .settings-tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 12px;
+        flex-shrink: 0;
+        overflow-x: auto;
+    }
+    .settings-tab {
+        padding: 8px 20px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .settings-tab:hover { color: var(--text-primary); }
+    .settings-tab.active { color: var(--text-primary); border-bottom-color: var(--blue); }
+
+    .settings-panels { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .settings-panel { display: none; flex: 1; overflow-y: auto; padding: 4px 0; }
+    .settings-panel.active { display: block; }
+
+    .settings-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+    }
+    .settings-card .title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px; }
+    .settings-card .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .settings-card .row:last-child { border-bottom: none; }
+    .settings-card .row .label { font-size: 13px; color: var(--text-secondary); }
+    .settings-card .row .value { font-size: 13px; color: var(--text-primary); }
+    .settings-card .row .value a { color: #2563ea; text-decoration: none; }
+    .settings-card .row .value a:hover { text-decoration: underline; }
+    .settings-card .row .action-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 4px 14px;
+        font-size: 11px;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+    }
+    .settings-card .row .action-btn:hover { background: var(--hover-bg); border-color: var(--border-hover); }
+
+    .switch {
+        position: relative;
+        width: 38px;
+        height: 20px;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #ccc;
+        border-radius: 20px;
+        transition: 0.3s;
+    }
+    .switch .slider::before {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        left: 2px;
+        bottom: 2px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.3s;
+    }
+    .switch input:checked + .slider { background: #2563ea; }
+    .switch input:checked + .slider::before { transform: translateX(18px); }
+
+    body.dark-mode .settings-card { background: #1e2a45; border-color: #2a3a5a; }
+    body.dark-mode .settings-card .row { border-bottom-color: #2a3a5a; }
+
+    @media (max-width: 768px) {
+        .settings-tabs { gap: 0; }
+        .settings-tab { padding: 6px 14px; font-size: 13px; }
+        .settings-container { padding: 4px 0; }
+    }
+
+    @media (max-width: 550px) {
+        .settings-tab { padding: 4px 12px; font-size: 12px; }
+    }
+
+    @media (max-width: 400px) {
+        .settings-tab { padding: 4px 8px; font-size: 11px; }
+    }
+</style>
+
+<div class="settings-container">
+    <div class="settings-tabs">
+        <button class="settings-tab active" data-stab="general" onclick="switchSettingTab('general')">通用</button>
+        <button class="settings-tab" data-stab="system" onclick="switchSettingTab('system')">系统</button>
+        <button class="settings-tab" data-stab="about" onclick="switchSettingTab('about')">关于</button>
+        <button class="settings-tab" data-stab="stats" onclick="switchSettingTab('stats')">统计</button>
+    </div>
+    <div class="settings-panels">
+        <div class="settings-panel active" id="spanel-general">
+            <div class="settings-card">
+                <div class="title">通用设置</div>
+                <div class="row"><span class="label">深色模式</span><label class="switch"><input type="checkbox" id="themeSwitch" onchange="handleThemeSwitch(this.checked)"><span class="slider"></span></label></div>
+                <div class="row"><span class="label">导出日志</span><button class="action-btn" onclick="exportLogs()">导出</button></div>
+            </div>
+        </div>
+        <div class="settings-panel" id="spanel-system">
+            <div class="settings-card">
+                <div class="title">系统信息</div>
+                <div class="row">
+                    <span class="label">客户端版本</span>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span class="value" id="settingsVersion">v{{ version }}</span>
+                        <button class="action-btn" id="checkUpdateBtn" onclick="checkClientUpdate()">检查更新</button>
+                        <span id="updateStatus" style="font-size:11px;color:var(--text-muted);"></span>
+                    </div>
+                </div>
+                <div class="row"><span class="label">系统架构</span><span class="value" id="settingsArch">x86_64</span></div>
+            </div>
+        </div>
+        <div class="settings-panel" id="spanel-about">
+            <div class="settings-card">
+                <div class="title">关于 FN软仓</div>
+                <div class="row"><span class="label">开发者</span><span class="value">晦华先生</span></div>
+                <div class="row"><span class="label">开源协议</span><span class="value">MIT</span></div>
+                <div class="row"><span class="label">源码仓库</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores" target="_blank">Gitee</a></span></div>
+                <div class="row"><span class="label">交流群</span><span class="value">2154077576</span></div>
+                <div class="row"><span class="label">应用接入</span><span class="value"><a href="https://f.wps.cn/g/L7KeYADl/" target="_blank">提交应用 →</a></span></div>
+                <div class="row"><span class="label">官方源查询</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores/raw/master/源.md" target="_blank">查看源列表 →</a></span></div>
+            </div>
+        </div>
+        <div class="settings-panel" id="spanel-stats">
+            <div class="settings-card">
+                <div class="title">应用统计</div>
+                <div class="row"><span class="label">总应用数</span><span class="value" id="settingsTotalApps">--</span></div>
+                <div class="row"><span class="label">已安装</span><span class="value" id="settingsInstalled">--</span></div>
+                <div class="row"><span class="label">可更新</span><span class="value" id="settingsUpdatable">--</span></div>
+                <div class="row"><span class="label">已配置源</span><span class="value" id="settingsSourceCount">--</span></div>
+            </div>
+        </div>
+    </div>
+</div>
