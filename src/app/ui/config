@@ -1,0 +1,20 @@
+{
+  ".url": {
+    "fn-appstores-client.Application": {
+      "noDisplay": false,
+      "allUsers": false,
+      "fileTypes": [],
+      "control": {
+        "accessPerm": "editable"
+      },
+      "protocol": "http",
+      "gatewayPrefix": "",
+      "gatewaySocket": "",
+      "title": "FN软仓",
+      "icon": "images/icon_64.png",
+      "type": "iframe",
+      "port": "5660",
+      "url": "/"
+    }
+  }
+}

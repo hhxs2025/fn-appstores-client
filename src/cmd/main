@@ -1,0 +1,143 @@
+#!/bin/bash
+# ================================================================
+# FN软仓 - 应用启动脚本
+# ================================================================
+
+LOG_FILE="${TRIM_PKGVAR}/app.log"
+PID_FILE="${TRIM_PKGVAR}/app.pid"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+}
+
+status() {
+    if [ -f "$PID_FILE" ]; then
+        pid=$(head -n 1 "$PID_FILE" | tr -d '[:space:]')
+        if kill -0 "$pid" 2>/dev/null; then
+            return 0
+        else
+            rm -f "$PID_FILE"
+        fi
+    fi
+    return 1
+}
+
+start_process() {
+    if status; then
+        log_msg "⚠️ 应用已在运行中"
+        return 0
+    fi
+
+    log_msg "========== 启动 FN软仓 =========="
+    
+    PORT="${TRIM_SERVICE_PORT:-5660}"
+    log_msg "◎端口: ${PORT}"
+    log_msg "◎应用目录: ${TRIM_APPDEST}"
+    log_msg "◎数据目录: ${TRIM_PKGVAR}"
+
+    if [ -n "${TRIM_PKGVAR}" ]; then
+        mkdir -p "${TRIM_PKGVAR}" || {
+            log_msg "创建数据目录失败: ${TRIM_PKGVAR}"
+            return 1
+        }
+        chmod 755 "${TRIM_PKGVAR}"
+        log_msg "数据目录就绪: ${TRIM_PKGVAR}"
+    fi
+
+    if [ -n "${TRIM_PKGTMP}" ]; then
+        mkdir -p "${TRIM_PKGTMP}" || {
+            log_msg "创建临时目录失败: ${TRIM_PKGTMP}"
+        }
+    fi
+
+    cd "${TRIM_APPDEST}/server" || {
+        log_msg "□无法进入应用目录: ${TRIM_APPDEST}/server"
+        return 1
+    }
+
+    export TRIM_SERVICE_PORT="${PORT}"
+    export PYTHONPATH="${TRIM_APPDEST}/server/vendor:${PYTHONPATH}"
+
+    # ========== 只支持 app.pyc ==========
+    if [ ! -f "app.pyc" ]; then
+        log_msg "app.pyc 不存在"
+        echo "＃FN软仓启动失败: app.pyc 不存在" > "${TRIM_PKGTMP:-/tmp}/error.log"
+        return 1
+    fi
+
+    log_msg "启动: app.pyc"
+    python3 app.pyc >> "$LOG_FILE" 2>&1 &
+
+    local pid=$!
+    echo "$pid" > "$PID_FILE"
+    log_msg "○进程 PID: $pid"
+
+    sleep 2
+    if ! kill -0 "$pid" 2>/dev/null; then
+        log_msg "进程启动后立即退出，请检查日志"
+        echo "FN软仓启动失败: 进程已退出" > "${TRIM_PKGTMP:-/tmp}/error.log"
+        return 1
+    fi
+
+    log_msg "○FN软仓启动成功 (端口: ${PORT})"
+    return 0
+}
+
+stop_process() {
+    log_msg "========== 停止 FN软仓 =========="
+
+    if [ ! -f "$PID_FILE" ]; then
+        log_msg "☆PID 文件不存在，应用可能未运行"
+        return 0
+    fi
+
+    pid=$(head -n 1 "$PID_FILE" | tr -d '[:space:]')
+    
+    if ! kill -0 "$pid" 2>/dev/null; then
+        log_msg "☆进程 $pid 已不存在"
+        rm -f "$PID_FILE"
+        return 0
+    fi
+
+    log_msg "终止进程 PID: $pid"
+    kill -TERM "$pid" 2>/dev/null
+
+    local count=0
+    while kill -0 "$pid" 2>/dev/null && [ $count -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+
+    if kill -0 "$pid" 2>/dev/null; then
+        log_msg "进程未响应 SIGTERM，使用 SIGKILL"
+        kill -KILL "$pid" 2>/dev/null
+    fi
+
+    rm -f "$PID_FILE"
+    log_msg "FN软仓已停止"
+    return 0
+}
+
+case $1 in
+    start)
+        start_process
+        exit $?
+        ;;
+    stop)
+        stop_process
+        exit $?
+        ;;
+    status)
+        if status; then
+            echo "◎FN软仓运行中 (PID: $(head -n 1 "$PID_FILE" 2>/dev/null || echo 'unknown'))"
+            exit 0
+        else
+            echo "FN软仓未运行"
+            exit 3
+        fi
+        ;;
+    *)
+        echo "用法: $0 {start|stop|status}"
+        exit 1
+        ;;
+esac

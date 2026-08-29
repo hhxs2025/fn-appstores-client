@@ -1,0 +1,20 @@
+appname=fn-appstores-client
+version=2.2.3
+display_name=FN软仓
+desc="""`<p>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。它让用户可以方便地发现、安装和管理非官方的飞牛应用，同时也为开发者提供了一个简单开放的应用发布渠道。</p><p><strong>2.2.2版更新说明:</strong></p><p>1.公告板改为支持多源读取。</p><p>2.源管理列表增加缓存机制(5分钟有效期),首次或缓存过期时自动探测,点击"刷新"按钮强制更新,页面加载速度大幅提升;</p><p>3.源管理列表项增加左右边距，界面更美观;</p><p>4.清理关于页残留的废弃样式。</p>`"""
+platform=x86
+source=thirdparty
+maintainer=晦华先生
+maintainer_url=https://gitee.com/hhxs2025/fn-appstores
+distributor=晦华先生
+distributor_url=https://f.wps.cn/ksform/w/write/L7KeYADl
+ctl_stop=true
+desktop_uidir=ui
+desktop_applaunchname=fn-appstores-client.Application
+service_port=5660
+checkport=true
+disable_authorization_path=false
+<p><a href="https://gitee.com/hhxs2025/fn-appstores/issues">应用接入通道</a></p>"""
+<ul style="list-style-type: disc
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse
+checksum=963fd30a1bb606b440f9b7dfa654b97a
