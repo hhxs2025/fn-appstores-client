@@ -121,6 +121,23 @@
         color: var(--text-muted);
     }
 
+    /* ===== v2.4.1 新增：状态筛选独立行 ===== */
+    .status-filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        flex-shrink: 0;
+        margin-bottom: 2px;
+        padding: 2px 0;
+        align-items: center;
+    }
+
+    .status-filter-bar .sep {
+        color: var(--text-muted);
+        font-size: 10px;
+        margin: 0 2px;
+    }
+
     .filter-bar {
         display: flex;
         flex-wrap: wrap;
@@ -153,6 +170,19 @@
         background: #e8eaed;
         border-color: #b0a8a0;
         color: var(--text-primary);
+    }
+
+    .filter-btn.clear-btn {
+        border-color: transparent;
+        color: var(--text-muted);
+        font-size: 9px;
+        padding: 2px 8px;
+    }
+
+    .filter-btn.clear-btn:hover {
+        background: transparent;
+        border-color: transparent;
+        color: var(--text-secondary);
     }
 
     .tab-content.active .toolbar:first-of-type {
@@ -1457,7 +1487,7 @@
         background: #2a3a5a;
     }
 
-    /* ===== 关于页公告轮播图（v2.4.0） ===== */
+    /* ===== 关于页公告轮播图（v2.4.1 手动切换） ===== */
     .nb-wrapper {
         background: #161b22;
         border-radius: 8px;
@@ -1488,6 +1518,71 @@
         overflow: hidden;
         border-right: 2px solid rgba(255, 255, 255, 0.08);
     }
+    .nb-carousel .carousel-track {
+        display: flex;
+        height: 100%;
+        transition: transform 0.5s ease;
+        will-change: transform;
+    }
+    .nb-carousel .carousel-slide {
+        flex: 0 0 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    .nb-carousel .carousel-btn-about {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.4);
+        color: white;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+        transition: background 0.2s ease;
+        opacity: 0.7;
+    }
+    .nb-carousel .carousel-btn-about:hover {
+        background: rgba(0, 0, 0, 0.7);
+        opacity: 1;
+    }
+    .nb-carousel .carousel-btn-about.prev {
+        left: 8px;
+    }
+    .nb-carousel .carousel-btn-about.next {
+        right: 8px;
+    }
+    .nb-carousel .carousel-dots-about {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 6px;
+        z-index: 5;
+    }
+    .nb-carousel .carousel-dots-about .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        transition: all 0.2s ease;
+    }
+    .nb-carousel .carousel-dots-about .dot.active {
+        background: #fff;
+        transform: scale(1.2);
+    }
     .nb-text {
         flex: 0 0 25%;
         padding: 16px 12px 14px 12px;
@@ -1500,6 +1595,13 @@
         font-size: 13px;
         line-height: 1.6;
         overflow-y: auto;
+    }
+    .nb-text a {
+        color: #58a6ff;
+        text-decoration: none;
+    }
+    .nb-text a:hover {
+        text-decoration: underline;
     }
 
     /* ===== 响应式 ===== */
@@ -1666,6 +1768,11 @@
         .nb-carousel {
             height: 150px;
         }
+        .nb-carousel .carousel-btn-about {
+            width: 26px;
+            height: 26px;
+            font-size: 14px;
+        }
     }
 
     @media (max-width: 400px) {
@@ -1725,8 +1832,18 @@
         <input type="text" id="searchInput" placeholder="搜索应用名称、描述、作者..." oninput="searchApps()">
     </div>
 
+    <!-- ===== v2.4.1: 状态筛选独立行 ===== -->
+    <div class="status-filter-bar">
+        <button class="filter-btn" data-filter="installed" onclick="filterByStatus('installed')">✓ 已安装</button>
+        <button class="filter-btn" data-filter="update" onclick="filterByStatus('update')">⬆ 可更新</button>
+        <span class="sep">|</span>
+        <button class="filter-btn clear-btn" onclick="filterByStatus('all')">清除筛选</button>
+    </div>
+
+    <!-- ===== 标签分类行 ===== -->
     <div class="filter-bar" id="filterBar">
         <button class="filter-btn active" data-tag="all" onclick="filterByTag('all')">全部</button>
+        <!-- 动态标签由 JavaScript 生成 -->
     </div>
 
     <div class="app-grid-wrapper">
@@ -1869,6 +1986,7 @@
     var API_BASE = window.location.origin;
 
     var currentTag = 'all';
+    var currentStatusFilter = 'all'; // 'all', 'installed', 'update'  (v2.4.1)
     var currentPage = 1;
     var pageSize = 8;
     var allAppsData = [];
@@ -1984,15 +2102,38 @@
         renderFilteredApps();
     }
 
+    // 标签筛选
     function filterByTag(tag) {
         currentTag = tag;
-        document.querySelectorAll('.filter-btn').forEach(function (btn) {
+        // 取消所有状态筛选的高亮（因为切换标签时，我们希望保持状态筛选不变，但为了 UI 清晰，不取消状态高亮，而是让它们共存）
+        // 但我们仍然保持高亮逻辑：标签按钮高亮，状态按钮保持其状态
+        document.querySelectorAll('.filter-btn[data-tag]').forEach(function (btn) {
             btn.classList.toggle('active', btn.dataset.tag === tag);
         });
+        // 如果点击的是“全部”标签，并且当前有状态筛选，不重置状态，让它们叠加
         currentPage = 1;
         renderFilteredApps();
     }
 
+    // v2.4.1: 状态筛选
+    function filterByStatus(status) {
+        currentStatusFilter = status;
+        // 高亮状态按钮
+        document.querySelectorAll('.status-filter-bar .filter-btn').forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.filter === status);
+        });
+        // 如果有清除筛选，高亮处理：当 status === 'all' 时，清除所有状态高亮
+        if (status === 'all') {
+            document.querySelectorAll('.status-filter-bar .filter-btn').forEach(function (btn) {
+                btn.classList.remove('active');
+            });
+        }
+        // 不重置标签，保持标签与状态叠加
+        currentPage = 1;
+        renderFilteredApps();
+    }
+
+    // 渲染标签按钮（保留状态按钮独立）
     function renderFilterButtons(apps) {
         var tagSet = new Set();
         apps.forEach(function (app) {
@@ -2002,9 +2143,12 @@
         var tags = ['all', ...tagSet];
         var container = document.getElementById('filterBar');
         var tagLabels = {'all': '全部'};
-        container.innerHTML = tags.map(function (tag) {
-            return '<button class="filter-btn' + (tag === 'all' ? ' active' : '') + '" data-tag="' + tag + '" onclick="filterByTag(\'' + tag + '\')">' + (tagLabels[tag] || tag) + '</button>';
-        }).join('');
+        var html = '';
+        tags.forEach(function (tag) {
+            var active = (tag === currentTag) ? ' active' : '';
+            html += '<button class="filter-btn' + active + '" data-tag="' + tag + '" onclick="filterByTag(\'' + tag + '\')">' + (tagLabels[tag] || tag) + '</button>';
+        });
+        container.innerHTML = html;
     }
 
     function getCurrentPageData(apps) {
@@ -2043,12 +2187,19 @@
                     (app.author && app.author.toLowerCase().includes(keyword));
             });
         }
+        // 标签筛选
         if (currentTag !== 'all') {
             var tagsArray = getTagsArray(currentTag);
             result = result.filter(function (app) {
                 var appTags = getTagsArray(app.tags);
                 return appTags.some(function (t) {return tagsArray.includes(t);});
             });
+        }
+        // 状态筛选 (v2.4.1)
+        if (currentStatusFilter === 'installed') {
+            result = result.filter(function (app) { return app.installed === true; });
+        } else if (currentStatusFilter === 'update') {
+            result = result.filter(function (app) { return app.has_update === true; });
         }
         return result;
     }
@@ -2062,7 +2213,7 @@
     }
 
     // ================================================================
-    // 轮播
+    // 轮播（应用详情）
     // ================================================================
     function initCarousel(screenshots) {
         var container = document.getElementById('carouselContainer');
@@ -3069,7 +3220,7 @@
     }
 
     // ================================================================
-    // 📢 公告板（v2.4.0 新格式：carousel + desc + interval）
+    // 📢 公告板（v2.4.1 手动切换轮播 + 富文本支持）
     // ================================================================
     async function loadNotice() {
         var container = document.getElementById('aboutContent');
@@ -3084,6 +3235,86 @@
                 return;
             }
 
+            // ================================================================
+            // sanitizeDesc: 富文本安全过滤
+            // 白名单标签: p, a, b, strong, h1, h2, h3, h4, h5, br
+            // 支持 style: font-size, color
+            // ================================================================
+            function sanitizeDesc(html) {
+                var allowedTags = ['p', 'a', 'b', 'strong', 'h1', 'h2', 'h3', 'h4', 'h5', 'br'];
+                var allowedStyles = ['font-size', 'color'];
+
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(html, 'text/html');
+                var body = doc.body;
+
+                function cleanNode(node) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        return document.createTextNode(node.textContent);
+                    }
+                    if (node.nodeType !== Node.ELEMENT_NODE) {
+                        return document.createTextNode('');
+                    }
+
+                    var tag = node.tagName.toLowerCase();
+
+                    // 不在白名单中的标签：保留子节点，丢弃标签本身
+                    if (allowedTags.indexOf(tag) === -1) {
+                        var fragment = document.createDocumentFragment();
+                        node.childNodes.forEach(function(child) {
+                            fragment.appendChild(cleanNode(child));
+                        });
+                        return fragment;
+                    }
+
+                    var newEl = document.createElement(tag);
+
+                    // <a> 标签处理
+                    if (tag === 'a') {
+                        var href = node.getAttribute('href');
+                        if (href) {
+                            newEl.setAttribute('href', href);
+                            newEl.setAttribute('target', '_blank');
+                            newEl.setAttribute('rel', 'noopener noreferrer');
+                        }
+                    }
+
+                    // 处理 style（仅允许 font-size 和 color）
+                    var style = node.getAttribute('style');
+                    if (style) {
+                        var allowedStyle = '';
+                        style.split(';').forEach(function(rule) {
+                            var parts = rule.trim().split(':');
+                            if (parts.length === 2) {
+                                var prop = parts[0].trim().toLowerCase();
+                                var val = parts[1].trim();
+                                if (allowedStyles.indexOf(prop) !== -1 && val) {
+                                    allowedStyle += prop + ':' + val + ';';
+                                }
+                            }
+                        });
+                        if (allowedStyle) {
+                            newEl.setAttribute('style', allowedStyle);
+                        }
+                    }
+
+                    node.childNodes.forEach(function(child) {
+                        newEl.appendChild(cleanNode(child));
+                    });
+
+                    return newEl;
+                }
+
+                var fragment = document.createDocumentFragment();
+                body.childNodes.forEach(function(child) {
+                    fragment.appendChild(cleanNode(child));
+                });
+
+                var container = document.createElement('div');
+                container.appendChild(fragment);
+                return container.innerHTML;
+            }
+
             if (data.enabled && data.carousel && data.carousel.length > 0 && data.desc) {
                 var baseUrl = window.location.origin;
                 var images = data.carousel.map(function(url) {
@@ -3094,48 +3325,81 @@
                 });
 
                 var count = images.length;
-                var trackWidth = count * 100 + '%';
-                var slideWidth = 100 / count + '%';
-
-                // ===== 读取间隔时间，默认 5 秒 =====
-                var interval = data.interval || 5;
-                var totalDuration = count * interval;
-
-                // 生成轮播图 HTML
-                var slidesHtml = images.map(function(url) {
-                    return '<div class="carousel-slide" style="background-image:url(' + url + ');flex:0 0 ' + slideWidth + ';height:100%;background-size:cover;background-position:center;"></div>';
-                }).join('');
-
-                // 生成 CSS 关键帧（自动轮播）
-                var keyframes = '';
-                var step = 100 / count;
-                for (var i = 0; i < count; i++) {
-                    var start = i * step;
-                    var end = (i + 1) * step;
-                    var offset = i * 100;
-                    keyframes += start + '%{transform:translateX(-' + offset + '%);}';
-                    keyframes += end + '%{transform:translateX(-' + offset + '%);}';
+                var html = '<div class="nb-wrapper"><div class="nb-board"><div class="nb-top">';
+                html += '<div class="nb-carousel" id="aboutCarousel">';
+                html += '<div class="carousel-track" id="aboutCarouselTrack">';
+                images.forEach(function(url) {
+                    html += '<div class="carousel-slide" style="background-image:url(' + url + ');"></div>';
+                });
+                html += '</div>';
+                if (count > 1) {
+                    html += '<button class="carousel-btn-about prev" onclick="aboutCarouselPrev(event)">‹</button>';
+                    html += '<button class="carousel-btn-about next" onclick="aboutCarouselNext(event)">›</button>';
                 }
-                keyframes += '100%{transform:translateX(0%);}';
+                html += '<div class="carousel-dots-about" id="aboutCarouselDots">';
+                for (var i = 0; i < count; i++) {
+                    html += '<button class="dot' + (i === 0 ? ' active' : '') + '" data-index="' + i + '" onclick="aboutCarouselGoTo(' + i + ')"></button>';
+                }
+                html += '</div>';
+                html += '</div>';
+                var sanitizedDesc = sanitizeDesc(data.desc);
+                html += '<div class="nb-text">' + sanitizedDesc + '</div>';
+                html += '</div></div></div>';
 
-                var styleTag = document.createElement('style');
-                styleTag.textContent = '.carousel-track-about{display:flex;height:100%;width:' + trackWidth + ';animation:slideShowAbout ' + totalDuration + 's infinite ease-in-out;}.carousel-slide{flex:0 0 ' + slideWidth + ';height:100%;background-size:cover;background-position:center;}@keyframes slideShowAbout{' + keyframes + '}';
+                container.innerHTML = html;
 
-                var html = '<div class="nb-wrapper"><div class="nb-board"><div class="nb-top"><div class="nb-carousel"><div class="carousel-track carousel-track-about">' + slidesHtml + '</div></div><div class="nb-text">' + data.desc + '</div></div></div></div>';
-
-                var wrapper = document.createElement('div');
-                wrapper.innerHTML = html;
-                wrapper.appendChild(styleTag);
-                container.innerHTML = wrapper.innerHTML;
+                window._aboutCarouselIndex = 0;
+                window._aboutCarouselCount = count;
+                aboutCarouselUpdate();
 
             } else if (data.enabled && data.desc && (!data.carousel || data.carousel.length === 0)) {
-                container.innerHTML = '<div class="nb-wrapper"><div class="nb-board"><div class="nb-top" style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;"><div class="nb-text" style="flex:1;padding:16px 20px;text-align:center;">' + data.desc + '</div></div></div></div>';
+                var sanitizedDesc = sanitizeDesc(data.desc);
+                container.innerHTML = '<div class="nb-wrapper"><div class="nb-board"><div class="nb-top" style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;"><div class="nb-text" style="flex:1;padding:16px 20px;text-align:center;">' + sanitizedDesc + '</div></div></div></div>';
             } else {
                 container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">暂无公告</div>';
             }
         } catch (e) {
             container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">加载失败</div>';
         }
+    }
+
+    // 关于页轮播控制函数
+    function aboutCarouselUpdate() {
+        var index = window._aboutCarouselIndex || 0;
+        var count = window._aboutCarouselCount || 0;
+        var track = document.getElementById('aboutCarouselTrack');
+        var dots = document.querySelectorAll('#aboutCarouselDots .dot');
+        if (track) {
+            track.style.transform = 'translateX(-' + (index * 100) + '%)';
+        }
+        dots.forEach(function(dot, i) {
+            dot.classList.toggle('active', i === index);
+        });
+    }
+
+    function aboutCarouselPrev(e) {
+        if (e) e.stopPropagation();
+        var count = window._aboutCarouselCount || 0;
+        if (count <= 1) return;
+        var index = (window._aboutCarouselIndex - 1 + count) % count;
+        window._aboutCarouselIndex = index;
+        aboutCarouselUpdate();
+    }
+
+    function aboutCarouselNext(e) {
+        if (e) e.stopPropagation();
+        var count = window._aboutCarouselCount || 0;
+        if (count <= 1) return;
+        var index = (window._aboutCarouselIndex + 1) % count;
+        window._aboutCarouselIndex = index;
+        aboutCarouselUpdate();
+    }
+
+    function aboutCarouselGoTo(index) {
+        var count = window._aboutCarouselCount || 0;
+        if (index < 0 || index >= count) return;
+        window._aboutCarouselIndex = index;
+        aboutCarouselUpdate();
     }
 
     // ================================================================
