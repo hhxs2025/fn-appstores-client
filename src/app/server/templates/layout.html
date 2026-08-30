@@ -275,7 +275,7 @@
         <div class="header-left">
             <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">☰</button>
             <span class="app-name">FN软仓</span>
-            <span class="app-version" id="appVersion">2.5.1</span>
+            <span class="app-version" id="appVersion">{{ version }}</span>
         </div>
         <div class="header-right">
             <span>飞牛第三方应用市场</span>
@@ -294,7 +294,7 @@
                 <button class="nav-item" data-tab="sources" onclick="switchTab('sources')"><span class="label">源管理</span></button>
                 <button class="nav-item" data-tab="settings" onclick="switchTab('settings')"><span class="label">设&nbsp;&nbsp;&nbsp;置</span></button>
             </nav>
-            <div class="sidebar-footer">FN软仓 v2.5.1-MIT</div>
+            <div class="sidebar-footer">FN软仓 v{{ version }}-MIT</div>
         </aside>
 
         <main class="main-content">

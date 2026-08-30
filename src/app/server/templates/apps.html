@@ -92,6 +92,7 @@
         flex-shrink: 0;
         margin: 4px 0 6px;
         flex-wrap: wrap;
+        align-items: center;
     }
     .type-filter-btn {
         background: transparent;
@@ -107,6 +108,22 @@
     }
     .type-filter-btn:hover { background: #e8eaed; border-color: #b8bac2; }
     .type-filter-btn.active { background: #e8eaed; border-color: #b0a8a0; color: var(--text-primary); }
+
+    /* ✅ 新增：源筛选下拉框样式 */
+    .source-filter-select {
+        background: transparent;
+        border: 1px solid #d5d7dd;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        outline: none;
+        height: 24px;
+        line-height: 1.4;
+    }
+    .source-filter-select:hover { border-color: #b8bac2; }
+    .source-filter-select:focus { border-color: #b0a8a0; }
 
     .app-grid-wrapper {
         flex: 1;
@@ -267,6 +284,8 @@
     body.dark-mode .refresh-btn:hover:not(:disabled) { background: #2a3a5a; }
     body.dark-mode .app-card .actions .btn-repo { border-color: #2a3a5a; color: var(--text-secondary); }
     body.dark-mode .app-card .actions .btn-repo:hover { background: #2a3a5a; }
+    body.dark-mode .source-filter-select { border-color: #2a3a5a; color: var(--text-secondary); background: #1a2a3a; }
+    body.dark-mode .source-filter-select:hover { border-color: #4a6a8a; }
 
     @media (max-width: 768px) {
         .app-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
@@ -311,6 +330,10 @@
     <button class="type-filter-btn active" data-type="all" onclick="filterByAppType('all')">全部</button>
     <button class="type-filter-btn" data-type="docker" onclick="filterByAppType('docker')">Docker应用</button>
     <button class="type-filter-btn" data-type="native" onclick="filterByAppType('native')">原生应用</button>
+    <!-- ✅ 新增：按源名称筛选下拉框 -->
+    <select class="source-filter-select" id="sourceFilterSelect" onchange="filterBySource(this.value)">
+        <option value="all">全部源</option>
+    </select>
 </div>
 
 <div class="app-grid-wrapper">

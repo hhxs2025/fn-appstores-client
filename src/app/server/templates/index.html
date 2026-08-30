@@ -13,11 +13,12 @@
 // ================================================================
 // 固定分类标签
 // ================================================================
-var FIXED_TAGS = ['全部', '影音', '办公', '下载', 'AI', '设计', '社交', '网络', '工具', '生活', '效率', '开发', '游戏'];
+var FIXED_TAGS = ['全部', '影音', '办公', '下载', 'AI', '设计', '社交', '网络', '工具', '生活', '商务', '教育', '效率', '开发', '游戏'];
 
 var API_BASE = window.location.origin;
 var currentTag = '全部';
 var currentAppType = 'all';
+var currentSourceFilter = 'all';  // ✅ 新增：源筛选
 var currentPage = 1;
 var pageSize = 8;
 var allAppsData = [];
@@ -143,6 +144,13 @@ function filterByAppType(type) {
     renderFilteredApps();
 }
 
+// ✅ 新增：按源名称筛选
+function filterBySource(sourceName) {
+    currentSourceFilter = sourceName || 'all';
+    currentPage = 1;
+    renderFilteredApps();
+}
+
 function renderFilterButtons() {
     var container = document.getElementById('filterBar');
     var html = '';
@@ -150,6 +158,30 @@ function renderFilterButtons() {
         html += '<button class="filter-btn' + (tag === currentTag ? ' active' : '') + '" data-tag="' + tag + '" onclick="filterByTag(\'' + tag + '\')">' + tag + '</button>';
     });
     container.innerHTML = html;
+}
+
+// ✅ 新增：获取所有去重的源名称
+function getUniqueSourceNames() {
+    var names = {};
+    allAppsData.forEach(function(app) {
+        if (app.id === 'fn-appstores-client') return;
+        var src = app._source_name || '未知源';
+        names[src] = true;
+    });
+    return Object.keys(names).sort();
+}
+
+// ✅ 新增：更新源筛选下拉框选项
+function updateSourceFilterOptions() {
+    var select = document.getElementById('sourceFilterSelect');
+    if (!select) return;
+    var names = getUniqueSourceNames();
+    var html = '<option value="all">全部源</option>';
+    names.forEach(function(name) {
+        var selected = currentSourceFilter === name ? ' selected' : '';
+        html += '<option value="' + name + '"' + selected + '>' + name + '</option>';
+    });
+    select.innerHTML = html;
 }
 
 function getCurrentPageData(apps) {
@@ -191,15 +223,50 @@ function getFilteredApps() {
             return appTags.some(function(t) { return t === currentTag; });
         });
     }
+
+    // ✅ 修正：同时检查 type 和 tags 字段（支持 "docker"、"Docker"、"原生" 等）
     if (currentAppType === 'docker') {
         result = result.filter(function(app) {
+            // 检查 type 字段是否为 docker（不区分大小写）
+            if (app.type) {
+                var typeLower = String(app.type).toLowerCase();
+                if (typeLower === 'docker' || typeLower === '容器') {
+                    return true;
+                }
+            }
+            // 检查 tags 中是否包含 docker 或 容器
             var tags = getTagsArray(app.tags);
-            return tags.some(function(t) { return t.toLowerCase().includes('docker') || t.toLowerCase().includes('容器'); });
+            return tags.some(function(t) {
+                var tl = t.toLowerCase();
+                return tl.includes('docker') || tl.includes('容器');
+            });
         });
     } else if (currentAppType === 'native') {
         result = result.filter(function(app) {
+            // 如果 type 字段明确是 原生 或 native，则为原生应用
+            if (app.type) {
+                var typeLower = String(app.type).toLowerCase();
+                if (typeLower === '原生' || typeLower === 'native' || typeLower === '本地') {
+                    return true;
+                }
+                // 如果 type 明确是 docker/容器，则不是原生应用
+                if (typeLower === 'docker' || typeLower === '容器') {
+                    return false;
+                }
+            }
+            // 检查 tags 中是否包含 docker 或 容器
             var tags = getTagsArray(app.tags);
-            return !tags.some(function(t) { return t.toLowerCase().includes('docker') || t.toLowerCase().includes('容器'); });
+            return !tags.some(function(t) {
+                var tl = t.toLowerCase();
+                return tl.includes('docker') || tl.includes('容器');
+            });
+        });
+    }
+
+    // ✅ 源名称筛选
+    if (currentSourceFilter !== 'all') {
+        result = result.filter(function(app) {
+            return (app._source_name || '未知源') === currentSourceFilter;
         });
     }
     return result;
@@ -287,7 +354,6 @@ document.addEventListener('keydown', function(e) {
 // 详情弹窗
 // ================================================================
 function openDetail(appId) {
-    // 如果试图打开 FN软仓自身，跳转到设置页
     if (appId === 'fn-appstores-client') {
         switchTab('settings');
         setTimeout(function() { switchSettingTab('system'); }, 300);
@@ -480,6 +546,8 @@ async function loadApps() {
             document.getElementById('statusBadge').className = 'badge connected';
             updateLastRefreshTime();
             localStorage.setItem('fnsoft_apps_cache', JSON.stringify({ timestamp: Date.now(), data: allAppsData }));
+            // ✅ 更新源筛选下拉框
+            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
         } else if (!hasCache) {
             document.getElementById('appGrid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败，请点击右上角「刷新」重试</p></div>';
             allAppsData = [];
@@ -497,14 +565,22 @@ function restoreAppsView() {
             var cacheData = JSON.parse(cached);
             if (Date.now() - cacheData.timestamp < 10 * 60 * 1000) {
                 allAppsData = cacheData.data;
+                // ✅ 恢复分类标签筛选状态
+                renderFilterButtons();
                 renderFilteredApps();
                 document.getElementById('statusBadge').textContent = '缓存';
                 document.getElementById('statusBadge').className = 'badge cached';
+                // ✅ 更新源筛选下拉框
+                if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
                 return;
             }
         }
     } catch (e) {}
-    if (allAppsData && allAppsData.length > 0) { renderFilteredApps(); return; }
+    if (allAppsData && allAppsData.length > 0) {
+        renderFilteredApps();
+        if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
+        return;
+    }
     loadApps();
 }
 
@@ -569,6 +645,8 @@ async function refreshApps() {
             badge.textContent = '在线';
             badge.className = 'badge connected';
             localStorage.setItem('fnsoft_apps_cache', JSON.stringify({ timestamp: Date.now(), data: allAppsData }));
+            // ✅ 更新源筛选下拉框
+            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
         } else {
             showToast('刷新失败: ' + data.message, 'error');
             badge.textContent = '失败';
@@ -695,7 +773,6 @@ function handleWsMessage(msg) {
 // 安装 / 更新
 // ================================================================
 async function installApp(appId) {
-    // 如果意外调用到自身，跳转设置页
     if (appId === 'fn-appstores-client') {
         showToast('请到「设置 → 系统」中安装更新', 'info');
         switchTab('settings');
@@ -739,7 +816,6 @@ async function installApp(appId) {
 }
 
 async function updateApp(appId) {
-    // 如果意外调用到自身，跳转设置页
     if (appId === 'fn-appstores-client') {
         showToast('请到「设置 → 系统」中检查更新', 'info');
         switchTab('settings');
@@ -791,7 +867,7 @@ async function checkClientUpdate() {
         if (data.has_update) {
             var downloadedVer = localStorage.getItem('fnsoft_downloaded_version');
             if (downloadedVer && downloadedVer === data.version) {
-                if (confirm('已下载 v' + data.version + '，是否重新下载？（如果文件已删除请点“确定”）')) {
+                if (confirm('已下载 v' + data.version + '，是否重新下载？（如果文件已删除请点"确定"）')) {
                     localStorage.removeItem('fnsoft_downloaded_version');
                     downloadAndInstall(data);
                 } else {
@@ -963,7 +1039,7 @@ async function submitWizard() {
 }
 
 // ================================================================
-// 软件源管理
+// 软件源管理（包含官方源处理）
 // ================================================================
 async function loadSources(force) {
     var container = document.getElementById('sourceList');
@@ -988,6 +1064,21 @@ async function loadSources(force) {
             var statusText = source.status === 'online' ? '在线' : source.status === 'disabled' ? '已禁用' : source.status === 'offline' ? '离线' : '未知';
             var isDefault = source.id === 'official' || source.id === 'official_backup';
 
+            // ✅ 官方源地址隐藏
+            var displayUrl = isDefault ? '●●●●●●●' : source.url;
+
+            // ✅ 官方源不渲染启用/禁用按钮；三方源按钮逻辑修正
+            var toggleBtn = '';
+            if (!isDefault) {
+                if (source.enabled) {
+                    // 当前启用 → 显示「禁用」，点击后禁用
+                    toggleBtn = '<button class="btn btn-disable" onclick="toggleSource(\'' + source.id + '\',false)">禁用</button>';
+                } else {
+                    // 当前禁用 → 显示「启用」，点击后启用
+                    toggleBtn = '<button class="btn btn-enable" onclick="toggleSource(\'' + source.id + '\',true)">启用</button>';
+                }
+            }
+
             return '<div class="source-item">' +
                 '<div class="info">' +
                 '<div class="name-row">' +
@@ -995,14 +1086,11 @@ async function loadSources(force) {
                 (isDefault ? '<span class="badge">官方</span>' : '') +
                 '<span class="status" style="color:' + statusColor + ';">● ' + statusText + '</span>' +
                 '</div>' +
-                '<div class="url">' + source.url + '</div>' +
+                '<div class="url">' + displayUrl + '</div>' +
                 (source.status_msg && source.status !== 'online' ? '<div class="status-msg">' + source.status_msg + '</div>' : '') +
                 '</div>' +
                 '<div class="actions">' +
-                (source.enabled ?
-                    '<button class="btn btn-enable" onclick="toggleSource(\'' + source.id + '\',false)">启用</button>' :
-                    '<button class="btn btn-disable" onclick="toggleSource(\'' + source.id + '\',true)">禁用</button>'
-                ) +
+                toggleBtn +
                 (isDefault ? '' : '<button class="btn btn-delete" onclick="removeSource(\'' + source.id + '\')">删除</button>') +
                 '</div>' +
                 '</div>';
@@ -1112,13 +1200,10 @@ async function loadHome() {
         var data;
 
         if (hasCache) {
-            // ✅ 使用缓存，不发起网络请求
             data = homeNoticeCache;
         } else {
-            // 请求最新公告
             var resp = await fetch(API_BASE + '/api/notice');
             data = await resp.json();
-            // 存入缓存
             homeNoticeCache = data;
             homeNoticeCacheTime = now;
         }
@@ -1139,7 +1224,6 @@ async function loadHome() {
         homeLoaded = true;
     } catch (e) {
         console.warn('加载首页失败:', e);
-        // 如果请求失败但缓存存在，降级使用旧缓存（即使过期）
         if (homeNoticeCache) {
             data = homeNoticeCache;
             homeNoticeData = data;
@@ -1224,12 +1308,12 @@ function updateHomeQuickCards() {
     document.getElementById('quickUpdatableCount').textContent = updatable.length;
     renderQuickList('quickUpdatableList', updatable, 'updatable');
 
-    var hot = filteredData.slice().sort(function(a, b) { return (b.downloads || 0) - (a.downloads || 0); }).slice(0, 5);
+    var hot = filteredData.slice().sort(function(a, b) { return (b.downloads || 0) - (a.downloads || 0); }).slice(0, 10);
     renderQuickList('quickHotList', hot, 'hot');
 
     var newest = filteredData.slice().sort(function(a, b) {
         return new Date(b.updated_at || '1970-01-01') - new Date(a.updated_at || '1970-01-01');
-    }).slice(0, 5);
+    }).slice(0, 10);
     renderQuickList('quickNewestList', newest, 'newest');
 }
 
@@ -1352,7 +1436,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     checkAndShowDownloaded();
 
-    // ✅ 主动加载首页、应用列表、源管理
     if (typeof loadHome === 'function') loadHome();
     if (typeof loadApps === 'function') loadApps();
     if (typeof loadSources === 'function') loadSources();
