@@ -25,6 +25,21 @@
     .toolbar .badge.loading { background: #e8eaed; color: #6b6b6b; }
     .toolbar .badge.error { background: #f5e6e0; color: #b55a5a; }
 
+    .toolbar .right { display: flex; align-items: center; gap: 6px; }
+    .sort-select {
+        background: transparent;
+        border: 1px solid #d5d7dd;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 10px;
+        color: var(--text-secondary);
+        outline: none;
+        height: 24px;
+        cursor: pointer;
+    }
+    .sort-select:hover { border-color: #b8bac2; }
+    .sort-select:focus { border-color: #b0a8a0; }
+
     .refresh-btn {
         background: transparent;
         color: var(--text-secondary);
@@ -109,7 +124,7 @@
     .type-filter-btn:hover { background: #e8eaed; border-color: #b8bac2; }
     .type-filter-btn.active { background: #e8eaed; border-color: #b0a8a0; color: var(--text-primary); }
 
-    /* ✅ 新增：源筛选下拉框样式 */
+    /* 源筛选下拉框样式 */
     .source-filter-select {
         background: transparent;
         border: 1px solid #d5d7dd;
@@ -236,6 +251,7 @@
     .app-card .progress-bar-fill.error { background: #c47a7a; }
     .app-card .progress-text { font-size: 9px; color: var(--text-secondary); margin-top: 3px; display: flex; justify-content: space-between; }
     .app-card .progress-text .status-msg { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .app-card .progress-text .progress-percent { font-weight: 600; font-size: 11px; color: var(--text-primary); flex-shrink: 0; margin-left: 8px; }
     .app-card .progress-details { font-size: 8px; color: var(--text-muted); margin-top: 1px; display: flex; gap: 10px; flex-wrap: wrap; }
     .app-card .progress-details .speed { color: var(--text-secondary); }
 
@@ -286,6 +302,8 @@
     body.dark-mode .app-card .actions .btn-repo:hover { background: #2a3a5a; }
     body.dark-mode .source-filter-select { border-color: #2a3a5a; color: var(--text-secondary); background: #1a2a3a; }
     body.dark-mode .source-filter-select:hover { border-color: #4a6a8a; }
+    body.dark-mode .sort-select { border-color: #2a3a5a; color: var(--text-secondary); background: #1a2a3a; }
+    body.dark-mode .sort-select:hover { border-color: #4a6a8a; }
 
     @media (max-width: 768px) {
         .app-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
@@ -302,12 +320,16 @@
         .app-card .desc { font-size: 9px; -webkit-line-clamp: 1; }
         .app-card .icon { width: 32px; height: 32px; font-size: 14px; }
         .app-card .progress-details { font-size: 7px; }
+        .app-card .progress-text .progress-percent { font-size: 10px; }
+        .toolbar .right { gap: 4px; }
+        .sort-select { font-size: 9px; padding: 1px 4px; max-width: 80px; }
     }
 
     @media (max-width: 400px) {
         .app-grid { grid-template-columns: 1fr; gap: 6px; }
         .app-card .top { flex-direction: row; align-items: center; }
         .app-card .icon { width: 28px; height: 28px; font-size: 12px; }
+        .sort-select { max-width: 60px; font-size: 8px; }
     }
 </style>
 
@@ -317,7 +339,15 @@
         <span class="count">共 <strong id="appCount">0</strong> 个应用</span>
         <span class="count" style="font-size:10px;color:var(--text-muted);" id="lastRefresh">--</span>
     </div>
-    <button class="refresh-btn" id="refreshBtn" onclick="refreshApps()">刷新</button>
+    <div class="right">
+        <select class="sort-select" id="sortSelect" onchange="changeSort()">
+            <option value="default">默认排序</option>
+            <option value="name">按名称</option>
+            <option value="downloads">按下载量</option>
+            <option value="updated">按更新时间</option>
+        </select>
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshApps()">刷新</button>
+    </div>
 </div>
 
 <div class="search-bar">
@@ -330,7 +360,7 @@
     <button class="type-filter-btn active" data-type="all" onclick="filterByAppType('all')">全部</button>
     <button class="type-filter-btn" data-type="docker" onclick="filterByAppType('docker')">Docker应用</button>
     <button class="type-filter-btn" data-type="native" onclick="filterByAppType('native')">原生应用</button>
-    <!-- ✅ 新增：按源名称筛选下拉框 -->
+    <!-- 按源名称筛选下拉框 -->
     <select class="source-filter-select" id="sourceFilterSelect" onchange="filterBySource(this.value)">
         <option value="all">全部源</option>
     </select>

@@ -98,6 +98,31 @@
     .switch input:checked + .slider { background: #2563ea; }
     .switch input:checked + .slider::before { transform: translateX(18px); }
 
+    /* ✅ v2.5.3：二维码行样式 */
+    .qrcode-row {
+        border-bottom: none !important;
+        padding-top: 8px !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 4px !important;
+    }
+    .qrcode-row .label {
+        font-size: 12px !important;
+        color: var(--text-muted) !important;
+    }
+    .qrcode-row img {
+        max-width: 140px;
+        max-height: 140px;
+        width: auto;
+        height: auto;
+        object-fit: contain; 
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: white;
+        padding: 4px;
+        margin: 0 auto;  
+    }
+
     body.dark-mode .settings-card { background: #1e2a45; border-color: #2a3a5a; }
     body.dark-mode .settings-card .row { border-bottom-color: #2a3a5a; }
 
@@ -129,6 +154,8 @@
                 <div class="title">通用设置</div>
                 <div class="row"><span class="label">深色模式</span><label class="switch"><input type="checkbox" id="themeSwitch" onchange="handleThemeSwitch(this.checked)"><span class="slider"></span></label></div>
                 <div class="row"><span class="label">导出日志</span><button class="action-btn" onclick="exportLogs()">导出</button></div>
+                <!-- v2.5.3✅ 新增 -->
+                <div class="row"><span class="label">清除本地缓存</span><button class="action-btn" onclick="clearCache()">清除</button></div>
             </div>
         </div>
         <div class="settings-panel" id="spanel-system">
@@ -152,8 +179,15 @@
                 <div class="row"><span class="label">开源协议</span><span class="value">MIT</span></div>
                 <div class="row"><span class="label">源码地址</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores-client" target="_blank">Gitee</a></span></div>
                 <div class="row"><span class="label">交流群</span><span class="value">2154077576</span></div>
-                <div class="row"><span class="label">应用接入</span><span class="value"><a href="https://f.wps.cn/g/L7KeYADl/" target="_blank">提交应用 →</a></span></div>
+                <div class="row"><span class="label">应用上架</span><span class="value"><a href="https://f.wps.cn/g/L7KeYADl/" target="_blank">提交应用 →</a></span></div>
+                <!-- ✅ v2.5.3 新增：申请聚合 -->
+                <div class="row"><span class="label">聚合申请</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores/issues/new/choose" target="_blank">提交申请 →</a></span></div>
                 <div class="row"><span class="label">官方源查询</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores/raw/master/源.md" target="_blank">查看源列表 →</a></span></div>
+                <!-- ✅ v2.5.3 新增：QQ群二维码 -->
+                <div class="row qrcode-row">
+                    <span class="label">扫一扫加群</span>
+                    <img src="{{ url_for('static', filename='qrcode.jpg') }}" alt="QQ群二维码">
+                </div>
             </div>
         </div>
         <div class="settings-panel" id="spanel-stats">

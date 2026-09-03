@@ -18,7 +18,8 @@ var FIXED_TAGS = ['全部', '影音', '办公', '下载', 'AI', '设计', '社�
 var API_BASE = window.location.origin;
 var currentTag = '全部';
 var currentAppType = 'all';
-var currentSourceFilter = 'all';  // ✅ 新增：源筛选
+var currentSourceFilter = 'all';
+var currentSort = 'default';  // ✅ 新增：排序方式
 var currentPage = 1;
 var pageSize = 8;
 var allAppsData = [];
@@ -92,6 +93,23 @@ function exportLogs() {
 }
 
 // ================================================================
+// ✅ 清除本地缓存
+// ================================================================
+function clearCache() {
+    if (!confirm('确定要清除所有本地缓存吗？\n\n清除后下次打开将重新加载数据。')) {
+        return;
+    }
+    localStorage.removeItem('fnsoft_apps_cache');
+    localStorage.removeItem('fnsoft_notice_cache');
+    localStorage.removeItem('fnsoft_downloaded_version');
+    // 保留主题设置（不清除 fnsoft_theme）
+    showToast('缓存已清除，即将刷新页面', 'success');
+    setTimeout(function() {
+        location.reload();
+    }, 800);
+}
+
+// ================================================================
 // 设置页标签切换
 // ================================================================
 function switchSettingTab(tab) {
@@ -144,9 +162,16 @@ function filterByAppType(type) {
     renderFilteredApps();
 }
 
-// ✅ 新增：按源名称筛选
 function filterBySource(sourceName) {
     currentSourceFilter = sourceName || 'all';
+    currentPage = 1;
+    renderFilteredApps();
+}
+
+// ✅ 排序切换
+function changeSort() {
+    var select = document.getElementById('sortSelect');
+    currentSort = select ? select.value : 'default';
     currentPage = 1;
     renderFilteredApps();
 }
@@ -160,7 +185,6 @@ function renderFilterButtons() {
     container.innerHTML = html;
 }
 
-// ✅ 新增：获取所有去重的源名称
 function getUniqueSourceNames() {
     var names = {};
     allAppsData.forEach(function(app) {
@@ -171,7 +195,6 @@ function getUniqueSourceNames() {
     return Object.keys(names).sort();
 }
 
-// ✅ 新增：更新源筛选下拉框选项
 function updateSourceFilterOptions() {
     var select = document.getElementById('sourceFilterSelect');
     if (!select) return;
@@ -182,6 +205,33 @@ function updateSourceFilterOptions() {
         html += '<option value="' + name + '"' + selected + '>' + name + '</option>';
     });
     select.innerHTML = html;
+}
+
+// ✅ 排序函数
+function sortApps(apps) {
+    if (currentSort === 'default') return apps;
+    
+    var sorted = apps.slice();
+    switch (currentSort) {
+        case 'name':
+            sorted.sort(function(a, b) {
+                return (a.name || '').localeCompare(b.name || '');
+            });
+            break;
+        case 'downloads':
+            sorted.sort(function(a, b) {
+                return (b.downloads || 0) - (a.downloads || 0);
+            });
+            break;
+        case 'updated':
+            sorted.sort(function(a, b) {
+                var dateA = a.updated_at || '1970-01-01';
+                var dateB = b.updated_at || '1970-01-01';
+                return new Date(dateB) - new Date(dateA);
+            });
+            break;
+    }
+    return sorted;
 }
 
 function getCurrentPageData(apps) {
@@ -224,17 +274,14 @@ function getFilteredApps() {
         });
     }
 
-    // ✅ 修正：同时检查 type 和 tags 字段（支持 "docker"、"Docker"、"原生" 等）
     if (currentAppType === 'docker') {
         result = result.filter(function(app) {
-            // 检查 type 字段是否为 docker（不区分大小写）
             if (app.type) {
                 var typeLower = String(app.type).toLowerCase();
                 if (typeLower === 'docker' || typeLower === '容器') {
                     return true;
                 }
             }
-            // 检查 tags 中是否包含 docker 或 容器
             var tags = getTagsArray(app.tags);
             return tags.some(function(t) {
                 var tl = t.toLowerCase();
@@ -243,18 +290,15 @@ function getFilteredApps() {
         });
     } else if (currentAppType === 'native') {
         result = result.filter(function(app) {
-            // 如果 type 字段明确是 原生 或 native，则为原生应用
             if (app.type) {
                 var typeLower = String(app.type).toLowerCase();
                 if (typeLower === '原生' || typeLower === 'native' || typeLower === '本地') {
                     return true;
                 }
-                // 如果 type 明确是 docker/容器，则不是原生应用
                 if (typeLower === 'docker' || typeLower === '容器') {
                     return false;
                 }
             }
-            // 检查 tags 中是否包含 docker 或 容器
             var tags = getTagsArray(app.tags);
             return !tags.some(function(t) {
                 var tl = t.toLowerCase();
@@ -263,12 +307,14 @@ function getFilteredApps() {
         });
     }
 
-    // ✅ 源名称筛选
     if (currentSourceFilter !== 'all') {
         result = result.filter(function(app) {
             return (app._source_name || '未知源') === currentSourceFilter;
         });
     }
+
+    // ✅ 排序（放在最后）
+    result = sortApps(result);
     return result;
 }
 
@@ -496,7 +542,10 @@ function renderApps(apps) {
             '</div>' +
             '<div class="progress-container" id="progress-' + app.id + '">' +
             '<div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar-' + app.id + '"></div></div>' +
-            '<div class="progress-text"><span class="status-msg" id="progressMsg-' + app.id + '">准备中...</span></div>' +
+            '<div class="progress-text">' +
+                '<span class="status-msg" id="progressMsg-' + app.id + '">准备中...</span>' +
+                '<span class="progress-percent" id="progressPercent-' + app.id + '">0%</span>' +
+            '</div>' +
             '<div class="progress-details"><span class="speed" id="speed-' + app.id + '"></span><span class="eta" id="eta-' + app.id + '"></span></div>' +
             '</div>' +
             '<div class="status-text" id="status-' + app.id + '"></div>' +
@@ -546,7 +595,6 @@ async function loadApps() {
             document.getElementById('statusBadge').className = 'badge connected';
             updateLastRefreshTime();
             localStorage.setItem('fnsoft_apps_cache', JSON.stringify({ timestamp: Date.now(), data: allAppsData }));
-            // ✅ 更新源筛选下拉框
             if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
         } else if (!hasCache) {
             document.getElementById('appGrid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败，请点击右上角「刷新」重试</p></div>';
@@ -565,12 +613,10 @@ function restoreAppsView() {
             var cacheData = JSON.parse(cached);
             if (Date.now() - cacheData.timestamp < 10 * 60 * 1000) {
                 allAppsData = cacheData.data;
-                // ✅ 恢复分类标签筛选状态
                 renderFilterButtons();
                 renderFilteredApps();
                 document.getElementById('statusBadge').textContent = '缓存';
                 document.getElementById('statusBadge').className = 'badge cached';
-                // ✅ 更新源筛选下拉框
                 if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
                 return;
             }
@@ -645,7 +691,6 @@ async function refreshApps() {
             badge.textContent = '在线';
             badge.className = 'badge connected';
             localStorage.setItem('fnsoft_apps_cache', JSON.stringify({ timestamp: Date.now(), data: allAppsData }));
-            // ✅ 更新源筛选下拉框
             if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
         } else {
             showToast('刷新失败: ' + data.message, 'error');
@@ -728,7 +773,15 @@ function handleWsMessage(msg) {
         var progressContainer = document.getElementById('progress-' + appId);
         if (progressContainer) progressContainer.classList.add('show');
         var progressBar = document.getElementById('progressBar-' + appId);
-        if (progressBar) { progressBar.style.width = Math.min(100, data.progress || 0) + '%'; progressBar.className = 'progress-bar-fill'; }
+        if (progressBar) {
+            var pct = Math.min(100, data.progress || 0);
+            progressBar.style.width = pct + '%';
+            progressBar.className = 'progress-bar-fill';
+        }
+        var pctEl = document.getElementById('progressPercent-' + appId);
+        if (pctEl) {
+            pctEl.textContent = Math.min(100, data.progress || 0) + '%';
+        }
         var msgEl = document.getElementById('progressMsg-' + appId);
         if (msgEl) msgEl.textContent = data.msg || '处理中...';
         var speedEl = document.getElementById('speed-' + appId);
@@ -749,14 +802,41 @@ function handleWsMessage(msg) {
 
         if (data.status === 'success') {
             if (progressBar) { progressBar.style.width = '100%'; progressBar.className = 'progress-bar-fill complete'; }
+            var pctEl = document.getElementById('progressPercent-' + appId);
+            if (pctEl) pctEl.textContent = '100%';
             var msgEl = document.getElementById('progressMsg-' + appId);
             if (msgEl) msgEl.textContent = '安装完成';
             if (statusDiv) { statusDiv.className = 'status-text show success'; statusDiv.textContent = '✓ ' + data.msg; }
             if (btn) { btn.disabled = true; btn.textContent = '已安装'; }
             var app = allAppsData.find(function(a) { return a.id === appId; });
             showToast((app ? app.name : appId) + ' 安装成功', 'success');
+            
+            // ✅ 优化：直接更新应用卡片状态，无需刷新整个列表
+            if (app) {
+                app.installed = true;
+                app.installed_version = data.version || app.version;
+                app.has_update = false;
+                // 更新卡片按钮
+                var card = document.getElementById('card-' + appId);
+                if (card) {
+                    var cardBtn = card.querySelector('.actions .btn');
+                    if (cardBtn) {
+                        cardBtn.textContent = '已安装';
+                        cardBtn.disabled = true;
+                        cardBtn.className = 'btn btn-secondary';
+                    }
+                }
+                // 更新首页快捷卡片
+                if (typeof updateHomeQuickCards === 'function') {
+                    updateHomeQuickCards();
+                }
+                // 更新统计
+                updateSettingsStats();
+            }
+            
             setTimeout(function() { if (progressContainer) progressContainer.classList.remove('show'); }, 5000);
-            setTimeout(function() { refreshApps(); }, 3000);
+            // ✅ 延迟刷新列表，但状态已经更新，用户感知更好
+            setTimeout(function() { refreshApps(); }, 5000);
         } else {
             if (progressBar) progressBar.className = 'progress-bar-fill error';
             var msgEl2 = document.getElementById('progressMsg-' + appId);
@@ -1064,17 +1144,13 @@ async function loadSources(force) {
             var statusText = source.status === 'online' ? '在线' : source.status === 'disabled' ? '已禁用' : source.status === 'offline' ? '离线' : '未知';
             var isDefault = source.id === 'official' || source.id === 'official_backup';
 
-            // ✅ 官方源地址隐藏
             var displayUrl = isDefault ? '●●●●●●●' : source.url;
 
-            // ✅ 官方源不渲染启用/禁用按钮；三方源按钮逻辑修正
             var toggleBtn = '';
             if (!isDefault) {
                 if (source.enabled) {
-                    // 当前启用 → 显示「禁用」，点击后禁用
                     toggleBtn = '<button class="btn btn-disable" onclick="toggleSource(\'' + source.id + '\',false)">禁用</button>';
                 } else {
-                    // 当前禁用 → 显示「启用」，点击后启用
                     toggleBtn = '<button class="btn btn-enable" onclick="toggleSource(\'' + source.id + '\',true)">启用</button>';
                 }
             }

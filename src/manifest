@@ -1,7 +1,7 @@
 appname=fn-appstores-client
-version=2.5.2
+version=2.6.0
 display_name=FN软仓
-desc="""<p>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。它让用户可以方便地发现、安装和管理非官方的飞牛应用，同时也为开发者提供了一个简单开放的应用发布渠道。</p><p>📖<strong>核心功能:</strong></p><p><strong>1.应用页:</strong>支持应用列表分页、应用卡片基本信息显示、应用弹窗预览图显示、README一键直达。</p><p><strong>2.源管理:</strong>内置应用源，支持添加应用源，支持自添加应用源启用与禁用，应用源缓存5分钟(可手动强制刷新);</p><p><strong>3.关于页:</strong>支持公告实时接收功能。</p><p><strong>4.副标题区:</strong>支持应用上架申请，支持FN软仓应用源查询，支持明暗主题切换。</p><p>📖<strong>2.5.2更新内容:</strong></p><p>1.应用类型筛选修复：修复应用列表Docker应用与原生应用分类筛选无效问题；</p><p>2.应用列表：修复缓存状态下分类筛选按钮隐藏必须刷新才显示的问题；</p><p>3.新增按源名称筛选功能。</p><br><br><img src="https://gitee.com/hhxs2025/fn-appstores-client/raw/master/previews/1.webp"  width="80%"/>"""
+desc="""`<p>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。它让用户可以方便地发现、安装和管理非官方的飞牛应用，同时也为开发者提供了一个简单开放的应用发布渠道。</p><p>📖<strong>核心功能:</strong></p><p><strong>1.应用页:</strong>支持应用列表分页、应用卡片基本信息显示、应用弹窗预览图显示、README一键直达。</p><p><strong>2.源管理:</strong>内置应用源，支持添加应用源，支持自添加应用源启用与禁用，应用源缓存5分钟(可手动强制刷新);</p><p><strong>3.关于页:</strong>支持公告实时接收功能。</p><p><strong>4.副标题区:</strong>支持应用上架申请，支持FN软仓应用源查询，支持明暗主题切换。</p><p>📖<strong>2.6.0更新内容:</strong></p><p>1.应用安装进度显示：安装过程实时显示百分比;</p><p>2.应用列表排序：新增按名称、下载量、更新时间排序；</p><p>3.安装即时刷新：安装完成后自动更新卡片状态;</p><p>4.设置页优化：新增清除缓存按钮、聚合申请入口及 QQ 群二维码；</p><p>5.详情弹窗优化：固定 4:3 比例显示;</p><br><img src="https://gitee.com/hhxs2025/fn-appstores-client/raw/master/previews/1.webp"  width="80%"/>`"""
 platform=x86
 source=thirdparty
 maintainer=晦华先生
@@ -18,4 +18,4 @@ changelog=1.修复应用页缓存状态下tags分类筛选按钮自动隐藏必�
 <p><a href="https://gitee.com/hhxs2025/fn-appstores/issues">应用接入通道</a></p>"""
 <ul style="list-style-type: disc
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse
-checksum=a127136c233e5bc184ee81012c7f1bf6
+checksum=54c91a1f076b2661cf37ba516f65efb8
