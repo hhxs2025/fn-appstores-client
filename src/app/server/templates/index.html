@@ -19,7 +19,7 @@ var API_BASE = window.location.origin;
 var currentTag = '全部';
 var currentAppType = 'all';
 var currentSourceFilter = 'all';
-var currentSort = 'default';
+var currentSort = 'default';  // ✅ 新增：排序方式
 var currentPage = 1;
 var pageSize = 8;
 var allAppsData = [];
@@ -39,17 +39,6 @@ var homeNoticeData = null;
 var homeLoaded = false;
 
 // ================================================================
-// ✅ P0-1: WebSocket（唯一全局实例，由 index.html 统一管理）
-// ================================================================
-var ws = null;
-var wsReady = false;
-var wsReconnectTimer = null;
-var wsReconnectAttempts = 0;
-var WS_MAX_RECONNECT_ATTEMPTS = 10;
-var pendingInstallQueue = [];
-var isInstalling = false;
-
-// ================================================================
 // 📢 首页公告缓存（5分钟 TTL）
 // ================================================================
 var homeNoticeCache = null;
@@ -57,36 +46,15 @@ var homeNoticeCacheTime = 0;
 var HOME_CACHE_TTL = 5 * 60 * 1000;  // 5 分钟
 
 // ================================================================
-// ✅ P1-1: 缓存版本号（升级时强制刷新）
-// ================================================================
-var CACHE_VERSION = 'v1';
-var CACHE_KEY = 'fnsoft_apps_cache';
-
-// ================================================================
-// ✅ P1-2: 加载状态锁（防止并发重复请求）
-// ================================================================
-var _loadingApps = false;
-var _loadingSources = false;
-var _loadingHome = false;
-var _appsLoaded = false;
-var _installedLoaded = false;
-
-// ================================================================
 // Toast
 // ================================================================
 function showToast(msg, type) {
     var toast = document.getElementById('toast');
-    if (!toast) {
-        console.warn('Toast 元素不存在');
-        return;
-    }
     toast.textContent = msg;
     toast.className = 'toast show ' + (type || '');
     var durations = { success: 2500, error: 4000, warning: 3000, info: 2000 };
     clearTimeout(toast._timer);
-    toast._timer = setTimeout(function() {
-        toast.classList.remove('show');
-    }, durations[type] || 3000);
+    toast._timer = setTimeout(function() { toast.classList.remove('show'); }, durations[type] || 3000);
 }
 
 // ================================================================
@@ -117,52 +85,6 @@ function getTagsArray(tags) {
 }
 
 // ================================================================
-// ✅ P1-1: 统一缓存读写
-// ================================================================
-function readAppsCache() {
-    try {
-        var cached = localStorage.getItem(CACHE_KEY);
-        if (!cached) return null;
-        var data = JSON.parse(cached);
-        // 检查版本号
-        if (data._version !== CACHE_VERSION) {
-            console.log('缓存版本不一致，忽略缓存');
-            localStorage.removeItem(CACHE_KEY);
-            return null;
-        }
-        // 检查 TTL（10分钟）
-        if (Date.now() - data.timestamp > 10 * 60 * 1000) {
-            console.log('缓存已过期（超过10分钟）');
-            return null;
-        }
-        return data.data;
-    } catch (e) {
-        return null;
-    }
-}
-
-function writeAppsCache(data) {
-    try {
-        var cacheData = {
-            _version: CACHE_VERSION,
-            timestamp: Date.now(),
-            data: data
-        };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        console.log('✅ 缓存已写入');
-    } catch (e) {
-        console.warn('写入缓存失败:', e);
-    }
-}
-
-function clearAppsCache() {
-    localStorage.removeItem(CACHE_KEY);
-    localStorage.removeItem('fnsoft_notice_cache');
-    localStorage.removeItem('fnsoft_downloaded_version');
-    console.log('✅ 缓存已清除');
-}
-
-// ================================================================
 // 导出日志
 // ================================================================
 function exportLogs() {
@@ -171,19 +93,21 @@ function exportLogs() {
 }
 
 // ================================================================
-// ✅ 清除本地缓存（暴露给 settings.html 调用）
+// ✅ 清除本地缓存
 // ================================================================
 function clearCache() {
     if (!confirm('确定要清除所有本地缓存吗？\n\n清除后下次打开将重新加载数据。')) {
         return;
     }
-    clearAppsCache();
+    localStorage.removeItem('fnsoft_apps_cache');
+    localStorage.removeItem('fnsoft_notice_cache');
+    localStorage.removeItem('fnsoft_downloaded_version');
+    // 保留主题设置（不清除 fnsoft_theme）
     showToast('缓存已清除，即将刷新页面', 'success');
     setTimeout(function() {
         location.reload();
     }, 800);
 }
-window.clearCache = clearCache;
 
 // ================================================================
 // 设置页标签切换
@@ -244,17 +168,16 @@ function filterBySource(sourceName) {
     renderFilteredApps();
 }
 
+// ✅ 排序切换
 function changeSort() {
     var select = document.getElementById('sortSelect');
-    if (!select) return;
-    currentSort = select.value || 'default';
+    currentSort = select ? select.value : 'default';
     currentPage = 1;
     renderFilteredApps();
 }
 
 function renderFilterButtons() {
     var container = document.getElementById('filterBar');
-    if (!container) return;
     var html = '';
     FIXED_TAGS.forEach(function(tag) {
         html += '<button class="filter-btn' + (tag === currentTag ? ' active' : '') + '" data-tag="' + tag + '" onclick="filterByTag(\'' + tag + '\')">' + tag + '</button>';
@@ -284,8 +207,10 @@ function updateSourceFilterOptions() {
     select.innerHTML = html;
 }
 
+// ✅ 排序函数
 function sortApps(apps) {
     if (currentSort === 'default') return apps;
+    
     var sorted = apps.slice();
     switch (currentSort) {
         case 'name':
@@ -316,15 +241,11 @@ function getCurrentPageData(apps) {
 function renderPagination(total) {
     var totalPages = Math.ceil(total / pageSize);
     var el = document.getElementById('pagination');
-    if (!el) return;
     if (totalPages <= 1) { el.classList.remove('show'); return; }
     el.classList.add('show');
-    var info = document.getElementById('pageInfo');
-    if (info) info.textContent = currentPage + '/' + totalPages;
-    var prevBtn = document.getElementById('prevBtn');
-    var nextBtn = document.getElementById('nextBtn');
-    if (prevBtn) prevBtn.disabled = currentPage === 1;
-    if (nextBtn) nextBtn.disabled = currentPage === totalPages;
+    document.getElementById('pageInfo').textContent = currentPage + '/' + totalPages;
+    document.getElementById('prevBtn').disabled = currentPage === 1;
+    document.getElementById('nextBtn').disabled = currentPage === totalPages;
 }
 
 function prevPage() { if (currentPage > 1) { currentPage--; renderFilteredApps(); } }
@@ -334,20 +255,17 @@ function nextPage() {
 }
 
 // ================================================================
-// 过滤掉 fn-appstores-client
+// 过滤掉 fn-appstores-client，使其不显示在应用列表
 // ================================================================
 function getFilteredApps() {
     var result = allAppsData.filter(function(app) { return app.id !== 'fn-appstores-client'; });
-    var keywordEl = document.getElementById('searchInput');
-    if (keywordEl) {
-        var keyword = keywordEl.value.toLowerCase().trim();
-        if (keyword) {
-            result = result.filter(function(app) {
-                return (app.name && app.name.toLowerCase().includes(keyword)) ||
-                    (app.desc && app.desc.toLowerCase().includes(keyword)) ||
-                    (app.author && app.author.toLowerCase().includes(keyword));
-            });
-        }
+    var keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (keyword) {
+        result = result.filter(function(app) {
+            return (app.name && app.name.toLowerCase().includes(keyword)) ||
+                (app.desc && app.desc.toLowerCase().includes(keyword)) ||
+                (app.author && app.author.toLowerCase().includes(keyword));
+        });
     }
     if (currentTag !== '全部') {
         result = result.filter(function(app) {
@@ -395,6 +313,7 @@ function getFilteredApps() {
         });
     }
 
+    // ✅ 排序（放在最后）
     result = sortApps(result);
     return result;
 }
@@ -403,8 +322,7 @@ function renderFilteredApps() {
     var filtered = getFilteredApps();
     renderApps(getCurrentPageData(filtered));
     renderPagination(filtered.length);
-    var countEl = document.getElementById('appCount');
-    if (countEl) countEl.textContent = filtered.length;
+    document.getElementById('appCount').textContent = filtered.length;
     updateSettingsStats();
 }
 
@@ -413,34 +331,26 @@ function renderFilteredApps() {
 // ================================================================
 function initCarousel(screenshots) {
     var container = document.getElementById('carouselContainer');
-    if (!container) return;
     var track = document.getElementById('carouselTrack');
     var dotsContainer = document.getElementById('carouselDots');
-    slideCount = screenshots ? screenshots.length : 0;
+    slideCount = screenshots.length;
     currentSlide = 0;
     if (slideCount === 0) { container.style.display = 'none'; return; }
     container.style.display = 'block';
     window._currentScreenshots = screenshots;
-    if (track) {
-        track.innerHTML = screenshots.map(function(url, index) {
-            return '<img src="' + url + '" alt="应用截图" loading="lazy" onerror="this.style.display=\'none\'" onclick="event.stopPropagation();openImageModal(window._currentScreenshots || [], ' + index + ')">';
-        }).join('');
-    }
-    var prevBtn = document.getElementById('carouselPrev');
-    var nextBtn = document.getElementById('carouselNext');
-    if (prevBtn) prevBtn.classList.toggle('show', slideCount > 1);
-    if (nextBtn) nextBtn.classList.toggle('show', slideCount > 1);
-    if (dotsContainer) {
-        dotsContainer.innerHTML = slideCount > 1 ? screenshots.map(function(_, i) {
-            return '<button class="dot' + (i === 0 ? ' active' : '') + '" onclick="goToSlide(' + i + ')"></button>';
-        }).join('') : '';
-    }
+    track.innerHTML = screenshots.map(function(url, index) {
+        return '<img src="' + url + '" alt="应用截图" loading="lazy" onerror="this.style.display=\'none\'" onclick="event.stopPropagation();openImageModal(window._currentScreenshots || [], ' + index + ')">';
+    }).join('');
+    document.getElementById('carouselPrev').classList.toggle('show', slideCount > 1);
+    document.getElementById('carouselNext').classList.toggle('show', slideCount > 1);
+    dotsContainer.innerHTML = slideCount > 1 ? screenshots.map(function(_, i) {
+        return '<button class="dot' + (i === 0 ? ' active' : '') + '" onclick="goToSlide(' + i + ')"></button>';
+    }).join('') : '';
     updateCarousel();
 }
 
 function updateCarousel() {
-    var track = document.getElementById('carouselTrack');
-    if (track) track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+    document.getElementById('carouselTrack').style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
     document.querySelectorAll('.carousel-dots .dot').forEach(function(dot, i) {
         dot.classList.toggle('active', i === currentSlide);
     });
@@ -458,41 +368,29 @@ function openImageModal(images, index) {
     imageList = images;
     currentImageIndex = index || 0;
     var img = document.getElementById('modalImage');
-    if (!img) return;
     img.src = imageList[currentImageIndex];
-    var counter = document.getElementById('imageCounter');
-    if (counter) counter.textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
-    var prevBtn = document.getElementById('imagePrevBtn');
-    var nextBtn = document.getElementById('imageNextBtn');
-    if (prevBtn) prevBtn.style.display = imageList.length > 1 ? 'flex' : 'none';
-    if (nextBtn) nextBtn.style.display = imageList.length > 1 ? 'flex' : 'none';
-    var modal = document.getElementById('imageModal');
-    if (modal) modal.classList.add('active');
+    document.getElementById('imageCounter').textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
+    document.getElementById('imagePrevBtn').style.display = imageList.length > 1 ? 'flex' : 'none';
+    document.getElementById('imageNextBtn').style.display = imageList.length > 1 ? 'flex' : 'none';
+    document.getElementById('imageModal').classList.add('active');
 }
-function closeImageModal() {
-    var modal = document.getElementById('imageModal');
-    if (modal) modal.classList.remove('active');
-}
+function closeImageModal() { document.getElementById('imageModal').classList.remove('active'); }
 function imagePrev() {
     if (imageList.length === 0) return;
     currentImageIndex = (currentImageIndex - 1 + imageList.length) % imageList.length;
-    var img = document.getElementById('modalImage');
-    if (img) img.src = imageList[currentImageIndex];
-    var counter = document.getElementById('imageCounter');
-    if (counter) counter.textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
+    document.getElementById('modalImage').src = imageList[currentImageIndex];
+    document.getElementById('imageCounter').textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
 }
 function imageNext() {
     if (imageList.length === 0) return;
     currentImageIndex = (currentImageIndex + 1) % imageList.length;
-    var img = document.getElementById('modalImage');
-    if (img) img.src = imageList[currentImageIndex];
-    var counter = document.getElementById('imageCounter');
-    if (counter) counter.textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
+    document.getElementById('modalImage').src = imageList[currentImageIndex];
+    document.getElementById('imageCounter').textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
 }
 
 document.addEventListener('keydown', function(e) {
     var modal = document.getElementById('imageModal');
-    if (!modal || !modal.classList.contains('active')) return;
+    if (!modal.classList.contains('active')) return;
     if (e.key === 'ArrowLeft') { e.preventDefault(); imagePrev(); }
     if (e.key === 'ArrowRight') { e.preventDefault(); imageNext(); }
     if (e.key === 'Escape') { e.preventDefault(); closeImageModal(); }
@@ -510,94 +408,72 @@ function openDetail(appId) {
     }
 
     var app = allAppsData.find(function(a) { return a.id === appId; });
-    if (!app) {
-        showToast('应用数据不存在，请刷新重试', 'error');
-        return;
-    }
+    if (!app) return;
     currentDetailApp = app;
 
-    var iconEl = document.getElementById('modalIcon');
-    if (iconEl) iconEl.innerHTML = app.icon ? '<img src="' + app.icon + '" alt="' + app.name + '">' : '·';
-    var titleEl = document.getElementById('modalTitle');
-    if (titleEl) titleEl.textContent = app.name;
+    document.getElementById('modalIcon').innerHTML = app.icon ? '<img src="' + app.icon + '" alt="' + app.name + '">' : '·';
+    document.getElementById('modalTitle').textContent = app.name;
 
     var versionText = app.installed ? (app.installed_version || app.version) : app.version;
     if (app.installed && app.has_update) versionText += ' (⬆ ' + app.version + ')';
-    var versionEl = document.getElementById('modalVersion');
-    if (versionEl) versionEl.textContent = 'v' + versionText;
-    var versionInfoEl = document.getElementById('modalVersionInfo');
-    if (versionInfoEl) versionInfoEl.textContent = app.version;
-    var authorEl = document.getElementById('modalAuthor');
-    if (authorEl) authorEl.textContent = app.author || '作者';
-    var descEl = document.getElementById('modalDesc');
-    if (descEl) descEl.innerHTML = app.desc || '暂无描述';
-    var sourceEl = document.getElementById('modalSource');
-    if (sourceEl) sourceEl.textContent = app._source_name || '未知源';
+    document.getElementById('modalVersion').textContent = 'v' + versionText;
+    document.getElementById('modalVersionInfo').textContent = app.version;
+    document.getElementById('modalAuthor').textContent = app.author || '作者';
+    document.getElementById('modalDesc').innerHTML = app.desc || '暂无描述';
+    document.getElementById('modalSource').textContent = app._source_name || '未知源';
 
     var tags = getTagsArray(app.tags);
     var tagsContainer = document.getElementById('modalTags');
-    if (tagsContainer) {
-        if (tags.length > 0) {
-            tagsContainer.innerHTML = tags.map(function(t) { return '<span class="tag">' + t + '</span>'; }).join('');
-            tagsContainer.style.display = 'flex';
-        } else {
-            tagsContainer.style.display = 'none';
-        }
-    }
+    if (tags.length > 0) {
+        tagsContainer.innerHTML = tags.map(function(t) { return '<span class="tag">' + t + '</span>'; }).join('');
+        tagsContainer.style.display = 'flex';
+    } else { tagsContainer.style.display = 'none'; }
 
     switchDetailTab('desc');
 
     if (app.screenshots && app.screenshots.length > 0) {
         initCarousel(app.screenshots);
     } else {
-        var container = document.getElementById('carouselContainer');
-        if (container) container.style.display = 'none';
+        document.getElementById('carouselContainer').style.display = 'none';
     }
 
     var btn = document.getElementById('modalInstallBtn');
-    if (btn) {
-        if (app.installed && app.has_update) {
-            btn.textContent = '更新';
-            btn.className = 'btn btn-warning';
-            btn.disabled = false;
-            btn.dataset.action = 'update';
-        } else if (app.installed) {
-            btn.textContent = '已安装';
-            btn.className = 'btn btn-secondary';
-            btn.disabled = true;
-            btn.dataset.action = 'none';
-        } else {
-            btn.textContent = '安装';
-            btn.className = 'btn btn-primary';
-            btn.disabled = false;
-            btn.dataset.action = 'install';
-        }
-        btn.dataset.appId = app.id;
+    if (app.installed && app.has_update) {
+        btn.textContent = '更新';
+        btn.className = 'btn btn-warning';
+        btn.disabled = false;
+        btn.dataset.action = 'update';
+    } else if (app.installed) {
+        btn.textContent = '已安装';
+        btn.className = 'btn btn-secondary';
+        btn.disabled = true;
+        btn.dataset.action = 'none';
+    } else {
+        btn.textContent = '安装';
+        btn.className = 'btn btn-primary';
+        btn.disabled = false;
+        btn.dataset.action = 'install';
     }
+    btn.dataset.appId = app.id;
 
     var repoBtn = document.getElementById('modalRepoBtn');
-    if (repoBtn) {
-        if (app.repo) {
-            repoBtn.href = app.repo;
-            repoBtn.style.display = 'inline-flex';
-        } else {
-            repoBtn.style.display = 'none';
-        }
+    if (app.repo) {
+        repoBtn.href = app.repo;
+        repoBtn.style.display = 'inline-flex';
+    } else {
+        repoBtn.style.display = 'none';
     }
 
-    var modal = document.getElementById('detailModal');
-    if (modal) modal.classList.add('active');
+    document.getElementById('detailModal').classList.add('active');
 }
 
 function closeDetail() {
-    var modal = document.getElementById('detailModal');
-    if (modal) modal.classList.remove('active');
+    document.getElementById('detailModal').classList.remove('active');
     currentDetailApp = null;
 }
 
 function modalInstall() {
     var btn = document.getElementById('modalInstallBtn');
-    if (!btn) return;
     var appId = btn.dataset.appId;
     if (!appId) return;
     if (btn.dataset.action === 'none') { showToast('应用已安装', 'info'); return; }
@@ -613,7 +489,6 @@ function modalInstall() {
 // ================================================================
 function renderApps(apps) {
     var grid = document.getElementById('appGrid');
-    if (!grid) return;
     if (!apps || apps.length === 0) {
         grid.innerHTML = '<div class="empty-state"><div class="icon">·</div><p>暂无符合条件的应用</p></div>';
         return;
@@ -679,148 +554,212 @@ function renderApps(apps) {
 }
 
 // ================================================================
-// ✅ P0-1: WebSocket 统一管理
+// 加载应用列表
 // ================================================================
-function connectWS() {
-    // 如果已有连接且状态正常，不重复创建
-    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
-        return;
-    }
-
-    // 关闭旧连接
-    if (ws) {
-        try { ws.close(); } catch(e) {}
-        ws = null;
-    }
-
-    var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    var url = protocol + '//' + window.location.host + '/ws';
+async function loadApps() {
+    var hasCache = false;
+    try {
+        var cached = localStorage.getItem('fnsoft_apps_cache');
+        if (cached) {
+            var cacheData = JSON.parse(cached);
+            if (Date.now() - cacheData.timestamp < 10 * 60 * 1000) {
+                allAppsData = cacheData.data;
+                setTimeout(function() { restoreAppsView(); }, 100);
+                document.getElementById('statusBadge').textContent = '缓存';
+                document.getElementById('statusBadge').className = 'badge cached';
+                hasCache = true;
+                return;
+            }
+        }
+    } catch (e) {}
 
     try {
-        ws = new WebSocket(url);
-        ws.onopen = function() {
-            console.log('✅ WebSocket 已连接');
-            wsReady = true;
-            wsReconnectAttempts = 0;
-            // 如果有待处理的安装任务，立即执行
-            processInstallQueue();
-        };
-        ws.onmessage = function(e) {
-            try {
-                var msg = JSON.parse(e.data);
-                handleWsMessage(msg);
-            } catch (err) {
-                console.warn('解析WS消息失败:', err);
+        var controller = new AbortController();
+        setTimeout(function() { controller.abort(); }, 30000);
+        var resp = await fetch(API_BASE + '/api/apps', { signal: controller.signal });
+        if (resp.status === 429) {
+            var data = await resp.json();
+            showToast(data.message, 'warning');
+            startCooldown(data.retry_after || 30);
+            document.getElementById('appGrid').innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>请求过于频繁，请 ' + (data.retry_after || 30) + ' 秒后点击刷新</p></div>';
+            return;
+        }
+        var data = await resp.json();
+        if (data.success && data.data.length > 0) {
+            allAppsData = data.data;
+            await loadInstalledVersions();
+            renderFilterButtons();
+            currentPage = 1;
+            setTimeout(function() { restoreAppsView(); }, 300);
+            document.getElementById('statusBadge').textContent = '在线';
+            document.getElementById('statusBadge').className = 'badge connected';
+            updateLastRefreshTime();
+            localStorage.setItem('fnsoft_apps_cache', JSON.stringify({ timestamp: Date.now(), data: allAppsData }));
+            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
+        } else if (!hasCache) {
+            document.getElementById('appGrid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败，请点击右上角「刷新」重试</p></div>';
+            allAppsData = [];
+        }
+    } catch (e) {
+        if (e.name !== 'AbortError') showToast('加载失败: ' + e.message, 'error');
+        if (!hasCache) { allAppsData = []; document.getElementById('appGrid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败，请点击右上角「刷新」重试</p></div>'; }
+    }
+}
+
+function restoreAppsView() {
+    try {
+        var cached = localStorage.getItem('fnsoft_apps_cache');
+        if (cached) {
+            var cacheData = JSON.parse(cached);
+            if (Date.now() - cacheData.timestamp < 10 * 60 * 1000) {
+                allAppsData = cacheData.data;
+                renderFilterButtons();
+                renderFilteredApps();
+                document.getElementById('statusBadge').textContent = '缓存';
+                document.getElementById('statusBadge').className = 'badge cached';
+                if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
+                return;
             }
+        }
+    } catch (e) {}
+    if (allAppsData && allAppsData.length > 0) {
+        renderFilteredApps();
+        if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
+        return;
+    }
+    loadApps();
+}
+
+async function loadInstalledVersions() {
+    try {
+        var resp = await fetch(API_BASE + '/api/installed');
+        var data = await resp.json();
+        if (data.success) {
+            installedAppsCache = {};
+            data.apps.forEach(function(app) { installedAppsCache[app.id] = app.version; });
+            allAppsData.forEach(function(app) {
+                if (app.id in installedAppsCache) {
+                    app.installed = true;
+                    app.installed_version = installedAppsCache[app.id];
+                    app.has_update = app.installed_version && app.version && compareVersions(app.version, app.installed_version) > 0;
+                } else {
+                    app.installed = false;
+                    app.has_update = false;
+                }
+            });
+        }
+        if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
+    } catch (e) { console.warn('获取已安装版本失败:', e); }
+}
+
+function updateLastRefreshTime() {
+    var el = document.getElementById('lastRefresh');
+    if (el) el.textContent = '上次刷新: ' + new Date().toLocaleTimeString();
+}
+
+// ================================================================
+// 刷新
+// ================================================================
+async function refreshApps() {
+    var btn = document.getElementById('refreshBtn');
+    var badge = document.getElementById('statusBadge');
+    if (refreshCooldown || btn.disabled) { showToast('请稍后再试', 'warning'); return; }
+
+    btn.disabled = true;
+    btn.textContent = '刷新中...';
+    badge.textContent = '加载中';
+    badge.className = 'badge loading';
+
+    try {
+        var resp = await fetch(API_BASE + '/api/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        var data = await resp.json();
+        if (resp.status === 429) {
+            showToast(data.message, 'warning');
+            startCooldown(data.retry_after || 30);
+            badge.textContent = '限流中';
+            badge.className = 'badge error';
+            return;
+        }
+        if (data.success) {
+            allAppsData = data.data;
+            await loadInstalledVersions();
+            renderFilterButtons();
+            currentPage = 1;
+            renderFilteredApps();
+            showToast(data.message, 'success');
+            updateLastRefreshTime();
+            badge.textContent = '在线';
+            badge.className = 'badge connected';
+            localStorage.setItem('fnsoft_apps_cache', JSON.stringify({ timestamp: Date.now(), data: allAppsData }));
+            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
+        } else {
+            showToast('刷新失败: ' + data.message, 'error');
+            badge.textContent = '失败';
+            badge.className = 'badge error';
+        }
+    } catch (e) {
+        showToast('刷新失败: ' + e.message, 'error');
+        badge.textContent = '错误';
+        badge.className = 'badge error';
+    } finally {
+        startCooldown(REFRESH_COOLDOWN);
+        btn.disabled = false;
+        btn.textContent = '刷新';
+    }
+}
+
+function startCooldown(seconds) {
+    var btn = document.getElementById('refreshBtn');
+    refreshCooldown = true;
+    var remaining = seconds;
+    if (refreshTimer) clearInterval(refreshTimer);
+    btn.classList.add('cooldown');
+    refreshTimer = setInterval(function() {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+            refreshCooldown = false;
+            btn.disabled = false;
+            btn.textContent = '刷新';
+            btn.classList.remove('cooldown');
+        } else {
+            btn.textContent = remaining + 's';
+        }
+    }, 1000);
+}
+
+// ================================================================
+// WebSocket
+// ================================================================
+var ws = null;
+var wsReady = false;
+var reconnectTimer = null;
+
+function connectWS() {
+    var url = window.location.origin.replace(/^http/, 'ws') + '/ws';
+    try {
+        if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+        ws = new WebSocket(url);
+        ws.onopen = function() { console.log('WebSocket 已连接'); wsReady = true; };
+        ws.onmessage = function(e) {
+            try { var msg = JSON.parse(e.data); handleWsMessage(msg); } catch (err) { console.warn('解析WS消息失败:', err); }
         };
-        ws.onclose = function(e) {
-            console.log('WebSocket 已断开, code:', e.code);
+        ws.onclose = function() {
+            console.log('WebSocket 已断开');
             wsReady = false;
             ws = null;
-            // 如果页面正在关闭，不重连
-            if (window._isClosing) return;
-            scheduleReconnect();
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(connectWS, 3000);
         };
-        ws.onerror = function(e) {
-            console.warn('WebSocket 错误:', e);
-            // 错误后自动关闭，触发 onclose 重连
-            if (ws) ws.close();
-        };
+        ws.onerror = function() { ws.close(); };
     } catch (e) {
-        console.warn('WebSocket 连接失败:', e);
-        ws = null;
         wsReady = false;
-        scheduleReconnect();
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(connectWS, 3000);
     }
 }
 
-function scheduleReconnect() {
-    if (wsReconnectTimer) {
-        clearTimeout(wsReconnectTimer);
-        wsReconnectTimer = null;
-    }
-    if (window._isClosing) return;
-    if (wsReconnectAttempts >= WS_MAX_RECONNECT_ATTEMPTS) {
-        console.warn('⚠️ WebSocket 重连次数已达上限');
-        return;
-    }
-    var delay = Math.min(1000 * Math.pow(1.5, wsReconnectAttempts), 30000);
-    wsReconnectAttempts++;
-    console.log('⏳ 将在 ' + (delay/1000) + ' 秒后重连 WebSocket (尝试 ' + wsReconnectAttempts + '/' + WS_MAX_RECONNECT_ATTEMPTS + ')');
-    wsReconnectTimer = setTimeout(function() {
-        wsReconnectTimer = null;
-        if (!window._isClosing) {
-            connectWS();
-        }
-    }, delay);
-}
-
-// ✅ 暴露清理函数给 layout.html 调用
-window.__cleanupWebSocket = function() {
-    window._isClosing = true;
-    if (wsReconnectTimer) {
-        clearTimeout(wsReconnectTimer);
-        wsReconnectTimer = null;
-    }
-    if (ws) {
-        try { ws.close(); } catch(e) {}
-        ws = null;
-    }
-    wsReady = false;
-};
-
-// ================================================================
-// ✅ P0-2: 安装任务队列管理
-// ================================================================
-function processInstallQueue() {
-    if (isInstalling || pendingInstallQueue.length === 0) return;
-    if (!wsReady || !ws || ws.readyState !== WebSocket.OPEN) {
-        // 如果 WebSocket 未就绪，等待连接
-        if (!wsReady) {
-            connectWS();
-        }
-        return;
-    }
-    isInstalling = true;
-    var task = pendingInstallQueue.shift();
-    if (task) {
-        console.log('📦 执行安装任务:', task.appId);
-        try {
-            ws.send(JSON.stringify({
-                event: 'install',
-                data: {
-                    app_id: task.appId,
-                    download_url: task.downloadUrl
-                }
-            }));
-        } catch (e) {
-            console.error('发送安装消息失败:', e);
-            isInstalling = false;
-            // 失败后重新加入队列末尾
-            if (task) {
-                pendingInstallQueue.push(task);
-            }
-            setTimeout(processInstallQueue, 1000);
-        }
-    } else {
-        isInstalling = false;
-    }
-}
-
-function addInstallTask(appId, downloadUrl) {
-    // 检查是否已有相同任务在队列中
-    var existing = pendingInstallQueue.some(function(t) { return t.appId === appId; });
-    if (existing) {
-        console.log('⏳ 安装任务已存在:', appId);
-        return;
-    }
-    pendingInstallQueue.push({ appId: appId, downloadUrl: downloadUrl });
-    processInstallQueue();
-}
-
-// ================================================================
-// WebSocket 消息处理
-// ================================================================
 function handleWsMessage(msg) {
     if (msg.event === 'wizard.show') {
         showWizardFromSession(msg.data.session_id, msg.data.steps, msg.data.title);
@@ -861,9 +800,6 @@ function handleWsMessage(msg) {
         var statusDiv = document.getElementById('status-' + appId);
         var btn = document.getElementById('installBtn-' + appId);
 
-        // ✅ 允许下一个安装任务执行
-        isInstalling = false;
-
         if (data.status === 'success') {
             if (progressBar) { progressBar.style.width = '100%'; progressBar.className = 'progress-bar-fill complete'; }
             var pctEl = document.getElementById('progressPercent-' + appId);
@@ -874,8 +810,8 @@ function handleWsMessage(msg) {
             if (btn) { btn.disabled = true; btn.textContent = '已安装'; }
             var app = allAppsData.find(function(a) { return a.id === appId; });
             showToast((app ? app.name : appId) + ' 安装成功', 'success');
-
-            // ✅ P0-2 / P1-1: 即时刷新应用状态 + 更新缓存
+            
+            // ✅ 优化：直接更新应用卡片状态，无需刷新整个列表
             if (app) {
                 app.installed = true;
                 app.installed_version = data.version || app.version;
@@ -896,38 +832,18 @@ function handleWsMessage(msg) {
                 }
                 // 更新统计
                 updateSettingsStats();
-                // ✅ 立即更新缓存
-                writeAppsCache(allAppsData);
             }
-
+            
             setTimeout(function() { if (progressContainer) progressContainer.classList.remove('show'); }, 5000);
-            // 延迟刷新列表
+            // ✅ 延迟刷新列表，但状态已经更新，用户感知更好
             setTimeout(function() { refreshApps(); }, 5000);
-            // 处理下一个安装任务
-            setTimeout(processInstallQueue, 500);
         } else {
             if (progressBar) progressBar.className = 'progress-bar-fill error';
             var msgEl2 = document.getElementById('progressMsg-' + appId);
             if (msgEl2) msgEl2.textContent = data.msg;
             if (statusDiv) { statusDiv.className = 'status-text show error'; statusDiv.textContent = '✗ ' + data.msg; }
-            // ✅ P0-2: 统一清理 UI 状态
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = '安装';
-            }
-            // 恢复卡片按钮状态
-            var card = document.getElementById('card-' + appId);
-            if (card) {
-                var cardBtn = card.querySelector('.actions .btn');
-                if (cardBtn && cardBtn.textContent === '安装中...') {
-                    cardBtn.textContent = '安装';
-                    cardBtn.disabled = false;
-                    cardBtn.className = 'btn btn-primary';
-                }
-            }
+            if (btn) { btn.disabled = false; btn.textContent = '安装'; }
             showToast(data.msg, 'error');
-            // 处理下一个安装任务
-            setTimeout(processInstallQueue, 500);
         }
         return;
     }
@@ -944,21 +860,15 @@ async function installApp(appId) {
         return;
     }
 
-    // 检查 WebSocket
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         showToast('连接中，请稍候...', '');
         connectWS();
-        // 等待 2 秒后重试
         setTimeout(function() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                installApp(appId);
-            } else {
-                showToast('连接失败，请刷新页面重试', 'error');
-            }
+            if (ws && ws.readyState === WebSocket.OPEN) installApp(appId);
+            else showToast('连接失败，请刷新页面重试', 'error');
         }, 2000);
         return;
     }
-
     var btn = document.getElementById('installBtn-' + appId);
     if (btn && btn.disabled) return;
     if (btn) { btn.disabled = true; btn.textContent = '安装中...'; }
@@ -976,8 +886,7 @@ async function installApp(appId) {
             if (progressContainer) progressContainer.classList.remove('show');
             return;
         }
-        // ✅ 使用任务队列
-        addInstallTask(appId, data.data.download_url);
+        ws.send(JSON.stringify({ event: 'install', data: { app_id: appId, download_url: data.data.download_url } }));
         showToast('开始安装...', '');
     } catch (e) {
         showToast(e.message, 'error');
@@ -995,20 +904,15 @@ async function updateApp(appId) {
     }
 
     if (!confirm('确定要更新该应用吗？')) return;
-
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         showToast('连接中，请稍候...', '');
         connectWS();
         setTimeout(function() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                updateApp(appId);
-            } else {
-                showToast('连接失败，请刷新页面重试', 'error');
-            }
+            if (ws && ws.readyState === WebSocket.OPEN) updateApp(appId);
+            else showToast('连接失败，请刷新页面重试', 'error');
         }, 2000);
         return;
     }
-
     var btn = document.getElementById('updateBtn-' + appId);
     if (btn) { btn.disabled = true; btn.textContent = '更新中...'; }
     try {
@@ -1019,7 +923,7 @@ async function updateApp(appId) {
             if (btn) { btn.disabled = false; btn.textContent = '更新'; }
             return;
         }
-        addInstallTask(appId, data.data.download_url);
+        ws.send(JSON.stringify({ event: 'install', data: { app_id: appId, download_url: data.data.download_url } }));
         showToast('开始更新...', '');
     } catch (e) {
         showToast(e.message, 'error');
@@ -1033,8 +937,6 @@ async function updateApp(appId) {
 async function checkClientUpdate() {
     var btn = document.getElementById('checkUpdateBtn');
     var status = document.getElementById('updateStatus');
-    if (!btn || !status) return;
-
     btn.disabled = true;
     btn.textContent = '检查中...';
     status.textContent = '⏳ 正在检查...';
@@ -1072,8 +974,6 @@ async function checkClientUpdate() {
 function downloadAndInstall(data) {
     var btn = document.getElementById('checkUpdateBtn');
     var status = document.getElementById('updateStatus');
-    if (!btn || !status) return;
-
     status.textContent = '📥 发现新版本 ' + data.version + '，开始下载...';
     btn.textContent = '下载中...';
     btn.disabled = true;
@@ -1099,12 +999,10 @@ function reDownload() {
     localStorage.removeItem('fnsoft_downloaded_version');
     var btn = document.getElementById('checkUpdateBtn');
     var status = document.getElementById('updateStatus');
-    if (btn) {
-        btn.textContent = '检查更新';
-        btn.disabled = false;
-        btn.onclick = function() { checkClientUpdate(); };
-    }
-    if (status) status.textContent = '';
+    btn.textContent = '检查更新';
+    btn.disabled = false;
+    btn.onclick = function() { checkClientUpdate(); };
+    status.textContent = '';
     checkClientUpdate();
 }
 
@@ -1131,12 +1029,10 @@ function checkAndShowDownloaded() {
 function showWizardFromSession(sessionId, steps, title) {
     currentWizardSessionId = sessionId;
     var modal = document.getElementById('wizardModal');
-    if (!modal) return;
     var body = document.getElementById('wizardBody');
     var status = document.getElementById('wizardStatus');
-    var titleEl = document.getElementById('wizardTitle');
-    if (titleEl) titleEl.textContent = title || '安装向导';
-    if (status) status.textContent = '请填写配置项';
+    document.getElementById('wizardTitle').textContent = title || '安装向导';
+    status.textContent = '请填写配置项';
 
     var htmlContent = '';
     if (steps && steps.length > 0) {
@@ -1173,31 +1069,25 @@ function showWizardFromSession(sessionId, steps, title) {
     } else {
         htmlContent = '<p>无配置项，点击确认安装</p>';
     }
-    if (body) body.innerHTML = htmlContent;
-    var submitBtn = document.getElementById('wizardSubmitBtn');
-    if (submitBtn) submitBtn.disabled = false;
+    body.innerHTML = htmlContent;
+    document.getElementById('wizardSubmitBtn').disabled = false;
     modal.classList.add('active');
 }
 
 function closeWizard() {
     if (currentWizardSessionId) {
-        fetch(API_BASE + '/api/wizard/cancel', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: currentWizardSessionId })
-        }).catch(function() {});
+        fetch(API_BASE + '/api/wizard/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: currentWizardSessionId }) }).catch(function() {});
         currentWizardSessionId = null;
     }
-    var modal = document.getElementById('wizardModal');
-    if (modal) modal.classList.remove('active');
+    document.getElementById('wizardModal').classList.remove('active');
 }
 
 async function submitWizard() {
     var btn = document.getElementById('wizardSubmitBtn');
-    if (!btn || btn.disabled) return;
+    if (btn.disabled) return;
     btn.disabled = true;
     var status = document.getElementById('wizardStatus');
-    if (status) status.textContent = '安装中...';
+    status.textContent = '安装中...';
 
     var inputs = {};
     document.querySelectorAll('#wizardBody input, #wizardBody select, #wizardBody textarea').forEach(function(el) {
@@ -1214,16 +1104,16 @@ async function submitWizard() {
         });
         var result = await resp.json();
         if (result.success) {
-            if (status) status.textContent = '安装成功';
+            status.textContent = '安装成功';
             showToast('安装成功', 'success');
             closeWizard();
             setTimeout(function() { refreshApps(); }, 2000);
         } else {
-            if (status) status.textContent = result.message;
+            status.textContent = result.message;
             btn.disabled = false;
         }
     } catch (e) {
-        if (status) status.textContent = e.message;
+        status.textContent = e.message;
         btn.disabled = false;
     }
 }
@@ -1233,35 +1123,21 @@ async function submitWizard() {
 // ================================================================
 async function loadSources(force) {
     var container = document.getElementById('sourceList');
-    if (!container) return;
-
-    // ✅ P1-2: 防止重复加载
-    if (_loadingSources) {
-        console.log('⏳ 源列表正在加载中...');
-        return;
-    }
-    _loadingSources = true;
-
-    // ✅ P1-4: 保存旧列表用于降级
-    var oldHtml = container.innerHTML;
-
     container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:11px;">加载中...</div>';
 
     try {
         var resp = await fetch(API_BASE + '/api/sources?force=' + (force ? 'true' : 'false'));
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
         var data = await resp.json();
         if (!data.success || !data.data) {
-            throw new Error(data.message || '加载失败');
+            container.innerHTML = '<div style="text-align:center;padding:12px;color:#b55a5a;font-size:11px;">加载失败</div>';
+            return;
         }
         var sources = data.data;
         if (sources.length === 0) {
             container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:11px;">暂无软件源</div>';
-            _loadingSources = false;
             return;
         }
-        var countEl = document.getElementById('settingsSourceCount');
-        if (countEl) countEl.textContent = sources.length;
+        document.getElementById('settingsSourceCount').textContent = sources.length;
 
         container.innerHTML = sources.map(function(source) {
             var statusColor = source.status === 'online' ? '#5a8a5a' : source.status === 'disabled' ? '#999' : source.status === 'offline' ? '#b55a5a' : '#999';
@@ -1296,25 +1172,13 @@ async function loadSources(force) {
                 '</div>';
         }).join('');
     } catch (e) {
-        console.warn('加载源列表失败:', e);
-        // ✅ P1-4: 错误降级 - 保留旧列表
-        if (oldHtml) {
-            container.innerHTML = oldHtml;
-            showToast('加载源列表失败，显示上次缓存', 'warning');
-        } else {
-            container.innerHTML = '<div style="text-align:center;padding:12px;color:#b55a5a;font-size:11px;">加载失败: ' + e.message + '</div>';
-        }
-    } finally {
-        _loadingSources = false;
+        container.innerHTML = '<div style="text-align:center;padding:12px;color:#b55a5a;font-size:11px;">加载失败: ' + e.message + '</div>';
     }
 }
 
 async function addSource() {
-    var nameEl = document.getElementById('newSourceName');
-    var urlEl = document.getElementById('newSourceUrl');
-    if (!nameEl || !urlEl) return;
-    var name = nameEl.value.trim();
-    var url = urlEl.value.trim();
+    var name = document.getElementById('newSourceName').value.trim();
+    var url = document.getElementById('newSourceUrl').value.trim();
     if (!name || !url) { showToast('请填写名称和地址', 'warning'); return; }
     try {
         var resp = await fetch(API_BASE + '/api/sources/add', {
@@ -1325,10 +1189,9 @@ async function addSource() {
         var data = await resp.json();
         if (data.success) {
             showToast('添加成功', 'success');
-            nameEl.value = '';
-            urlEl.value = '';
-            var resultEl = document.getElementById('testResult');
-            if (resultEl) resultEl.textContent = '';
+            document.getElementById('newSourceName').value = '';
+            document.getElementById('newSourceUrl').value = '';
+            document.getElementById('testResult').textContent = '';
             loadSources();
             setTimeout(function() { refreshApps(); }, 500);
         } else {
@@ -1375,10 +1238,8 @@ async function toggleSource(sourceId, enabled) {
 }
 
 async function testSourceUrl() {
-    var urlEl = document.getElementById('newSourceUrl');
+    var url = document.getElementById('newSourceUrl').value.trim();
     var resultEl = document.getElementById('testResult');
-    if (!urlEl || !resultEl) return;
-    var url = urlEl.value.trim();
     if (!url) { resultEl.textContent = '⚠️ 请输入地址'; resultEl.style.color = '#b55a5a'; return; }
     resultEl.textContent = '⏳ 测试中...';
     resultEl.style.color = 'var(--text-muted)';
@@ -1407,9 +1268,6 @@ async function testSourceUrl() {
 // ================================================================
 async function loadHome() {
     if (homeLoaded) return;
-    // ✅ P1-2: 防止重复加载
-    if (_loadingHome) return;
-    _loadingHome = true;
 
     var now = Date.now();
     var hasCache = homeNoticeCache && (now - homeNoticeCacheTime) < HOME_CACHE_TTL;
@@ -1421,7 +1279,6 @@ async function loadHome() {
             data = homeNoticeCache;
         } else {
             var resp = await fetch(API_BASE + '/api/notice');
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
             data = await resp.json();
             homeNoticeCache = data;
             homeNoticeCacheTime = now;
@@ -1431,7 +1288,6 @@ async function loadHome() {
         renderCarousel(data);
         renderNoticeRecords(data);
 
-        // 检查 allAppsData 是否已就绪
         if (allAppsData && allAppsData.length > 0) {
             updateHomeQuickCards();
         } else {
@@ -1444,7 +1300,6 @@ async function loadHome() {
         homeLoaded = true;
     } catch (e) {
         console.warn('加载首页失败:', e);
-        // ✅ P1-4: 错误降级 - 使用过期缓存
         if (homeNoticeCache) {
             data = homeNoticeCache;
             homeNoticeData = data;
@@ -1452,21 +1307,15 @@ async function loadHome() {
             renderNoticeRecords(data);
             homeLoaded = true;
         } else {
-            var content = document.getElementById('homeNoticeContent');
-            if (content) {
-                content.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:12px 0;">加载公告失败</div>';
-            }
+            document.getElementById('homeNoticeContent').innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:12px 0;">加载公告失败</div>';
             homeLoaded = true;
         }
-    } finally {
-        _loadingHome = false;
     }
 }
 
 function renderCarousel(data) {
     var track = document.getElementById('homeCarouselTrack');
     var dotsContainer = document.getElementById('homeCarouselDots');
-    if (!track) return;
     if (data.enabled && data.carousel && data.carousel.length > 0) {
         var baseUrl = window.location.origin;
         var images = data.carousel.map(function(url) { return url.startsWith('/') ? baseUrl + url : url; });
@@ -1475,22 +1324,19 @@ function renderCarousel(data) {
         track.innerHTML = images.map(function(url) {
             return '<div class="home-carousel-slide" style="background-image:url(' + url + ');"></div>';
         }).join('');
-        if (dotsContainer) {
-            dotsContainer.innerHTML = homeSlideCount > 1 ? images.map(function(_, i) {
-                return '<button class="dot' + (i === 0 ? ' active' : '') + '" onclick="homeCarouselGoTo(' + i + ')"></button>';
-            }).join('') : '';
-        }
+        dotsContainer.innerHTML = homeSlideCount > 1 ? images.map(function(_, i) {
+            return '<button class="dot' + (i === 0 ? ' active' : '') + '" onclick="homeCarouselGoTo(' + i + ')"></button>';
+        }).join('') : '';
     } else {
         track.innerHTML = '<div class="home-carousel-slide" style="background:var(--card-bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted);">暂无轮播图</div>';
         homeSlideCount = 1;
         homeSlideIndex = 0;
-        if (dotsContainer) dotsContainer.innerHTML = '';
+        dotsContainer.innerHTML = '';
     }
 }
 
 function renderNoticeRecords(data) {
     var container = document.getElementById('homeNoticeContent');
-    if (!container) return;
     if (!data.enabled || !data.records || data.records.length === 0) {
         container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:12px 0;">暂无公告</div>';
         return;
@@ -1525,20 +1371,17 @@ function homeCarouselGoTo(index) { if (index < 0 || index >= homeSlideCount) ret
 function updateHomeQuickCards() {
     if (!allAppsData || allAppsData.length === 0) {
         ['quickInstalledList', 'quickUpdatableList', 'quickHotList', 'quickNewestList'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.innerHTML = '<div class="empty">加载中...</div>';
+            document.getElementById(id).innerHTML = '<div class="empty">加载中...</div>';
         });
         return;
     }
     var filteredData = allAppsData.filter(function(app) { return app.id !== 'fn-appstores-client'; });
     var installed = filteredData.filter(function(app) { return app.installed; });
-    var countEl = document.getElementById('quickInstalledCount');
-    if (countEl) countEl.textContent = installed.length;
+    document.getElementById('quickInstalledCount').textContent = installed.length;
     renderQuickList('quickInstalledList', installed, 'installed');
 
     var updatable = filteredData.filter(function(app) { return app.has_update; });
-    var updatableCount = document.getElementById('quickUpdatableCount');
-    if (updatableCount) updatableCount.textContent = updatable.length;
+    document.getElementById('quickUpdatableCount').textContent = updatable.length;
     renderQuickList('quickUpdatableList', updatable, 'updatable');
 
     var hot = filteredData.slice().sort(function(a, b) { return (b.downloads || 0) - (a.downloads || 0); }).slice(0, 10);
@@ -1552,7 +1395,6 @@ function updateHomeQuickCards() {
 
 function renderQuickList(containerId, apps, type) {
     var container = document.getElementById(containerId);
-    if (!container) return;
     if (!apps || apps.length === 0) { container.innerHTML = '<div class="empty">暂无应用</div>'; return; }
     var html = '';
     apps.forEach(function(app) {
@@ -1577,19 +1419,15 @@ function openNoticeDetail(index) {
     var data = homeNoticeData;
     if (!data || !data.records || !data.records[index]) return;
     var record = data.records[index];
-    var titleEl = document.getElementById('noticeDetailTitle');
-    if (titleEl) titleEl.textContent = record.title;
-    var bodyEl = document.getElementById('noticeDetailBody');
-    if (bodyEl) bodyEl.innerHTML = sanitizeDesc(record.content);
-    var modal = document.getElementById('noticeDetailModal');
-    if (modal) modal.classList.add('active');
+    document.getElementById('noticeDetailTitle').textContent = record.title;
+    document.getElementById('noticeDetailBody').innerHTML = sanitizeDesc(record.content);
+    document.getElementById('noticeDetailModal').classList.add('active');
 }
 
 function openAllNotices() {
     var data = homeNoticeData;
     if (!data || !data.records || data.records.length === 0) return;
-    var titleEl = document.getElementById('noticeDetailTitle');
-    if (titleEl) titleEl.textContent = '全部公告';
+    document.getElementById('noticeDetailTitle').textContent = '全部公告';
     var html = '';
     data.records.forEach(function(record, idx) {
         html += '<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">' +
@@ -1597,15 +1435,12 @@ function openAllNotices() {
             '<div style="font-size:14px;font-weight:600;color:var(--text-primary);cursor:pointer;" onclick="event.stopPropagation();openNoticeDetail(' + idx + ')">' + record.title + '</div>' +
             '</div>';
     });
-    var bodyEl = document.getElementById('noticeDetailBody');
-    if (bodyEl) bodyEl.innerHTML = html;
-    var modal = document.getElementById('noticeDetailModal');
-    if (modal) modal.classList.add('active');
+    document.getElementById('noticeDetailBody').innerHTML = html;
+    document.getElementById('noticeDetailModal').classList.add('active');
 }
 
 function closeNoticeDetail() {
-    var modal = document.getElementById('noticeDetailModal');
-    if (modal) modal.classList.remove('active');
+    document.getElementById('noticeDetailModal').classList.remove('active');
 }
 
 function sanitizeDesc(html) {
@@ -1656,271 +1491,30 @@ function sanitizeDesc(html) {
 function updateSettingsStats() {
     if (!allAppsData || allAppsData.length === 0) return;
     var filteredData = allAppsData.filter(function(app) { return app.id !== 'fn-appstores-client'; });
-    var totalEl = document.getElementById('settingsTotalApps');
-    if (totalEl) totalEl.textContent = filteredData.length;
-    var installedEl = document.getElementById('settingsInstalled');
-    if (installedEl) installedEl.textContent = filteredData.filter(function(app) { return app.installed; }).length;
-    var updatableEl = document.getElementById('settingsUpdatable');
-    if (updatableEl) updatableEl.textContent = filteredData.filter(function(app) { return app.has_update; }).length;
-}
-
-// ================================================================
-// ✅ P0-2 / P1-1: 加载应用列表（增强版）
-// ================================================================
-async function loadApps() {
-    // ✅ P1-2: 防止重复加载
-    if (_loadingApps) {
-        console.log('⏳ 应用列表正在加载中...');
-        return;
-    }
-    _loadingApps = true;
-
-    // ✅ 先检查缓存
-    var cachedData = readAppsCache();
-    if (cachedData) {
-        allAppsData = cachedData;
-        // 恢复视图但不阻塞
-        setTimeout(function() {
-            renderFilterButtons();
-            renderFilteredApps();
-            document.getElementById('statusBadge').textContent = '缓存';
-            document.getElementById('statusBadge').className = 'badge cached';
-            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
-            if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
-            _loadingApps = false;
-        }, 100);
-        // 继续后台刷新
-        loadAppsFromServer(true);
-        return;
-    }
-
-    // 无缓存，从服务器加载
-    await loadAppsFromServer(false);
-}
-
-async function loadAppsFromServer(silent) {
-    try {
-        var controller = new AbortController();
-        setTimeout(function() { controller.abort(); }, 30000);
-        var resp = await fetch(API_BASE + '/api/apps', { signal: controller.signal });
-        if (resp.status === 429) {
-            var data = await resp.json();
-            if (!silent) showToast(data.message, 'warning');
-            startCooldown(data.retry_after || 30);
-            document.getElementById('appGrid').innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>请求过于频繁，请 ' + (data.retry_after || 30) + ' 秒后点击刷新</p></div>';
-            _loadingApps = false;
-            return;
-        }
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        var data = await resp.json();
-        if (data.success && data.data.length > 0) {
-            allAppsData = data.data;
-            await loadInstalledVersions();
-            renderFilterButtons();
-            currentPage = 1;
-            renderFilteredApps();
-            if (!silent) {
-                document.getElementById('statusBadge').textContent = '在线';
-                document.getElementById('statusBadge').className = 'badge connected';
-                updateLastRefreshTime();
-            }
-            // ✅ P1-1: 写入缓存
-            writeAppsCache(allAppsData);
-            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
-            if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
-        } else if (!silent) {
-            document.getElementById('appGrid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败，请点击右上角「刷新」重试</p></div>';
-        }
-    } catch (e) {
-        if (e.name !== 'AbortError') {
-            console.warn('加载应用列表失败:', e);
-            // ✅ P1-4: 错误降级 - 尝试使用过期缓存
-            var fallbackData = readAppsCache();
-            if (fallbackData) {
-                allAppsData = fallbackData;
-                renderFilterButtons();
-                renderFilteredApps();
-                if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
-                if (!silent) showToast('使用离线缓存（网络异常）', 'warning');
-            } else if (!silent) {
-                showToast('加载失败: ' + e.message, 'error');
-                document.getElementById('appGrid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败，请点击右上角「刷新」重试</p></div>';
-            }
-        }
-    } finally {
-        _loadingApps = false;
-    }
-}
-
-function restoreAppsView() {
-    try {
-        var cachedData = readAppsCache();
-        if (cachedData) {
-            allAppsData = cachedData;
-            renderFilterButtons();
-            renderFilteredApps();
-            document.getElementById('statusBadge').textContent = '缓存';
-            document.getElementById('statusBadge').className = 'badge cached';
-            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
-            return;
-        }
-    } catch (e) {}
-    if (allAppsData && allAppsData.length > 0) {
-        renderFilteredApps();
-        if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
-        return;
-    }
-    loadApps();
-}
-
-async function loadInstalledVersions() {
-    try {
-        var resp = await fetch(API_BASE + '/api/installed');
-        var data = await resp.json();
-        if (data.success) {
-            installedAppsCache = {};
-            data.apps.forEach(function(app) { installedAppsCache[app.id] = app.version; });
-            allAppsData.forEach(function(app) {
-                if (app.id in installedAppsCache) {
-                    app.installed = true;
-                    app.installed_version = installedAppsCache[app.id];
-                    app.has_update = app.installed_version && app.version && compareVersions(app.version, app.installed_version) > 0;
-                } else {
-                    app.installed = false;
-                    app.has_update = false;
-                }
-            });
-            // ✅ P1-2: 数据就绪后更新缓存和首页
-            writeAppsCache(allAppsData);
-            if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
-            _installedLoaded = true;
-        }
-    } catch (e) { console.warn('获取已安装版本失败:', e); }
-}
-
-function updateLastRefreshTime() {
-    var el = document.getElementById('lastRefresh');
-    if (el) el.textContent = '上次刷新: ' + new Date().toLocaleTimeString();
-}
-
-// ================================================================
-// 刷新
-// ================================================================
-async function refreshApps() {
-    var btn = document.getElementById('refreshBtn');
-    var badge = document.getElementById('statusBadge');
-    if (!btn || !badge) return;
-    if (refreshCooldown || btn.disabled) { showToast('请稍后再试', 'warning'); return; }
-
-    btn.disabled = true;
-    btn.textContent = '刷新中...';
-    badge.textContent = '加载中';
-    badge.className = 'badge loading';
-
-    try {
-        var resp = await fetch(API_BASE + '/api/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-        var data = await resp.json();
-        if (resp.status === 429) {
-            showToast(data.message, 'warning');
-            startCooldown(data.retry_after || 30);
-            badge.textContent = '限流中';
-            badge.className = 'badge error';
-            return;
-        }
-        if (data.success) {
-            allAppsData = data.data;
-            await loadInstalledVersions();
-            renderFilterButtons();
-            currentPage = 1;
-            renderFilteredApps();
-            showToast(data.message, 'success');
-            updateLastRefreshTime();
-            badge.textContent = '在线';
-            badge.className = 'badge connected';
-            // ✅ P1-1: 刷新后立即写缓存
-            writeAppsCache(allAppsData);
-            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
-        } else {
-            showToast('刷新失败: ' + data.message, 'error');
-            badge.textContent = '失败';
-            badge.className = 'badge error';
-        }
-    } catch (e) {
-        showToast('刷新失败: ' + e.message, 'error');
-        badge.textContent = '错误';
-        badge.className = 'badge error';
-    } finally {
-        startCooldown(REFRESH_COOLDOWN);
-        btn.disabled = false;
-        btn.textContent = '刷新';
-    }
-}
-
-function startCooldown(seconds) {
-    var btn = document.getElementById('refreshBtn');
-    if (!btn) return;
-    refreshCooldown = true;
-    var remaining = seconds;
-    if (refreshTimer) clearInterval(refreshTimer);
-    btn.classList.add('cooldown');
-    refreshTimer = setInterval(function() {
-        remaining--;
-        if (remaining <= 0) {
-            clearInterval(refreshTimer);
-            refreshTimer = null;
-            refreshCooldown = false;
-            btn.disabled = false;
-            btn.textContent = '刷新';
-            btn.classList.remove('cooldown');
-        } else {
-            btn.textContent = remaining + 's';
-        }
-    }, 1000);
+    document.getElementById('settingsTotalApps').textContent = filteredData.length;
+    document.getElementById('settingsInstalled').textContent = filteredData.filter(function(app) { return app.installed; }).length;
+    document.getElementById('settingsUpdatable').textContent = filteredData.filter(function(app) { return app.has_update; }).length;
 }
 
 // ================================================================
 // 初始化
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // 设置系统架构
-    var archEl = document.getElementById('settingsArch');
-    if (archEl) {
-        archEl.textContent = navigator.platform || 'x86_64';
+    var arch = navigator.platform || 'x86_64';
+    document.getElementById('settingsArch').textContent = arch;
+
+    var versionEl = document.getElementById('settingsVersion');
+    if (versionEl) {
+        var ver = versionEl.textContent.trim();
+        if (!ver || ver === 'v{{ version }}') {
+        }
     }
 
     checkAndShowDownloaded();
 
-    // ✅ 连接 WebSocket
-    connectWS();
-
-    // ✅ 加载数据
     if (typeof loadHome === 'function') loadHome();
     if (typeof loadApps === 'function') loadApps();
     if (typeof loadSources === 'function') loadSources();
-
-    // ✅ 页面关闭前清理资源
-    window.addEventListener('beforeunload', function() {
-        if (typeof window.__cleanupWebSocket === 'function') {
-            window.__cleanupWebSocket();
-        }
-        if (refreshTimer) {
-            clearInterval(refreshTimer);
-            refreshTimer = null;
-        }
-    });
-
-    // ✅ 页面可见性变化时处理 WebSocket
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            // 页面隐藏，不主动断开 WebSocket
-        } else {
-            // 页面重新可见，如果 WebSocket 未连接则重连
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                console.log('页面重新可见，检查 WebSocket 连接...');
-                connectWS();
-            }
-        }
-    });
 });
 </script>
 {% endblock %}

@@ -329,16 +329,12 @@
             localStorage.setItem('fnsoft_theme', theme);
             if (theme === 'dark') {
                 document.body.classList.add('dark-mode');
-                var icon = document.getElementById('themeIconHeader');
-                var label = document.getElementById('themeLabelHeader');
-                if (icon) icon.textContent = '☀️';
-                if (label) label.textContent = '浅色';
+                document.getElementById('themeIconHeader').textContent = '☀️';
+                document.getElementById('themeLabelHeader').textContent = '浅色';
             } else {
                 document.body.classList.remove('dark-mode');
-                var icon = document.getElementById('themeIconHeader');
-                var label = document.getElementById('themeLabelHeader');
-                if (icon) icon.textContent = '🌙';
-                if (label) label.textContent = '深色';
+                document.getElementById('themeIconHeader').textContent = '🌙';
+                document.getElementById('themeLabelHeader').textContent = '深色';
             }
         }
 
@@ -350,12 +346,8 @@
         // 标签页切换
         // ================================================================
         function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(function(el) {
-                el.classList.remove('active');
-            });
-            document.querySelectorAll('.sidebar-nav .nav-item').forEach(function(el) {
-                el.classList.remove('active');
-            });
+            document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.sidebar-nav .nav-item').forEach(function(el) { el.classList.remove('active'); });
 
             var target = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
             if (target) target.classList.add('active');
@@ -365,15 +357,39 @@
 
             closeSidebar();
 
-            // ✅ 安全调用：检查函数是否存在
-            if (tab === 'apps' && typeof restoreAppsView === 'function') {
-                restoreAppsView();
-            }
-            if (tab === 'sources' && typeof loadSources === 'function') {
-                loadSources();
-            }
-            if (tab === 'home' && typeof loadHome === 'function') {
-                loadHome();
+            if (tab === 'apps' && typeof restoreAppsView === 'function') restoreAppsView();
+            if (tab === 'sources' && typeof loadSources === 'function') loadSources();
+            if (tab === 'home' && typeof loadHome === 'function') loadHome();
+        }
+
+        // ================================================================
+        // WebSocket
+        // ================================================================
+        var ws = null;
+        var reconnectTimer = null;
+
+        function connectWS() {
+            var url = 'ws://' + window.location.host + '/ws';
+            try {
+                if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+                ws = new WebSocket(url);
+                ws.onopen = function() { console.log('WebSocket 已连接'); };
+                ws.onmessage = function(e) {
+                    try {
+                        var msg = JSON.parse(e.data);
+                        if (typeof handleWsMessage === 'function') handleWsMessage(msg);
+                    } catch (err) { console.warn('WS消息解析失败:', err); }
+                };
+                ws.onclose = function() {
+                    console.log('WebSocket 已断开');
+                    ws = null;
+                    if (reconnectTimer) clearTimeout(reconnectTimer);
+                    reconnectTimer = setTimeout(connectWS, 3000);
+                };
+                ws.onerror = function() { ws.close(); };
+            } catch (e) {
+                if (reconnectTimer) clearTimeout(reconnectTimer);
+                reconnectTimer = setTimeout(connectWS, 3000);
             }
         }
 
@@ -382,32 +398,20 @@
         // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             initTheme();
-
-            // 默认显示首页
+            connectWS();
             switchTab('home');
-
-            // ✅ 延迟加载各页面数据（由 index.html 统一管理 WebSocket）
             setTimeout(function() {
                 if (typeof loadHome === 'function') loadHome();
                 if (typeof loadApps === 'function') loadApps();
                 if (typeof loadSources === 'function') loadSources();
             }, 300);
-
-            // 点击侧边栏外部关闭
             document.addEventListener('click', function(e) {
-                if (window.innerWidth > 768) return;
                 var sidebar = document.getElementById('sidebar');
                 var ham = document.getElementById('hamburgerBtn');
-                if (!sidebar.contains(e.target) && e.target !== ham && !ham.contains(e.target)) {
-                    closeSidebar();
-                }
-            });
-
-            // ✅ 页面关闭/刷新时清理资源（由 index.html 统一管理）
-            window.addEventListener('beforeunload', function() {
-                // 通知 index.html 清理 WebSocket（通过全局标志）
-                if (typeof window.__cleanupWebSocket === 'function') {
-                    window.__cleanupWebSocket();
+                if (window.innerWidth <= 768) {
+                    if (!sidebar.contains(e.target) && e.target !== ham && !ham.contains(e.target)) {
+                        closeSidebar();
+                    }
                 }
             });
         });
