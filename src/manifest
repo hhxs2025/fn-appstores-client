@@ -1,7 +1,7 @@
 appname=fn-appstores-client
-version=2.6.1
+version=2.6.2
 display_name=FN软仓
-desc="""<p>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。它让用户可以方便地发现、安装和管理非官方的飞牛应用，同时也为开发者提供了一个简单开放的应用发布渠道。</p><p>📖<strong>核心功能:</strong></p><p><strong>1.应用页:</strong>支持应用列表分页、应用卡片基本信息显示、应用弹窗预览图显示、README一键直达。</p><p><strong>2.源管理:</strong>内置应用源，支持添加应用源，支持自添加应用源启用与禁用，应用源缓存5分钟(可手动强制刷新);</p><p><strong>3.关于页:</strong>支持公告实时接收功能。</p><p><strong>4.副标题区:</strong>支持应用上架申请，支持FN软仓应用源查询，支持明暗主题切换。</p><p>📖<strong>2.6.1 聚焦稳定性提升：</strong>修复 WebSocket 连接冲突、安装任务丢失、缓存不一致、首页卡片空白、DOM 报错中断等关键问题，显著提升客户端在弱网和长运行场景下的稳定性。</p><br><img src="https://gitee.com/hhxs2025/fn-appstores-client/raw/master/previews/1.webp"  width="80%"/>"""
+desc="""`<p>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。它让用户可以方便地发现、安装和管理非官方的飞牛应用，同时也为开发者提供了一个简单开放的应用发布渠道。</p><p>📖<strong>核心功能:</strong></p><p><strong>1.应用页:</strong>支持应用列表分页、应用卡片基本信息显示、应用弹窗预览图显示、README一键直达。</p><p><strong>2.源管理:</strong>内置应用源，支持添加应用源，支持自添加应用源启用与禁用，应用源缓存5分钟(可手动强制刷新);</p><p><strong>3.关于页:</strong>支持公告实时接收功能。</p><p><strong>4.副标题区:</strong>支持应用上架申请，支持FN软仓应用源查询，支持明暗主题切换。</p><p><b>📖2.6.2 更新要点:</b></p><p><b>1. 接入飞牛统一网关：</b>应用改走 Unix Socket，通过 `/app/fn-appstores-client` 路径访问，不再监听 TCP 端口，同时自动获得 HTTPS 适配、飞牛登录态复用和桌面图标直达。<br><b>2. 端口模式可降级：</b>切回旧模式，兼容低版本系统。<br><b>3.修复 HTTPS下轮播图不显示，同时新增对轮播图放大的支持：</b>客户端新增图片代理接口，HTTPS 页面下 HTTP 图片自动转到同源代理，绕开浏览器混合内容拦截。<br><b>4.图标与截图同步修复：</b>应用卡片图标、详情预览截图、首页快捷卡片图标统一走图片代理，HTTPS 下均正常显示。<br><b>5.图片代理带白名单与缓存：</b>仅允许代理已配置源及聚合源域名，单张限制 10MB，命中后内存缓存 10 分钟。<br><b>6. 业务功能完全一致：</b>应用列表、安装、更新、向导、公告、源管理等 v2.6.1 的所有功能保持不变。</p><br><img src="https://gitee.com/hhxs2025/fn-appstores-client/raw/master/previews/1.webp"  width="80%"/>`"""
 platform=x86
 source=thirdparty
 maintainer=晦华先生
@@ -12,10 +12,10 @@ ctl_stop=true
 desktop_uidir=ui
 desktop_applaunchname=fn-appstores-client.Application
 service_port=5660
-checkport=true
+checkport=false
 disable_authorization_path=false
 changelog=1.修复应用页缓存状态下tags分类筛选按钮自动隐藏必须刷新才能出现的问题；2.修复应用类型Docker应用和原生应用筛选无效的问题。3.新增按源名称筛选功能。
 <p><a href="https://gitee.com/hhxs2025/fn-appstores/issues">应用接入通道</a></p>"""
 <ul style="list-style-type: disc
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse
-checksum=54c91a1f076b2661cf37ba516f65efb8
+checksum=1f7d95080de10549e94a916affe6bdb6

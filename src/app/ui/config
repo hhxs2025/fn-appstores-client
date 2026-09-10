@@ -2,19 +2,18 @@
   ".url": {
     "fn-appstores-client.Application": {
       "noDisplay": false,
-      "allUsers": false,
+      "allUsers": true,
       "fileTypes": [],
       "control": {
         "accessPerm": "editable"
       },
-      "protocol": "http",
-      "gatewayPrefix": "",
-      "gatewaySocket": "",
+      "protocol": "",
+      "gatewayPrefix": "/app/fn-appstores-client",
+      "gatewaySocket": "app.sock",
       "title": "FN软仓",
-      "icon": "images/icon_64.png",
+      "icon": "images/icon_{0}.png",
       "type": "iframe",
-      "port": "5660",
-      "url": "/"
+      "url": "/app/fn-appstores-client"
     }
   }
 }
