@@ -1,7 +1,7 @@
 #!/bin/bash
 # ================================================================
 # FN软仓 - 应用启动脚本
-# v2.7.0 统一网关模式（使用 app.pyc）
+# v2.7.0 统一网关模式（Go 二进制版）
 # ================================================================
 
 LOG_FILE="${TRIM_PKGVAR}/app.log"
@@ -10,6 +10,9 @@ SOCK_FILE="${TRIM_APPDEST}/app.sock"
 
 # 启动模式：gateway（默认，统一网关）/ port（降级，监听 TCP）
 START_MODE="${FN_SOFT_START_MODE:-gateway}"
+
+# Go 二进制文件名（放在 server/ 目录下）
+BIN_NAME="fn-appstores-client"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
@@ -44,7 +47,7 @@ start_process() {
         return 0
     fi
 
-    log_msg "========== 启动 FN软仓 =========="
+    log_msg "========== 启动 FN软仓 (Go 版) =========="
 
     PORT="${TRIM_SERVICE_PORT:-5660}"
     log_msg "◎启动模式: ${START_MODE}"
@@ -86,23 +89,29 @@ start_process() {
 
     export TRIM_SERVICE_PORT="${PORT}"
     export START_MODE="${START_MODE}"
-    export PYTHONPATH="${TRIM_APPDEST}/server/vendor:${PYTHONPATH}"
 
-    # ========== 只支持 app.pyc ==========
-    if [ ! -f "app.pyc" ]; then
-        log_msg "app.pyc 不存在"
-        echo "＃FN软仓启动失败: app.pyc 不存在" > "${TRIM_PKGTMP:-/tmp}/error.log"
+    # ========== 只支持 Go 二进制 ==========
+    if [ ! -f "./${BIN_NAME}" ]; then
+        log_msg "${BIN_NAME} 不存在"
+        echo "#FN软仓启动失败: ${BIN_NAME} 不存在" > "${TRIM_PKGTMP:-/tmp}/error.log"
         return 1
     fi
 
-    log_msg "启动: app.pyc (模式=${START_MODE})"
-    python3 app.pyc >> "$LOG_FILE" 2>&1 &
+    # 确保二进制有执行权限（打包时可能丢失）
+    if [ ! -x "./${BIN_NAME}" ]; then
+        chmod +x "./${BIN_NAME}" 2>/dev/null
+        log_msg "已为二进制添加执行权限"
+    fi
+
+    log_msg "启动: ./${BIN_NAME} (模式=${START_MODE})"
+    "./${BIN_NAME}" >> "$LOG_FILE" 2>&1 &
 
     local pid=$!
     echo "$pid" > "$PID_FILE"
     log_msg "○进程 PID: $pid"
 
     # 网关模式：等待 socket 出现（最多 10 秒）
+    # Go 版启动快，通常 1 秒内就绪
     if [ "$START_MODE" = "gateway" ]; then
         local count=0
         while [ ! -S "$SOCK_FILE" ] && [ $count -lt 10 ]; do
@@ -118,7 +127,7 @@ start_process() {
 
         if [ ! -S "$SOCK_FILE" ]; then
             log_msg "启动失败：未检测到 socket ${SOCK_FILE}"
-            echo "＃FN软仓启动失败: 未生成 socket ${SOCK_FILE}" > "${TRIM_PKGTMP:-/tmp}/error.log"
+            echo "#FN软仓启动失败: 未生成 socket ${SOCK_FILE}" > "${TRIM_PKGTMP:-/tmp}/error.log"
             kill -TERM "$pid" 2>/dev/null
             sleep 1
             kill -KILL "$pid" 2>/dev/null
@@ -131,7 +140,7 @@ start_process() {
         log_msg "Socket 就绪: ${SOCK_FILE}"
     else
         # 端口模式：仅检查进程存活
-        sleep 2
+        sleep 1
         if ! kill -0 "$pid" 2>/dev/null; then
             log_msg "进程启动后立即退出，请检查日志"
             echo "FN软仓启动失败: 进程已退出" > "${TRIM_PKGTMP:-/tmp}/error.log"
