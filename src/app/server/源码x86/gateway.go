@@ -32,6 +32,10 @@ func registerRoutes(rg *gin.RouterGroup) {
 	rg.POST("/api/wizard/install", APIWizardInstall)
 	rg.POST("/api/wizard/cancel", APIWizardCancel)
 	rg.GET("/ws", HandleWS)
+
+	// ★ 应用评分（转发到应用来源的源）
+	rg.GET("/api/rating/:app_id", APIGetRating)
+	rg.POST("/api/rating/:app_id", APISubmitRating)
 }
 
 func buildRouter(prefix string) *gin.Engine {

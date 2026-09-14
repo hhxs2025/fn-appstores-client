@@ -125,7 +125,6 @@
     .type-filter-btn:hover { background: #e8eaed; border-color: #b8bac2; }
     .type-filter-btn.active { background: #e8eaed; border-color: #b0a8a0; color: var(--text-primary); }
 
-    /* 源筛选下拉框样式 */
     .source-filter-select {
         background: transparent;
         border: 1px solid #d5d7dd;
@@ -244,6 +243,42 @@
     .app-card .actions .btn-repo:hover { background: #e8eaed; border-color: #b8bac2; }
     .app-card .actions .download-count { font-size: 10px; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
 
+    .app-card .actions .rating-count-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.5;
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-left: auto;
+        cursor: help;
+        transition: all 0.15s;
+    }
+    .app-card .actions .rating-count-badge .star {
+        font-size: 11px;
+        line-height: 1;
+    }
+    .app-card .actions .rating-count-badge.scored {
+        background: #fff8e1;
+        color: #b8860b;
+        border: 1px solid #f0d890;
+    }
+    .app-card .actions .rating-count-badge.scored .star { color: #f5b301; }
+    .app-card .actions .rating-count-badge.unscored {
+        background: transparent;
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+        font-weight: 400;
+    }
+    .app-card .actions .rating-count-badge.unscored .star { color: var(--text-muted); }
+    .app-card .actions .rating-count-badge + .download-count {
+        margin-left: 6px;
+    }
+
     .app-card .progress-container { display: none; margin-top: 6px; padding: 4px 0 2px; }
     .app-card .progress-container.show { display: block; }
     .app-card .progress-bar-bg { width: 100%; height: 3px; background: #e8e0d8; border-radius: 2px; overflow: hidden; }
@@ -265,6 +300,61 @@
     .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: var(--text-muted); }
     .empty-state .icon { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
     .empty-state p { font-size: 12px; }
+
+    /* ============================================================ */
+    /* 骨架屏样式 */
+    /* ============================================================ */
+    .skeleton-card {
+        pointer-events: none;
+        cursor: default;
+    }
+    .skeleton-card:hover {
+        box-shadow: none !important;
+        transform: none !important;
+        border-color: var(--border) !important;
+        background: var(--card-bg) !important;
+    }
+    .skeleton {
+        background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
+        background-size: 200% 100%;
+        animation: skeletonShine 1.5s ease-in-out infinite;
+        border-radius: 4px;
+        display: block;
+    }
+    @keyframes skeletonShine {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    .skeleton-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+    .skeleton-line {
+        height: 12px;
+        margin: 6px 0;
+    }
+    .skeleton-line.h-8 { height: 8px; }
+    .skeleton-line.h-14 { height: 14px; }
+    .skeleton-line.h-20 { height: 20px; }
+    .skeleton-line.w-30 { width: 30%; }
+    .skeleton-line.w-40 { width: 40%; }
+    .skeleton-line.w-50 { width: 50%; }
+    .skeleton-line.w-60 { width: 60%; }
+    .skeleton-line.w-70 { width: 70%; }
+    .skeleton-line.w-80 { width: 80%; }
+    .skeleton-line.w-90 { width: 90%; }
+    .skeleton-line.w-100 { width: 100%; }
+    .skeleton-btn {
+        width: 60px;
+        height: 22px;
+        border-radius: 4px;
+    }
+    body.dark-mode .skeleton {
+        background: linear-gradient(90deg, #2a3a5a 25%, #3a4a6a 50%, #2a3a5a 75%);
+        background-size: 200% 100%;
+    }
 
     .pagination {
         display: none;
@@ -289,7 +379,6 @@
     .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     #pageInfo { color: var(--text-muted); font-size: 11px; }
 
-    /* 深色覆盖 */
     body.dark-mode .app-card { background: #1e2a45; border-color: #2a3a5a; }
     body.dark-mode .app-card:hover { background: #223050; border-color: #3a4a6a; }
     body.dark-mode .search-bar input { background: #1a2a3a; border-color: #2a3a5a; color: #e8e8f0; }
@@ -305,6 +394,17 @@
     body.dark-mode .source-filter-select:hover { border-color: #4a6a8a; }
     body.dark-mode .sort-select { border-color: #2a3a5a; color: var(--text-secondary); background: #1a2a3a; }
     body.dark-mode .sort-select:hover { border-color: #4a6a8a; }
+
+    body.dark-mode .app-card .actions .rating-count-badge.scored {
+        background: #3a2f1a;
+        color: #ffd76a;
+        border-color: #5a4a2a;
+    }
+    body.dark-mode .app-card .actions .rating-count-badge.scored .star { color: #ffd76a; }
+    body.dark-mode .app-card .actions .rating-count-badge.unscored {
+        color: #6a7a9a;
+        border-color: #2a3a5a;
+    }
 
     @media (max-width: 768px) {
         .app-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
@@ -322,6 +422,8 @@
         .app-card .icon { width: 32px; height: 32px; font-size: 14px; }
         .app-card .progress-details { font-size: 7px; }
         .app-card .progress-text .progress-percent { font-size: 10px; }
+        .app-card .actions .rating-count-badge { font-size: 9px; padding: 0 4px; }
+        .app-card .actions .rating-count-badge .star { font-size: 10px; }
         .toolbar .right { gap: 4px; }
         .sort-select { font-size: 9px; padding: 1px 4px; max-width: 80px; }
     }
@@ -352,7 +454,7 @@
 </div>
 
 <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="搜索应用名称、描述、作者..." oninput="searchApps()">
+    <input type="text" id="searchInput" placeholder="搜索应用名称、描述、作者..." oninput="searchAppsDebounced()">
 </div>
 
 <div class="filter-bar" id="filterBar"></div>
@@ -361,7 +463,6 @@
     <button class="type-filter-btn active" data-type="all" onclick="filterByAppType('all')">全部</button>
     <button class="type-filter-btn" data-type="docker" onclick="filterByAppType('docker')">Docker应用</button>
     <button class="type-filter-btn" data-type="native" onclick="filterByAppType('native')">原生应用</button>
-    <!-- 按源名称筛选下拉框 -->
     <select class="source-filter-select" id="sourceFilterSelect" onchange="filterBySource(this.value)">
         <option value="all">全部源</option>
     </select>

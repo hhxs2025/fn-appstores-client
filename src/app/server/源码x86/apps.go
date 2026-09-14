@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -16,6 +17,22 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// ============================================================
+// 本机架构检测（启动时执行一次）
+// ============================================================
+var localArch = detectLocalArch()
+
+func detectLocalArch() string {
+	switch runtime.GOARCH {
+	case "arm64", "arm":
+		return "arm"
+	case "amd64", "386":
+		return "x86"
+	default:
+		return "x86"
+	}
+}
 
 type App struct {
 	ID          string          `json:"id"`
@@ -30,11 +47,13 @@ type App struct {
 	Icon        string          `json:"icon,omitempty"`
 	Screenshots ScreenshotsFlex `json:"screenshots,omitempty"`
 	Type        string          `json:"type,omitempty"`
-	Arch        string          `json:"arch,omitempty"` // x86 / arm / all
+	Platform    string          `json:"platform,omitempty"` // ★ 改这里：arch → platform
 	SortOrder   SortOrderFlex   `json:"sort_order"`
 	Downloads   int64           `json:"downloads,omitempty"`
 
-	// 客户端运行时字段
+	RatingAvg   float64 `json:"rating_avg,omitempty"`
+	RatingCount int64   `json:"rating_count,omitempty"`
+
 	Installed        bool   `json:"installed,omitempty"`
 	InstalledVersion string `json:"installed_version,omitempty"`
 	HasUpdate        bool   `json:"has_update,omitempty"`
@@ -50,9 +69,6 @@ var (
 	appCacheMu   sync.RWMutex
 )
 
-// ============================================================
-// 从单个源拉取
-// ============================================================
 func FetchAppsFromSource(s Source) []App {
 	url := trimSlash(s.URL)
 	if url == "" {
@@ -92,9 +108,6 @@ func FetchAppsFromSource(s Source) []App {
 	return wrapper.Data
 }
 
-// ============================================================
-// 合并多源（按 id + arch 去重）
-// ============================================================
 func MergeAppsFromSources() []App {
 	sources := GetEnabledSources()
 	if len(sources) == 0 {
@@ -118,8 +131,8 @@ func MergeAppsFromSources() []App {
 		for j := range r.apps {
 			a := r.apps[j]
 			key := a.ID
-			if a.Arch != "" {
-				key = a.ID + "@" + a.Arch
+			if a.Platform != "" { // ★ 改：a.Arch → a.Platform
+				key = a.ID + "@" + a.Platform
 			}
 			existing, ok := appMap[key]
 			if !ok {
@@ -140,9 +153,6 @@ func MergeAppsFromSources() []App {
 	return result
 }
 
-// ============================================================
-// 已安装检测
-// ============================================================
 type InstalledApp struct {
 	ID      string `json:"id"`
 	Version string `json:"version"`
@@ -243,8 +253,30 @@ func GetInstalledAppsWithVersions() []InstalledApp {
 }
 
 // ============================================================
-// 汇总
+// 架构匹配判断
 // ============================================================
+func platformMatches(appPlatform string) bool {
+	p := strings.ToLower(strings.TrimSpace(appPlatform))
+
+	// 空 = 老应用，默认按 x86 处理
+	if p == "" {
+		p = "x86"
+	}
+	// all / 通用 兼容所有架构
+	if p == "all" || p == "通用" || p == "universal" {
+		return true
+	}
+	// 归一化
+	switch p {
+	case "aarch64", "arm64":
+		p = "arm"
+	case "amd64", "x86_64":
+		p = "x86"
+	}
+
+	return p == localArch
+}
+
 func GetAllApps(force bool) []App {
 	appCacheMu.RLock()
 	if !force && appCache != nil && time.Since(appCacheTime) < AppCacheTTL*time.Second {
@@ -255,6 +287,18 @@ func GetAllApps(force bool) []App {
 	appCacheMu.RUnlock()
 
 	apps := MergeAppsFromSources()
+
+	// ★ 按本机架构过滤
+	filtered := make([]App, 0, len(apps))
+	for _, a := range apps {
+		if platformMatches(a.Platform) { // ★ 改：a.Arch → a.Platform
+			filtered = append(filtered, a)
+		} else {
+			log.Printf("⏭️ 跳过不兼容应用: %s v%s (platform=%s, 本机=%s)",
+				a.ID, a.Version, a.Platform, localArch)
+		}
+	}
+	apps = filtered
 
 	installed := GetInstalledApps()
 	installedVersions := map[string]string{}
@@ -273,7 +317,6 @@ func GetAllApps(force bool) []App {
 				a.HasUpdate = CompareVersions(a.Version, v) > 0
 			}
 		}
-		// 补全 download_url / icon
 		if a.DownloadURL == "" {
 			srcURL := trimSlash(a.SourceURL)
 			if srcURL != "" {
@@ -309,13 +352,9 @@ func InvalidateAppCache() {
 	appCacheMu.Unlock()
 }
 
-// ============================================================
-// API
-// ============================================================
 func APIApps(c *gin.Context) {
 	force := c.Query("force") == "true"
 	apps := GetAllApps(force)
-	// 客户端自身不显示
 	filtered := []App{}
 	for _, a := range apps {
 		if a.ID == "fn-appstores-client" {

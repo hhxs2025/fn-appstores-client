@@ -1,0 +1,43 @@
+#### x86_64架构完整编译命令，cd进入*.go文件所在目录，输入：
+
+set GOPROXY=https://goproxy.cn,direct
+go mod init fn-appstores-client
+go mod tidy
+
+set CGO_ENABLED=0
+set GOOS=linux
+set GOARCH=amd64
+go build -ldflags="-s -w" -o fn-appstores-client .
+
+dir fn-appstores-client
+
+#### arm64架构完整编译命令，cd进入*.go文件所在目录，输入：
+set GOPROXY=https://goproxy.cn,direct
+go mod init fn-appstores-client
+go mod tidy
+
+set CGO_ENABLED=0
+set GOOS=linux
+set GOARCH=arm64
+go build -ldflags="-s -w" -o fn-appstores-client .
+
+dir fn-appstores-client
+
+#### ARMv7架构完整编译命令，cd进入*.go文件所在目录，输入：
+set GOPROXY=https://goproxy.cn,direct
+go mod init fn-appstores-client
+go mod tidy
+
+set CGO_ENABLED=0
+set GOOS=linux
+set GOARCH=arm
+set GOARM=7
+go build -ldflags="-s -w" -o fn-appstores-client .
+
+dir fn-appstores-client
+
+===================================
+正常编译完，目录下应该多出：
+go.mod              # 新建
+go.sum              # go mod tidy 生成
+fn-appstores-client # 编译产物
