@@ -240,6 +240,10 @@ var _sphereDrag = { active: false, lastX: 0, lastY: 0 };
 var _sphereLastTime = 0;
 var _sphereBgStars = null;
 
+// ★ 搜索状态（不隐藏星星，只高亮匹配项）
+var _sphereSearchKeyword = '';
+var _sphereSearchActive = false;
+
 // 星球自转速度：每秒弧度
 var _SPHERE_ROT_SPEED = 0.00006;
 
@@ -314,8 +318,9 @@ function initStars(devs, W, H) {
 
 // ============================================================
 // 绘制单颗星
+// ★ 新增 isSearchHighlight 参数：白色光圈标识搜索命中
 // ============================================================
-function drawStar(ctx, x, y, size, colors, alpha, isHover) {
+function drawStar(ctx, x, y, size, colors, alpha, isHover, isSearchHighlight) {
     // alpha 是综合亮度（0~1），决定星的整体透明度/亮度
 
     // ===== 1. 外光晕 =====
@@ -373,6 +378,23 @@ function drawStar(ctx, x, y, size, colors, alpha, isHover) {
         ctx.lineWidth = 1.4;
         ctx.beginPath();
         ctx.arc(x, y, size * 3.2, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // ===== 5. ★ 搜索命中：白色光圈（悬停时不重复画）=====
+    if (isSearchHighlight && !isHover) {
+        // 内圈实线
+        ctx.strokeStyle = 'rgba(255, 255, 255, ' + (0.85 * alpha) + ')';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 3.6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 外圈淡光
+        ctx.strokeStyle = 'rgba(255, 255, 255, ' + (0.28 * alpha) + ')';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 5.4, 0, Math.PI * 2);
         ctx.stroke();
     }
 }
@@ -512,6 +534,12 @@ function sphereRenderLoop() {
         var star = p.star;
         var isHover = (p.star === hoveredStar);
 
+        // ★ 搜索命中判断
+        var isSearchMatch = false;
+        if (_sphereSearchActive) {
+            isSearchMatch = star.dev.author.toLowerCase().indexOf(_sphereSearchKeyword) !== -1;
+        }
+
         // ===== 呼吸 =====
         // breath: -1 ~ 1
         var breath = Math.sin(time * star.breathSpeed + star.breathPhase);
@@ -535,10 +563,22 @@ function sphereRenderLoop() {
 
         if (isHover) alpha = 1;
 
+        // ★ 搜索激活时的亮度处理
+        if (_sphereSearchActive) {
+            if (isSearchMatch) {
+                // 命中的提亮到最低可见度
+                if (alpha < 0.7) alpha = 0.7;
+            } else {
+                // 未命中的大幅调暗
+                alpha *= 0.22;
+                if (alpha < 0.06) alpha = 0.06;
+            }
+        }
+
         // 尺寸：基础尺寸 × 呼吸 × 透视缩放
         var size = star.baseSize * sizeMul * p.scale * (isHover ? 1.35 : 1);
 
-        drawStar(ctx, p.sx, p.sy, size, star.colors, alpha, isHover);
+        drawStar(ctx, p.sx, p.sy, size, star.colors, alpha, isHover, isSearchMatch);
 
         // 缓存绘制坐标供点击检测
         star._sx = p.sx;
@@ -671,13 +711,29 @@ function sphereWheel(e) {
 
 // ============================================================
 // 启动 / 停止
+// ★ 数据/尺寸不变时不重建，避免搜索输入时画面抖动
 // ============================================================
 function startSphere(devs) {
-    sphereResize();
-    initStars(devs, _sphereW, _sphereH);
-
     var canvas = document.getElementById('sphereCanvas');
-    if (!canvas) return;
+    var container = document.getElementById('sphereContainer');
+    if (!canvas || !container) return;
+
+    var cw = container.clientWidth;
+    var ch = container.clientHeight;
+
+    // 尺寸变化或首次初始化 canvas
+    if (_sphereCanvas !== canvas || _sphereW !== cw || _sphereH !== ch) {
+        sphereResize();
+    }
+
+    // 数据变化才重建星星（搜索时不重建）
+    var sameData = _stars.length === devs.length &&
+        _stars.every(function(s, i) {
+            return s.dev && s.dev.author === devs[i].author;
+        });
+    if (!sameData) {
+        initStars(devs, _sphereW, _sphereH);
+    }
 
     if (!canvas._eventsBound) {
         canvas._eventsBound = true;
@@ -732,21 +788,26 @@ function renderDevelopers() {
     if (devCountEl) devCountEl.textContent = devs.length;
     if (devAppCountEl) devAppCountEl.textContent = allAppsData.length;
 
+    // ★ 搜索状态：球体保留全量，匹配项加白色光圈
     var searchEl = document.getElementById('devSearchInput');
     var keyword = searchEl ? searchEl.value.trim().toLowerCase() : '';
+    _sphereSearchKeyword = keyword;
+    _sphereSearchActive = !!keyword;
+
+    if (window.innerWidth >= 900) {
+        // ★ 传全量 devs，球体不隐藏星星
+        startSphere(devs);
+    } else {
+        stopSphere();
+    }
+
+    // 窄屏列表仍按关键词过滤
     var filteredForGrid = devs;
     if (keyword) {
         filteredForGrid = devs.filter(function(d) {
             return d.author.toLowerCase().indexOf(keyword) !== -1;
         });
     }
-
-    if (window.innerWidth >= 900) {
-        startSphere(devs);
-    } else {
-        stopSphere();
-    }
-
     renderGridFallback(filteredForGrid);
 }
 

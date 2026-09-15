@@ -147,6 +147,7 @@
         <button class="settings-tab" data-stab="system" onclick="switchSettingTab('system')">系统</button>
         <button class="settings-tab" data-stab="about" onclick="switchSettingTab('about')">关于</button>
         <button class="settings-tab" data-stab="stats" onclick="switchSettingTab('stats')">统计</button>
+        <button class="settings-tab" data-stab="host" onclick="switchSettingTab('host')">建源</button>
     </div>
     <div class="settings-panels">
         <div class="settings-panel active" id="spanel-general">
@@ -194,6 +195,36 @@
                 <div class="row"><span class="label">已安装</span><span class="value" id="settingsInstalled">--</span></div>
                 <div class="row"><span class="label">可更新</span><span class="value" id="settingsUpdatable">--</span></div>
                 <div class="row"><span class="label">已配置源</span><span class="value" id="settingsSourceCount">--</span></div>
+            </div>
+        </div>
+        <div class="settings-panel" id="spanel-host">
+            <div class="settings-card">
+                <div class="title">☆成为源主</div>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+                    自建源 · 应用只在自己的圈子里分发<br>
+                    不想等官方收录？自己搭一个 FN软仓服务端。<br>
+                    Docker 一键部署，镜像仅 15MB、内存 10MB。
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="title">☆三步搞定</div>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
+                    <b>① 部署</b> · Docker 一条命令起服务端<br>
+                    <b>② 上架</b> · 后台上传 FPK，或 Gitee + 上架助手（群里拿）<br>
+                    <b>③ 分享</b> · 把源地址发给朋友
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:12px;">
+                <a href="https://gitee.com/hhxs2025/fn-appstores/blob/master/README.md" target="_blank"
+                   style="flex:1;text-align:center;padding:10px;background:#2563ea;color:#fff;text-decoration:none;border-radius:6px;font-size:13px;">
+                    查看建源指南
+                </a>
+                <a href="https://gitee.com/hhxs2025/fn-appstores/issues/new/choose" target="_blank"
+                   style="flex:1;text-align:center;padding:10px;background:transparent;color:#2563ea;text-decoration:none;border-radius:6px;font-size:13px;border:1px solid #2563ea;">
+                    聚合申请
+                </a>
             </div>
         </div>
     </div>
