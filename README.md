@@ -9,7 +9,7 @@
 FN软仓是飞牛 OS 上的第三方应用商店客户端，支持**多软件源聚合**。用户可以自由添加自托管服务端地址，浏览、安装、更新飞牛官方应用中心没有的三方应用。
 
 - **客户端项目地址**：[https://gitee.com/hhxs2025/fn-appstores](https://gitee.com/hhxs2025/fn-appstores)
-- **服务端镜像**：`docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.8.1`
+- **服务端镜像**：`docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.8.3`
 - **平台**：飞牛 OS
 - **开源协议**：MIT
 
