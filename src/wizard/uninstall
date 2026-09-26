@@ -1,0 +1,38 @@
+[
+  {
+    "stepTitle": "卸载确认",
+    "items": [
+      {
+        "type": "tips",
+        "field": "wizard_keep_default",
+        "label": "示例项",
+        "rules": [],
+        "options": [],
+        "helpText": "请选择是否清除用户配置数据"
+      }
+    ]
+  },
+  {
+    "stepTitle": "选择卸载选项",
+    "items": [
+      {
+        "type": "radio",
+        "field": "wizard_keep_data",
+        "label": "示例项",
+        "rules": [],
+        "options": [
+          {
+            "label": "保留配置数据",
+            "value": "yes"
+          },
+          {
+            "label": "删除配置数据",
+            "value": "no"
+          }
+        ],
+        "helpText": "选择是否删除FN软仓的配置数据",
+        "initValue": "yes"
+      }
+    ]
+  }
+]

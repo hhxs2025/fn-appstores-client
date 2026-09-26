@@ -1,0 +1,862 @@
+{{define "developers"}}
+<style>
+    .dev-container { display: flex; flex-direction: column; height: 100%; gap: 10px; }
+    .dev-toolbar {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 10px; flex-shrink: 0; flex-wrap: wrap;
+    }
+    .dev-toolbar .left { display: flex; align-items: baseline; gap: 10px; }
+    .dev-toolbar .title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+    .dev-toolbar .stats { font-size: 11px; color: var(--text-muted); }
+    .dev-toolbar .stats strong { color: var(--text-primary); font-weight: 500; }
+    .dev-search-input {
+        flex: 1; max-width: 240px;
+        padding: 5px 12px;
+        border: 1px solid #d5d7dd; border-radius: 6px;
+        font-size: 11px; outline: none;
+        background: #fff; color: var(--text-primary);
+    }
+    .dev-search-input:focus { border-color: #b0a8a0; }
+
+    /* ===== 呼吸星球 ===== */
+    .sphere-container {
+        flex: 1; min-height: 0;
+        position: relative; overflow: hidden;
+        border-radius: 14px;
+        background: radial-gradient(ellipse at 50% 45%, #0a0e1f 0%, #05070f 55%, #010103 100%);
+        border: 1px solid var(--border);
+        cursor: grab;
+        user-select: none;
+    }
+    .sphere-container:active { cursor: grabbing; }
+    .sphere-container canvas {
+        position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%; display: block;
+    }
+    .sphere-hint {
+        position: absolute; bottom: 12px; left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px; color: rgba(180, 200, 240, 0.35);
+        pointer-events: none;
+        padding: 4px 14px; border-radius: 12px;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
+        letter-spacing: 0.5px;
+    }
+    .sphere-tooltip {
+        position: absolute; pointer-events: none;
+        background: rgba(10, 15, 35, 0.95);
+        color: #fff; font-size: 12px;
+        padding: 6px 12px; border-radius: 6px;
+        white-space: nowrap; opacity: 0;
+        transition: opacity 0.15s; z-index: 20;
+        box-shadow: 0 4px 20px rgba(100, 150, 255, 0.25);
+        border: 1px solid rgba(120, 160, 255, 0.3);
+        transform: translate(-50%, -150%);
+    }
+    .sphere-tooltip.show { opacity: 1; }
+    .sphere-tooltip .badge { color: #ffd76a; margin-left: 6px; font-size: 10px; }
+
+    /* 窄屏兜底 */
+    .dev-grid {
+        display: none; flex: 1; min-height: 0;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 12px; overflow-y: auto;
+        align-content: start; padding: 4px 0 8px;
+    }
+    .dev-card {
+        background: var(--card-bg); border: 1px solid var(--border);
+        border-radius: 10px; padding: 12px 14px;
+        cursor: pointer; transition: all 0.25s;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .dev-card:hover {
+        border-color: #c5c7d0; transform: translateY(-1px);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .dev-card .mini-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        flex-shrink: 0; display: flex; align-items: center;
+        justify-content: center; color: #fff;
+        font-size: 16px; font-weight: 600;
+    }
+    .dev-card .info { flex: 1; min-width: 0; }
+    .dev-card .name {
+        font-size: 14px; font-weight: 600;
+        color: var(--text-primary);
+        display: flex; align-items: center; gap: 6px;
+    }
+    .dev-card .badge { font-size: 9px; padding: 1px 6px; border-radius: 3px; }
+    .dev-card .badge.official { background: #fff5d1; color: #8a7a3a; }
+    .dev-card .badge.thirdparty { background: #e6f0ff; color: #2563ea; }
+    .dev-card .badge.self { background: #eaeaea; color: #6b6b6b; }
+    .dev-card .count { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    .dev-empty {
+        grid-column: 1 / -1; text-align: center;
+        padding: 40px 20px; color: var(--text-muted); font-size: 12px;
+    }
+    body.dark-mode .dev-card { background: #1e2a45; border-color: #2a3a5a; }
+    body.dark-mode .dev-search-input { background: #1a2a3a; border-color: #2a3a5a; color: #e8e8f0; }
+
+    @media (max-width: 900px) {
+        .sphere-container { display: none; }
+        .dev-grid { display: grid; }
+    }
+    @media (max-width: 550px) {
+        .dev-toolbar .stats { display: none; }
+        .dev-search-input { max-width: 140px; }
+        .dev-grid { grid-template-columns: 1fr; gap: 8px; }
+    }
+</style>
+
+<div class="dev-container">
+    <div class="dev-toolbar">
+        <div class="left">
+            <span class="title">✨ 开发者星球</span>
+            <span class="stats">
+                共 <strong id="devCount">0</strong> 位 ·
+                收录 <strong id="devAppCount">0</strong> 款应用
+            </span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+            <input type="text" class="dev-search-input" id="devSearchInput" placeholder="搜索开发者..." oninput="renderDevelopers()">
+        </div>
+    </div>
+
+    <div class="sphere-container" id="sphereContainer">
+        <canvas id="sphereCanvas"></canvas>
+        <div class="sphere-hint">拖动旋转 · 滚轮缩放 · 悬停查看 · 点击进入</div>
+        <div class="sphere-tooltip" id="sphereTooltip"></div>
+    </div>
+
+    <div class="dev-grid" id="devGrid">
+        <div class="dev-empty">正在加载开发者...</div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="devDetailModal" onclick="if(event.target===this) closeDevDetail()">
+    <div class="modal-content" style="max-width: 540px;">
+        <button class="modal-close" onclick="closeDevDetail()">✕</button>
+        <div class="modal-title" id="devDetailTitle">开发者</div>
+        <div id="devDetailBody" style="max-height: 60vh; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// 数据构建
+// ============================================================
+function buildDeveloperData() {
+    if (!allAppsData || allAppsData.length === 0) return [];
+    var map = {};
+    allAppsData.forEach(function(app) {
+        if (app.id === 'fn-appstores-client') return;
+        var author = (app.author || '未知开发者').trim();
+        if (!author) author = '未知开发者';
+        if (!map[author]) {
+            map[author] = {
+                author: author, apps: [], count: 0, downloads: 0,
+                latest: '1970-01-01', sources: {}
+            };
+        }
+        map[author].apps.push(app);
+        map[author].count++;
+        map[author].downloads += (app.downloads || 0);
+        if (app.updated_at && app.updated_at > map[author].latest) {
+            map[author].latest = app.updated_at;
+        }
+        var srcId = app._source_id || 'unknown';
+        map[author].sources[srcId] = true;
+    });
+    Object.keys(map).forEach(function(k) {
+        map[k].apps.sort(function(a, b) {
+            if ((a.sort_order || 0) !== (b.sort_order || 0)) {
+                return (b.sort_order || 0) - (a.sort_order || 0);
+            }
+            return (b.updated_at || '').localeCompare(a.updated_at || '');
+        });
+    });
+    return Object.keys(map).map(function(k) { return map[k]; });
+}
+
+function getDevType(dev) {
+    if (dev.sources['official']) return 'official';
+    var hasCertified = Object.keys(dev.sources).some(function(sid) {
+        return sid !== 'official' && !sid.startsWith('source_');
+    });
+    if (hasCertified) return 'thirdparty';
+    return 'self';
+}
+function getDevTypeLabel(dev) {
+    var t = getDevType(dev);
+    return t === 'official' ? '官方' : t === 'thirdparty' ? '认证' : '个人';
+}
+function getAvatarChar(name) {
+    if (!name) return '?';
+    return name.charAt(0).toUpperCase();
+}
+function escHtmlDev(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function getMiniAvatarColor(name) {
+    var palette = [
+        ['#88c888', '#4a8a4a'], ['#ffd76a', '#c8960a'],
+        ['#a8d8ff', '#2a7ac8'], ['#ffb8b8', '#c85a5a'],
+        ['#d8b8ff', '#7a4ac8'], ['#b8ffd8', '#3aa878']
+    ];
+    var hash = 0;
+    for (var i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+    return palette[Math.abs(hash) % palette.length];
+}
+
+// ============================================================
+// 星星配色：克制三种色系
+// ============================================================
+var STAR_COLORS = {
+    official:   { core: '255, 245, 210', mid: '255, 215, 120', outer: '255, 180, 80' },
+    thirdparty: { core: '240, 245, 255', mid: '180, 215, 255', outer: '120, 170, 240' },
+    self:       { core: '255, 255, 255', mid: '235, 240, 250', outer: '180, 195, 220' }
+};
+
+// ============================================================
+// 状态
+// ============================================================
+var _stars = [];
+var _starProjected = [];
+var _sphereCanvas = null;
+var _sphereCtx = null;
+var _sphereDPR = 1;
+var _sphereRunning = false;
+var _sphereAnimFrame = null;
+var _sphereW = 0, _sphereH = 0;
+var _sphereCX = 0, _sphereCY = 0;
+var _sphereRadius = 0;
+var _sphereRotation = { x: -0.15, y: 0 };
+var _sphereScale = 1;
+var _sphereHoverDev = null;
+var _sphereDrag = { active: false, lastX: 0, lastY: 0 };
+var _sphereLastTime = 0;
+var _sphereBgStars = null;
+
+// 星球自转速度：每秒弧度
+var _SPHERE_ROT_SPEED = 0.00006;
+
+// ============================================================
+// 斐波那契球面均匀分布
+// ============================================================
+function fibSpherePoint(i, n) {
+    var phi = Math.acos(1 - 2 * (i + 0.5) / n);
+    var theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    return {
+        nx: Math.cos(theta) * Math.sin(phi),
+        ny: Math.sin(theta) * Math.sin(phi),
+        nz: Math.cos(phi)
+    };
+}
+
+// ============================================================
+// 初始化星星
+// ============================================================
+function initStars(devs, W, H) {
+    _sphereW = W;
+    _sphereH = H;
+    _sphereCX = W / 2;
+    _sphereCY = H / 2;
+    _sphereRadius = Math.min(W, H) * 0.4;
+
+    if (devs.length === 0) { _stars = []; return; }
+
+    var total = devs.length;
+
+    _stars = devs.map(function(dev, i) {
+        var p = fibSpherePoint(i, total);
+
+        // 应用数越多，星星越大
+        var baseSize = 3.2 + Math.sqrt(dev.count) * 1.15;
+
+        // 每个星星独立的呼吸相位和速度（周期 5~9 秒）
+        var seedA = Math.sin(i * 12.9898) * 43758.5453; seedA -= Math.floor(seedA);
+        var seedB = Math.sin(i * 78.233) * 43758.5453;  seedB -= Math.floor(seedB);
+        var seedC = Math.sin(i * 43.123) * 12345.6789;  seedC -= Math.floor(seedC);
+
+        return {
+            dev: dev,
+            nx: p.nx,
+            ny: p.ny,
+            nz: p.nz,
+            baseSize: baseSize,
+            type: getDevType(dev),
+            colors: STAR_COLORS[getDevType(dev)],
+            // 呼吸相位和速度
+            breathPhase: seedA * Math.PI * 2,
+            breathSpeed: 0.00075 + seedB * 0.0007,   // 5~9 秒一个周期
+            // 微小闪烁（第二层，让星星更"活"）
+            twinklePhase: seedC * Math.PI * 2,
+            twinkleSpeed: 0.0018 + seedA * 0.002
+        };
+    });
+
+    // 背景散星
+    _sphereBgStars = [];
+    for (var k = 0; k < 180; k++) {
+        _sphereBgStars.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: 0.3 + Math.random() * 0.9,
+            a: 0.15 + Math.random() * 0.4,
+            phase: Math.random() * Math.PI * 2,
+            speed: 0.0004 + Math.random() * 0.0009
+        });
+    }
+}
+
+// ============================================================
+// 绘制单颗星
+// ============================================================
+function drawStar(ctx, x, y, size, colors, alpha, isHover) {
+    // alpha 是综合亮度（0~1），决定星的整体透明度/亮度
+
+    // ===== 1. 外光晕 =====
+    var glowR = size * (isHover ? 6.5 : 4.5);
+    var glow = ctx.createRadialGradient(x, y, 0, x, y, glowR);
+    glow.addColorStop(0, 'rgba(' + colors.mid + ',' + (0.5 * alpha) + ')');
+    glow.addColorStop(0.4, 'rgba(' + colors.mid + ',' + (0.18 * alpha) + ')');
+    glow.addColorStop(1, 'rgba(' + colors.outer + ',0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, glowR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ===== 2. 十字星芒（先画星芒，再画核心，核心会盖在上面）=====
+    var spikeLen = size * (isHover ? 6 : 4.5);
+    var spikeAlpha = 0.85 * alpha;
+
+    // 横向星芒
+    var hGrad = ctx.createLinearGradient(x - spikeLen, y, x + spikeLen, y);
+    hGrad.addColorStop(0, 'rgba(' + colors.mid + ',0)');
+    hGrad.addColorStop(0.5, 'rgba(' + colors.core + ',' + spikeAlpha + ')');
+    hGrad.addColorStop(1, 'rgba(' + colors.mid + ',0)');
+    ctx.strokeStyle = hGrad;
+    ctx.lineWidth = isHover ? 1.8 : 1.1;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - spikeLen, y);
+    ctx.lineTo(x + spikeLen, y);
+    ctx.stroke();
+
+    // 纵向星芒
+    var vGrad = ctx.createLinearGradient(x, y - spikeLen, x, y + spikeLen);
+    vGrad.addColorStop(0, 'rgba(' + colors.mid + ',0)');
+    vGrad.addColorStop(0.5, 'rgba(' + colors.core + ',' + spikeAlpha + ')');
+    vGrad.addColorStop(1, 'rgba(' + colors.mid + ',0)');
+    ctx.strokeStyle = vGrad;
+    ctx.beginPath();
+    ctx.moveTo(x, y - spikeLen);
+    ctx.lineTo(x, y + spikeLen);
+    ctx.stroke();
+
+    // ===== 3. 核心 =====
+    var core = ctx.createRadialGradient(x, y, 0, x, y, size);
+    core.addColorStop(0, 'rgba(' + colors.core + ',' + (1.0 * alpha) + ')');
+    core.addColorStop(0.5, 'rgba(' + colors.mid + ',' + (0.85 * alpha) + ')');
+    core.addColorStop(1, 'rgba(' + colors.outer + ',' + (0.3 * alpha) + ')');
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ===== 4. 悬停外圈 =====
+    if (isHover) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 3.2, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+}
+
+// ============================================================
+// 主渲染循环
+// ============================================================
+function sphereRenderLoop() {
+    if (!_sphereRunning) return;
+
+    var canvas = _sphereCanvas;
+    if (!canvas) {
+        _sphereAnimFrame = requestAnimationFrame(sphereRenderLoop);
+        return;
+    }
+
+    var tab = document.getElementById('tabDevelopers');
+    if (tab && !tab.classList.contains('active')) {
+        _sphereAnimFrame = setTimeout(function() { requestAnimationFrame(sphereRenderLoop); }, 500);
+        return;
+    }
+
+    var ctx = _sphereCtx;
+    var W = canvas.width / _sphereDPR;
+    var H = canvas.height / _sphereDPR;
+    var time = performance.now();
+
+    // ===== 自动旋转（delta time）=====
+    if (_sphereLastTime === 0) _sphereLastTime = time;
+    var dt = time - _sphereLastTime;
+    _sphereLastTime = time;
+    if (dt > 100) dt = 100;
+
+    if (!_sphereDrag.active) {
+        _sphereRotation.y += _SPHERE_ROT_SPEED * dt;
+        // 轻微的 X 轴摆动
+        _sphereRotation.x = -0.15 + Math.sin(time * 0.0003) * 0.06;
+    }
+
+    ctx.setTransform(_sphereDPR, 0, 0, _sphereDPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // ===== 背景 =====
+    var bg = ctx.createRadialGradient(
+        _sphereCX, _sphereCY, 0,
+        _sphereCX, _sphereCY, Math.max(W, H) * 0.75
+    );
+    bg.addColorStop(0, '#0b1020');
+    bg.addColorStop(0.5, '#050810');
+    bg.addColorStop(1, '#010103');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // ===== 背景散星 =====
+    if (_sphereBgStars) {
+        _sphereBgStars.forEach(function(bs) {
+            var tw = 0.5 + 0.5 * Math.sin(time * bs.speed + bs.phase);
+            ctx.globalAlpha = bs.a * tw;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(bs.x, bs.y, bs.r, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    // ===== 星球中心光晕 =====
+    var coreBreath = 0.5 + 0.5 * Math.sin(time * 0.0005);
+    var coreR = _sphereRadius * (0.5 + coreBreath * 0.15);
+    var coreGlow = ctx.createRadialGradient(
+        _sphereCX, _sphereCY, 0,
+        _sphereCX, _sphereCY, coreR
+    );
+    coreGlow.addColorStop(0, 'rgba(90, 120, 200, ' + (0.18 + coreBreath * 0.06) + ')');
+    coreGlow.addColorStop(0.5, 'rgba(60, 80, 150, ' + (0.08 + coreBreath * 0.04) + ')');
+    coreGlow.addColorStop(1, 'rgba(20, 30, 60, 0)');
+    ctx.fillStyle = coreGlow;
+    ctx.beginPath();
+    ctx.arc(_sphereCX, _sphereCY, coreR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ===== 3D 投影 =====
+    var cosX = Math.cos(_sphereRotation.x);
+    var sinX = Math.sin(_sphereRotation.x);
+    var cosY = Math.cos(_sphereRotation.y);
+    var sinY = Math.sin(_sphereRotation.y);
+
+    var R = _sphereRadius * _sphereScale;
+    var perspective = R * 3.2;
+
+    _starProjected = _stars.map(function(star) {
+        var x0 = star.nx * R;
+        var y0 = star.ny * R;
+        var z0 = star.nz * R;
+
+        // 绕 Y 轴
+        var x1 = x0 * cosY - z0 * sinY;
+        var z1 = x0 * sinY + z0 * cosY;
+
+        // 绕 X 轴
+        var y1 = y0 * cosX - z1 * sinX;
+        var z2 = y0 * sinX + z1 * cosX;
+
+        // 透视投影
+        var scale = perspective / (perspective + z2);
+        var sx = _sphereCX + x1 * scale;
+        var sy = _sphereCY + y1 * scale;
+
+        // 深度：0（远） ~ 1（近）
+        var depth = (z2 + R) / (2 * R);
+
+        return {
+            star: star,
+            sx: sx,
+            sy: sy,
+            sz: z2,
+            depth: depth,
+            scale: scale
+        };
+    });
+
+    // 远 → 近 排序
+    _starProjected.sort(function(a, b) { return b.sz - a.sz; });
+
+    // ===== 逐颗绘制 =====
+    var hoveredStar = null;
+    if (_sphereHoverDev) {
+        for (var i = 0; i < _starProjected.length; i++) {
+            if (_starProjected[i].star.dev === _sphereHoverDev) {
+                hoveredStar = _starProjected[i];
+                break;
+            }
+        }
+    }
+
+    _starProjected.forEach(function(p) {
+        var star = p.star;
+        var isHover = (p.star === hoveredStar);
+
+        // ===== 呼吸 =====
+        // breath: -1 ~ 1
+        var breath = Math.sin(time * star.breathSpeed + star.breathPhase);
+
+        // 呼吸让尺寸变化 ±18%
+        var sizeMul = 1 + breath * 0.18;
+        // 呼吸让亮度变化 ±25%
+        var brightnessMul = 1 + breath * 0.25;
+
+        // 深度影响亮度：近的亮，远的暗
+        var depthBright = 0.35 + p.depth * 0.65;
+
+        // 基础亮度
+        var alpha = depthBright * brightnessMul;
+        if (alpha > 1) alpha = 1;
+        if (alpha < 0.15) alpha = 0.15;
+
+        // 快速微弱闪烁（第二层）
+        var twinkle = 0.9 + 0.1 * Math.sin(time * star.twinkleSpeed + star.twinklePhase);
+        alpha *= twinkle;
+
+        if (isHover) alpha = 1;
+
+        // 尺寸：基础尺寸 × 呼吸 × 透视缩放
+        var size = star.baseSize * sizeMul * p.scale * (isHover ? 1.35 : 1);
+
+        drawStar(ctx, p.sx, p.sy, size, star.colors, alpha, isHover);
+
+        // 缓存绘制坐标供点击检测
+        star._sx = p.sx;
+        star._sy = p.sy;
+        star._sr = Math.max(size * 3, 12);
+        star._depth = p.depth;
+    });
+
+    _sphereAnimFrame = requestAnimationFrame(sphereRenderLoop);
+}
+
+// ============================================================
+// 尺寸
+// ============================================================
+function sphereResize() {
+    var container = document.getElementById('sphereContainer');
+    var canvas = document.getElementById('sphereCanvas');
+    if (!container || !canvas) return;
+
+    var W = container.clientWidth;
+    var H = container.clientHeight;
+    _sphereDPR = window.devicePixelRatio || 1;
+
+    canvas.width = W * _sphereDPR;
+    canvas.height = H * _sphereDPR;
+    _sphereCtx = canvas.getContext('2d');
+    _sphereCanvas = canvas;
+
+    _sphereW = W;
+    _sphereH = H;
+    _sphereCX = W / 2;
+    _sphereCY = H / 2;
+    _sphereRadius = Math.min(W, H) * 0.4;
+
+    // 重建背景散星坐标
+    if (_sphereBgStars) {
+        _sphereBgStars.forEach(function(bs) {
+            bs.x = Math.random() * W;
+            bs.y = Math.random() * H;
+        });
+    }
+}
+
+// ============================================================
+// 交互
+// ============================================================
+function sphereMouseDown(e) {
+    _sphereDrag.active = true;
+    var p = e.touches ? e.touches[0] : e;
+    _sphereDrag.lastX = p.clientX;
+    _sphereDrag.lastY = p.clientY;
+}
+
+function sphereMouseMove(e) {
+    var canvas = _sphereCanvas;
+    if (!canvas) return;
+    var p = e.touches ? e.touches[0] : e;
+    var rect = canvas.getBoundingClientRect();
+    var mx = p.clientX - rect.left;
+    var my = p.clientY - rect.top;
+
+    // 拖拽旋转
+    if (_sphereDrag.active) {
+        var dx = p.clientX - _sphereDrag.lastX;
+        var dy = p.clientY - _sphereDrag.lastY;
+        _sphereRotation.y += dx * 0.006;
+        _sphereRotation.x += dy * 0.006;
+        _sphereRotation.x = Math.max(-Math.PI / 2 + 0.15, Math.min(Math.PI / 2 - 0.15, _sphereRotation.x));
+        _sphereDrag.lastX = p.clientX;
+        _sphereDrag.lastY = p.clientY;
+        canvas.style.cursor = 'grabbing';
+        return;
+    }
+
+    // 悬停检测（从近到远）
+    var found = null;
+    for (var i = _starProjected.length - 1; i >= 0; i--) {
+        var pp = _starProjected[i];
+        if (pp.star._sx === undefined) continue;
+        var ddx = mx - pp.star._sx;
+        var ddy = my - pp.star._sy;
+        var hitR = Math.max(12, pp.star._sr);
+        if (ddx * ddx + ddy * ddy < hitR * hitR) {
+            found = pp.star.dev;
+            break;
+        }
+    }
+
+    _sphereHoverDev = found;
+    canvas.style.cursor = found ? 'pointer' : 'grab';
+
+    var tip = document.getElementById('sphereTooltip');
+    if (tip) {
+        if (found) {
+            // 找对应的投影坐标
+            for (var j = 0; j < _starProjected.length; j++) {
+                if (_starProjected[j].star.dev === found) {
+                    tip.innerHTML = escHtmlDev(found.author) +
+                        ' · ' + found.count + ' 款' +
+                        '<span class="badge">' + getDevTypeLabel(found) + '</span>';
+                    tip.style.left = _starProjected[j].sx + 'px';
+                    tip.style.top = (_starProjected[j].sy - 20) + 'px';
+                    tip.classList.add('show');
+                    break;
+                }
+            }
+        } else {
+            tip.classList.remove('show');
+        }
+    }
+}
+
+function sphereMouseUp() {
+    _sphereDrag.active = false;
+    if (_sphereCanvas) _sphereCanvas.style.cursor = 'grab';
+}
+
+function sphereClick() {
+    if (_sphereDrag.active) return;
+    if (_sphereHoverDev) {
+        openDevDetail(_sphereHoverDev.author);
+    }
+}
+
+function sphereWheel(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.93 : 1.07;
+    _sphereScale = Math.max(0.55, Math.min(2.0, _sphereScale * delta));
+}
+
+// ============================================================
+// 启动 / 停止
+// ============================================================
+function startSphere(devs) {
+    sphereResize();
+    initStars(devs, _sphereW, _sphereH);
+
+    var canvas = document.getElementById('sphereCanvas');
+    if (!canvas) return;
+
+    if (!canvas._eventsBound) {
+        canvas._eventsBound = true;
+        canvas.addEventListener('mousedown', sphereMouseDown);
+        window.addEventListener('mousemove', sphereMouseMove);
+        window.addEventListener('mouseup', sphereMouseUp);
+        canvas.addEventListener('click', sphereClick);
+        canvas.addEventListener('wheel', sphereWheel, { passive: false });
+
+        canvas.addEventListener('touchstart', function(e) { sphereMouseDown(e); }, { passive: true });
+        canvas.addEventListener('touchmove', function(e) { sphereMouseMove(e); }, { passive: true });
+        canvas.addEventListener('touchend', sphereMouseUp);
+    }
+
+    _sphereLastTime = 0;
+
+    if (!_sphereRunning) {
+        _sphereRunning = true;
+        _sphereAnimFrame = requestAnimationFrame(sphereRenderLoop);
+    }
+}
+
+function stopSphere() {
+    _sphereRunning = false;
+    if (_sphereAnimFrame) {
+        cancelAnimationFrame(_sphereAnimFrame);
+        clearTimeout(_sphereAnimFrame);
+        _sphereAnimFrame = null;
+    }
+    _sphereLastTime = 0;
+}
+
+// ============================================================
+// 渲染入口
+// ============================================================
+function renderDevelopers() {
+    if (!allAppsData || allAppsData.length === 0) {
+        var grid = document.getElementById('devGrid');
+        if (grid) grid.innerHTML = '<div class="dev-empty">暂无数据，请稍候...</div>';
+        return;
+    }
+
+    var devs = buildDeveloperData();
+    if (devs.length === 0) {
+        var grid2 = document.getElementById('devGrid');
+        if (grid2) grid2.innerHTML = '<div class="dev-empty">暂无开发者数据</div>';
+        return;
+    }
+
+    var devCountEl = document.getElementById('devCount');
+    var devAppCountEl = document.getElementById('devAppCount');
+    if (devCountEl) devCountEl.textContent = devs.length;
+    if (devAppCountEl) devAppCountEl.textContent = allAppsData.length;
+
+    var searchEl = document.getElementById('devSearchInput');
+    var keyword = searchEl ? searchEl.value.trim().toLowerCase() : '';
+    var filteredForGrid = devs;
+    if (keyword) {
+        filteredForGrid = devs.filter(function(d) {
+            return d.author.toLowerCase().indexOf(keyword) !== -1;
+        });
+    }
+
+    if (window.innerWidth >= 900) {
+        startSphere(devs);
+    } else {
+        stopSphere();
+    }
+
+    renderGridFallback(filteredForGrid);
+}
+
+// ============================================================
+// 窄屏列表
+// ============================================================
+function renderGridFallback(devs) {
+    var grid = document.getElementById('devGrid');
+    if (!grid) return;
+    if (devs.length === 0) {
+        grid.innerHTML = '<div class="dev-empty">未找到匹配的开发者</div>';
+        return;
+    }
+    var html = '';
+    devs.forEach(function(dev) {
+        var type = getDevType(dev);
+        var badgeText = type === 'official' ? '官方' : type === 'thirdparty' ? '认证' : '个人';
+        var c = getMiniAvatarColor(dev.author);
+        var char = escHtmlDev(getAvatarChar(dev.author));
+        html += '<div class="dev-card" data-author="' + escHtmlDev(dev.author) + '">' +
+            '<div class="mini-avatar" style="background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ');">' + char + '</div>' +
+            '<div class="info">' +
+                '<div class="name">' + escHtmlDev(dev.author) +
+                    '<span class="badge ' + type + '">' + badgeText + '</span>' +
+                '</div>' +
+                '<div class="count">' + dev.count + ' 款应用 · ' + dev.downloads + ' 下载</div>' +
+            '</div>' +
+            '</div>';
+    });
+    grid.innerHTML = html;
+    grid.querySelectorAll('.dev-card').forEach(function(el) {
+        el.addEventListener('click', function() {
+            openDevDetail(el.dataset.author);
+        });
+    });
+}
+
+// ============================================================
+// 开发者详情
+// ============================================================
+function openDevDetail(author) {
+    var devs = buildDeveloperData();
+    var dev = null;
+    for (var i = 0; i < devs.length; i++) {
+        if (devs[i].author === author) { dev = devs[i]; break; }
+    }
+    if (!dev) return;
+
+    var type = getDevType(dev);
+    var badgeText = type === 'official' ? '官方开发者' :
+                   type === 'thirdparty' ? '认证开发者' : '个人开发者';
+    var c = getMiniAvatarColor(dev.author);
+    var char = escHtmlDev(getAvatarChar(dev.author));
+
+    var titleEl = document.getElementById('devDetailTitle');
+    if (titleEl) titleEl.textContent = '✨ ' + dev.author;
+
+    var html = '';
+    html += '<div style="display:flex;gap:16px;padding:4px 0 14px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-wrap:wrap;align-items:center;">';
+    html += '<div style="background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ');width:56px;height:56px;font-size:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;">' + char + '</div>';
+    html += '<div>';
+    html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">' + badgeText + '</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+    html += '<div><div style="font-size:10px;color:var(--text-muted);">应用数</div><div style="font-size:17px;font-weight:600;color:var(--text-primary);">' + dev.count + '</div></div>';
+    html += '<div><div style="font-size:10px;color:var(--text-muted);">总下载</div><div style="font-size:17px;font-weight:600;color:var(--text-primary);">' + dev.downloads + '</div></div>';
+    html += '<div><div style="font-size:10px;color:var(--text-muted);">最近更新</div><div style="font-size:17px;font-weight:600;color:var(--text-primary);">' + (dev.latest !== '1970-01-01' ? dev.latest : '--') + '</div></div>';
+    html += '</div></div></div>';
+
+    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    dev.apps.forEach(function(app) {
+        var iconHtml = app.icon
+            ? '<img src="' + wrapImageUrl(app.icon) + '" alt="" style="width:38px;height:38px;border-radius:8px;object-fit:cover;" onerror="this.style.display=\'none\';">'
+            : '<div style="width:38px;height:38px;border-radius:8px;background:#e8eaed;display:flex;align-items:center;justify-content:center;font-size:16px;"></div>';
+        html += '<div onclick="closeDevDetail();openDetail(\'' + app.id + '\')" ' +
+            'style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" ' +
+            'onmouseover="this.style.background=\'rgba(0,0,0,0.04)\'" ' +
+            'onmouseout="this.style.background=\'transparent\'">' +
+            iconHtml +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:13px;font-weight:500;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escHtmlDev(app.name) + '</div>' +
+                '<div style="font-size:11px;color:var(--text-muted);">v' + escHtmlDev(app.version) + ' · 📥 ' + (app.downloads || 0) + (app.installed ? ' · <span style="color:#4a8a4a;">已安装</span>' : '') + '</div>' +
+            '</div>' +
+            '</div>';
+    });
+    html += '</div>';
+
+    var bodyEl = document.getElementById('devDetailBody');
+    if (bodyEl) bodyEl.innerHTML = html;
+
+    var modal = document.getElementById('devDetailModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeDevDetail() {
+    var modal = document.getElementById('devDetailModal');
+    if (modal) modal.classList.remove('active');
+}
+
+// ============================================================
+// 窗口大小变化
+// ============================================================
+var _sphereResizeTimer = null;
+window.addEventListener('resize', function() {
+    if (_sphereResizeTimer) clearTimeout(_sphereResizeTimer);
+    _sphereResizeTimer = setTimeout(function() {
+        var tab = document.getElementById('tabDevelopers');
+        if (tab && tab.classList.contains('active')) {
+            renderDevelopers();
+        }
+    }, 300);
+});
+</script>
+{{end}}

@@ -1,0 +1,228 @@
+#!/bin/bash
+# ================================================================
+# FN软仓 - 应用启动脚本
+# v2.7.0 统一网关模式（Go 二进制版）
+# ================================================================
+
+LOG_FILE="${TRIM_PKGVAR}/app.log"
+PID_FILE="${TRIM_PKGVAR}/app.pid"
+SOCK_FILE="${TRIM_APPDEST}/app.sock"
+
+# 启动模式：gateway（默认，统一网关）/ port（降级，监听 TCP）
+START_MODE="${FN_SOFT_START_MODE:-gateway}"
+
+# Go 二进制文件名（放在 server/ 目录下）
+BIN_NAME="fn-appstores-client"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+}
+
+status() {
+    if [ -f "$PID_FILE" ]; then
+        pid=$(head -n 1 "$PID_FILE" | tr -d '[:space:]')
+        if kill -0 "$pid" 2>/dev/null; then
+            return 0
+        else
+            rm -f "$PID_FILE"
+        fi
+    fi
+    return 1
+}
+
+# 网关模式下，进程 + socket 同时存在才算健康
+status_healthy() {
+    if ! status; then
+        return 1
+    fi
+    if [ "$START_MODE" = "gateway" ]; then
+        [ -S "$SOCK_FILE" ] || return 1
+    fi
+    return 0
+}
+
+start_process() {
+    if status; then
+        log_msg "⚠️ 应用已在运行中"
+        return 0
+    fi
+
+    log_msg "========== 启动 FN软仓 (Go 版) =========="
+
+    PORT="${TRIM_SERVICE_PORT:-5660}"
+    log_msg "◎启动模式: ${START_MODE}"
+    if [ "$START_MODE" = "port" ]; then
+        log_msg "◎端口: ${PORT}"
+    else
+        log_msg "◎Socket: ${SOCK_FILE}"
+    fi
+    log_msg "◎应用目录: ${TRIM_APPDEST}"
+    log_msg "◎数据目录: ${TRIM_PKGVAR}"
+
+    if [ -n "${TRIM_PKGVAR}" ]; then
+        mkdir -p "${TRIM_PKGVAR}" || {
+            log_msg "创建数据目录失败: ${TRIM_PKGVAR}"
+            return 1
+        }
+        chmod 755 "${TRIM_PKGVAR}"
+        log_msg "数据目录就绪: ${TRIM_PKGVAR}"
+    fi
+
+    if [ -n "${TRIM_PKGTMP}" ]; then
+        mkdir -p "${TRIM_PKGTMP}" || {
+            log_msg "创建临时目录失败: ${TRIM_PKGTMP}"
+        }
+    fi
+
+    cd "${TRIM_APPDEST}/server" || {
+        log_msg "□无法进入应用目录: ${TRIM_APPDEST}/server"
+        return 1
+    }
+
+    # ========== 网关模式：清理残留 socket ==========
+    if [ "$START_MODE" = "gateway" ]; then
+        if [ -e "$SOCK_FILE" ]; then
+            rm -f "$SOCK_FILE"
+            log_msg "已清理残留 socket: ${SOCK_FILE}"
+        fi
+    fi
+
+    export TRIM_SERVICE_PORT="${PORT}"
+    export START_MODE="${START_MODE}"
+
+    # ========== 只支持 Go 二进制 ==========
+    if [ ! -f "./${BIN_NAME}" ]; then
+        log_msg "${BIN_NAME} 不存在"
+        echo "#FN软仓启动失败: ${BIN_NAME} 不存在" > "${TRIM_PKGTMP:-/tmp}/error.log"
+        return 1
+    fi
+
+    # 确保二进制有执行权限（打包时可能丢失）
+    if [ ! -x "./${BIN_NAME}" ]; then
+        chmod +x "./${BIN_NAME}" 2>/dev/null
+        log_msg "已为二进制添加执行权限"
+    fi
+
+    log_msg "启动: ./${BIN_NAME} (模式=${START_MODE})"
+    "./${BIN_NAME}" >> "$LOG_FILE" 2>&1 &
+
+    local pid=$!
+    echo "$pid" > "$PID_FILE"
+    log_msg "○进程 PID: $pid"
+
+    # 网关模式：等待 socket 出现（最多 10 秒）
+    # Go 版启动快，通常 1 秒内就绪
+    if [ "$START_MODE" = "gateway" ]; then
+        local count=0
+        while [ ! -S "$SOCK_FILE" ] && [ $count -lt 10 ]; do
+            if ! kill -0 "$pid" 2>/dev/null; then
+                log_msg "进程在等待 socket 期间退出"
+                echo "FN软仓启动失败: 进程已退出" > "${TRIM_PKGTMP:-/tmp}/error.log"
+                rm -f "$PID_FILE"
+                return 1
+            fi
+            sleep 1
+            count=$((count + 1))
+        done
+
+        if [ ! -S "$SOCK_FILE" ]; then
+            log_msg "启动失败：未检测到 socket ${SOCK_FILE}"
+            echo "#FN软仓启动失败: 未生成 socket ${SOCK_FILE}" > "${TRIM_PKGTMP:-/tmp}/error.log"
+            kill -TERM "$pid" 2>/dev/null
+            sleep 1
+            kill -KILL "$pid" 2>/dev/null
+            rm -f "$PID_FILE"
+            return 1
+        fi
+
+        # 网关进程需可连接该 socket
+        chmod 660 "$SOCK_FILE" 2>/dev/null || true
+        log_msg "Socket 就绪: ${SOCK_FILE}"
+    else
+        # 端口模式：仅检查进程存活
+        sleep 1
+        if ! kill -0 "$pid" 2>/dev/null; then
+            log_msg "进程启动后立即退出，请检查日志"
+            echo "FN软仓启动失败: 进程已退出" > "${TRIM_PKGTMP:-/tmp}/error.log"
+            rm -f "$PID_FILE"
+            return 1
+        fi
+    fi
+
+    log_msg "○FN软仓启动成功 (模式=${START_MODE})"
+    return 0
+}
+
+stop_process() {
+    log_msg "========== 停止 FN软仓 =========="
+
+    if [ ! -f "$PID_FILE" ]; then
+        log_msg "☆PID 文件不存在，应用可能未运行"
+        if [ -e "$SOCK_FILE" ]; then
+            rm -f "$SOCK_FILE"
+            log_msg "已清理残留 socket: ${SOCK_FILE}"
+        fi
+        return 0
+    fi
+
+    pid=$(head -n 1 "$PID_FILE" | tr -d '[:space:]')
+
+    if ! kill -0 "$pid" 2>/dev/null; then
+        log_msg "☆进程 $pid 已不存在"
+        rm -f "$PID_FILE"
+        if [ -e "$SOCK_FILE" ]; then
+            rm -f "$SOCK_FILE"
+            log_msg "已清理残留 socket: ${SOCK_FILE}"
+        fi
+        return 0
+    fi
+
+    log_msg "终止进程 PID: $pid"
+    kill -TERM "$pid" 2>/dev/null
+
+    local count=0
+    while kill -0 "$pid" 2>/dev/null && [ $count -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+
+    if kill -0 "$pid" 2>/dev/null; then
+        log_msg "进程未响应 SIGTERM，使用 SIGKILL"
+        kill -KILL "$pid" 2>/dev/null
+        sleep 1
+    fi
+
+    rm -f "$PID_FILE"
+
+    if [ -e "$SOCK_FILE" ]; then
+        rm -f "$SOCK_FILE"
+        log_msg "已清理 socket: ${SOCK_FILE}"
+    fi
+
+    log_msg "FN软仓已停止"
+    return 0
+}
+
+case $1 in
+    start)
+        start_process
+        exit $?
+        ;;
+    stop)
+        stop_process
+        exit $?
+        ;;
+    status)
+        if status_healthy; then
+            echo "◎FN软仓运行中 (PID: $(head -n 1 "$PID_FILE" 2>/dev/null || echo 'unknown'), 模式=${START_MODE})"
+            exit 0
+        else
+            echo "FN软仓未运行"
+            exit 3
+        fi
+        ;;
+    *)
+        echo "用法: $0 {start|stop|status}"
+        exit 1
+        ;;
+esac
