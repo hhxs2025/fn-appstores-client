@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
     <title>FN软仓</title>
     <style>
-        /* ===== 全局重置 & 基础变量 ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
@@ -40,7 +39,6 @@
             transition: background 0.25s, color 0.25s;
         }
 
-        /* ===== 顶部栏 ===== */
         .header {
             background: var(--card-bg);
             padding: 6px 16px 4px;
@@ -73,23 +71,7 @@
             color: var(--text-muted);
         }
         .header-right .sep { color: #d5d5dd; }
-        .header-right a { color: var(--text-secondary); text-decoration: none; }
-        .header-right a:hover { color: var(--text-primary); }
 
-        .theme-btn-header {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--text-muted);
-            font-size: 9px;
-            padding: 0 4px;
-            display: inline-flex;
-            align-items: center;
-            gap: 2px;
-        }
-        .theme-btn-header:hover { color: var(--text-secondary); }
-
-        /* ===== 主体布局 ===== */
         .app-layout {
             display: flex;
             flex: 1;
@@ -112,6 +94,31 @@
             overflow-y: auto;
             z-index: 50;
         }
+
+        /* ★ 侧边栏顶部搜索框 */
+        .sidebar-search {
+            padding: 0 10px 10px;
+            flex-shrink: 0;
+        }
+        .sidebar-search input {
+            width: 100%;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.15s;
+        }
+        .sidebar-search input:focus {
+            border-color: var(--blue);
+        }
+        .sidebar-search input::placeholder {
+            color: var(--text-muted);
+        }
+
         .sidebar-nav {
             display: flex;
             flex-direction: column;
@@ -120,24 +127,51 @@
             flex: 1;
         }
         .sidebar-nav .nav-item {
-            display: flex;
+            display: flex !important;
+            flex-direction: row !important;
             align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
             padding: 0 12px;
             height: var(--nav-item-height);
             border: none;
             background: transparent;
             border-radius: 6px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
             width: 100%;
             text-align: left;
+            box-sizing: border-box;
         }
         .sidebar-nav .nav-item:hover { background: rgba(0,0,0,0.05); color: var(--text-primary); }
         .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.1); color: var(--blue); }
-        .sidebar-nav .nav-item .label { flex: 1; }
+        .sidebar-nav .nav-item .label {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-nav .nav-icon {
+            display: block;
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            min-height: 18px;
+            max-width: 18px;
+            max-height: 18px;
+            flex: 0 0 18px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .sidebar-nav .nav-item:hover .nav-icon,
+        .sidebar-nav .nav-item.active .nav-icon {
+            opacity: 1;
+        }
 
         .sidebar-footer {
             padding: 8px 12px 0;
@@ -147,7 +181,6 @@
             color: var(--text-muted);
         }
 
-        /* ===== 内容区 ===== */
         .main-content {
             flex: 1;
             display: flex;
@@ -168,7 +201,7 @@
         }
         .tab-content.active { display: flex; }
 
-        /* ===== 深色模式 ===== */
+        /* 深色模式 */
         body.dark-mode {
             --bg: #1a1a2e;
             --content-bg: #16213e;
@@ -185,13 +218,12 @@
         body.dark-mode .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: #60a5fa; }
         body.dark-mode .sidebar-footer { border-top-color: var(--border); }
 
-        /* ===== 滚动条 ===== */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #d5d5dd; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #b8bac2; }
+        body.dark-mode ::-webkit-scrollbar-thumb { background: #2a3a5a; }
 
-        /* ===== Toast ===== */
         .toast {
             position: fixed;
             bottom: 24px;
@@ -214,18 +246,24 @@
         .toast.error { background: rgba(80,40,40,0.92); }
         .toast.warning { background: rgba(80,70,40,0.92); }
 
-        /* ===== 响应式 ===== */
         @media (max-width: 1100px) {
             .sidebar { width: 48px; }
             .sidebar-footer { display: none; }
+            .sidebar-search { display: none; }
             .sidebar-nav { padding: 0 4px; }
-            .sidebar-nav .nav-item { font-size: 0; padding: 0 8px; justify-content: center; }
+            .sidebar-nav .nav-item {
+                font-size: 0;
+                padding: 0 8px;
+                justify-content: center;
+                gap: 0;
+            }
             .sidebar-nav .nav-item .label { display: none; }
-            .sidebar-nav .nav-item[data-tab="home"]::after { content: "首"; font-size: 16px; font-weight: 600; }
-            .sidebar-nav .nav-item[data-tab="apps"]::after { content: "应"; font-size: 16px; font-weight: 600; }
-            .sidebar-nav .nav-item[data-tab="developers"]::after { content: "开"; font-size: 16px; font-weight: 600; }
-            .sidebar-nav .nav-item[data-tab="sources"]::after { content: "源"; font-size: 16px; font-weight: 600; }
-            .sidebar-nav .nav-item[data-tab="settings"]::after { content: "设"; font-size: 16px; font-weight: 600; }
+            .sidebar-nav .nav-icon {
+                width: 20px; height: 20px;
+                min-width: 20px; min-height: 20px;
+                max-width: 20px; max-height: 20px;
+                flex: 0 0 20px;
+            }
             .main-content { padding: 0 12px; }
         }
 
@@ -235,16 +273,21 @@
             .header-right .sep { display: none; }
             .sidebar {
                 position: fixed; top: 0; left: 0;
-                height: 100vh; width: 100px;
+                height: 100vh; width: 180px;
                 transform: translateX(-100%);
                 box-shadow: 2px 0 16px rgba(0,0,0,0.1);
                 z-index: 200;
                 padding-top: 12px;
             }
             .sidebar.open { transform: translateX(0); }
-            .sidebar .sidebar-nav .nav-item { font-size: 14px; justify-content: flex-start; padding: 0 12px; }
+            .sidebar .sidebar-search { display: block; }
+            .sidebar .sidebar-nav .nav-item {
+                font-size: 14px;
+                justify-content: flex-start;
+                padding: 0 12px;
+                gap: 10px;
+            }
             .sidebar .sidebar-nav .nav-item .label { display: inline; flex: 1; }
-            .sidebar .sidebar-nav .nav-item::after { display: none; }
             .sidebar .sidebar-footer { display: block; }
             .sidebar-overlay {
                 display: none;
@@ -265,7 +308,6 @@
             .header-left .app-name { font-size: 13px; }
             .header-left .app-version { font-size: 9px; }
             .header-right { font-size: 7px; }
-            .header-right a { display: none; }
             .main-content { padding: 0 4px; }
         }
     </style>
@@ -289,12 +331,33 @@
 
     <div class="app-layout">
         <aside class="sidebar" id="sidebar">
+
+            <!-- ★ 全局搜索框 -->
+            <div class="sidebar-search">
+                <input type="text" id="globalSearchInput" placeholder="搜索应用..." oninput="onGlobalSearchInput(this.value)">
+            </div>
+
             <nav class="sidebar-nav">
-                <button class="nav-item active" data-tab="home" onclick="switchTab('home')"><span class="label">首&nbsp;&nbsp;&nbsp;页</span></button>
-                <button class="nav-item" data-tab="apps" onclick="switchTab('apps')"><span class="label">应&nbsp;&nbsp;&nbsp;用</span></button>
-                <button class="nav-item" data-tab="developers" onclick="switchTab('developers')"><span class="label">开发者</span></button>
-                <button class="nav-item" data-tab="sources" onclick="switchTab('sources')"><span class="label">源管理</span></button>
-                <button class="nav-item" data-tab="settings" onclick="switchTab('settings')"><span class="label">设&nbsp;&nbsp;&nbsp;置</span></button>
+                <button class="nav-item active" data-tab="home" onclick="switchTab('home')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>
+                    <span class="label">首&nbsp;&nbsp;&nbsp;页</span>
+                </button>
+                <button class="nav-item" data-tab="apps" onclick="switchTab('apps')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                    <span class="label">应&nbsp;&nbsp;&nbsp;用</span>
+                </button>
+                <button class="nav-item" data-tab="developers" onclick="switchTab('developers')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+                    <span class="label">开发者</span>
+                </button>
+                <button class="nav-item" data-tab="sources" onclick="switchTab('sources')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 7.5l3 3M17 7.5l-3 3M7 16.5l3-3M17 16.5l-3-3"/></svg>
+                    <span class="label">源管理</span>
+                </button>
+                <button class="nav-item" data-tab="settings" onclick="switchTab('settings')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span class="label">设&nbsp;&nbsp;&nbsp;置</span>
+                </button>
             </nav>
             <div class="sidebar-footer">FN软仓 v{{.Version}}-MIT</div>
         </aside>
@@ -307,9 +370,6 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ================================================================
-        // 侧边栏控制
-        // ================================================================
         function toggleSidebar() {
             var sidebar = document.getElementById('sidebar');
             var overlay = document.getElementById('sidebarOverlay');
@@ -318,29 +378,20 @@
         }
 
         function closeSidebar() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('active');
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('active');
         }
 
-        // ================================================================
-        // 主题切换
-        // ================================================================
         function getTheme() { return localStorage.getItem('fnsoft_theme') || 'light'; }
 
         function setTheme(theme) {
             localStorage.setItem('fnsoft_theme', theme);
             if (theme === 'dark') {
                 document.body.classList.add('dark-mode');
-                var icon = document.getElementById('themeIconHeader');
-                var label = document.getElementById('themeLabelHeader');
-                if (icon) icon.textContent = '☀️';
-                if (label) label.textContent = '浅色';
             } else {
                 document.body.classList.remove('dark-mode');
-                var icon = document.getElementById('themeIconHeader');
-                var label = document.getElementById('themeLabelHeader');
-                if (icon) icon.textContent = '🌙';
-                if (label) label.textContent = '深色';
             }
         }
 
@@ -348,9 +399,26 @@
 
         function initTheme() { setTheme(getTheme()); }
 
-        // ================================================================
-        // 标签页切换
-        // ================================================================
+        /* ★ 全局搜索（侧边栏顶部） */
+        var _globalSearchTimer = null;
+        function onGlobalSearchInput(val) {
+            if (_globalSearchTimer) clearTimeout(_globalSearchTimer);
+            _globalSearchTimer = setTimeout(function () {
+                _globalSearchTimer = null;
+                // 切到 apps tab
+                var appsTab = document.getElementById('tabApps');
+                if (!appsTab || !appsTab.classList.contains('active')) {
+                    switchTab('apps');
+                }
+                // 同步到应用页搜索框
+                var localInput = document.getElementById('searchInput');
+                if (localInput) {
+                    localInput.value = val;
+                    if (typeof searchApps === 'function') searchApps();
+                }
+            }, 250);
+        }
+
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(function(el) {
                 el.classList.remove('active');
@@ -367,6 +435,13 @@
 
             closeSidebar();
 
+            // 从别的 tab 切到 apps 时，先回到列表视图
+            if (tab === 'apps' && typeof backToAppsList === 'function') {
+                // 如果带着 pendingDetail，就别回列表（让待打开的详情直接显示）
+                if (!window._pendingDetailAppId) {
+                    backToAppsList();
+                }
+            }
             if (tab === 'apps' && typeof restoreAppsView === 'function') {
                 restoreAppsView();
             }
@@ -379,11 +454,17 @@
             if (tab === 'home' && typeof loadHome === 'function') {
                 loadHome();
             }
+
+            // ★ 处理从首页跳转过来的"待打开详情"
+            if (tab === 'apps' && window._pendingDetailAppId && typeof openDetail === 'function') {
+                var id = window._pendingDetailAppId;
+                window._pendingDetailAppId = null;
+                setTimeout(function () {
+                    openDetail(id);
+                }, 100);
+            }
         }
 
-        // ================================================================
-        // 初始化
-        // ================================================================
         document.addEventListener('DOMContentLoaded', function() {
             initTheme();
 
@@ -399,7 +480,7 @@
                 if (window.innerWidth > 768) return;
                 var sidebar = document.getElementById('sidebar');
                 var ham = document.getElementById('hamburgerBtn');
-                if (!sidebar.contains(e.target) && e.target !== ham && !ham.contains(e.target)) {
+                if (sidebar && !sidebar.contains(e.target) && e.target !== ham && ham && !ham.contains(e.target)) {
                     closeSidebar();
                 }
             });

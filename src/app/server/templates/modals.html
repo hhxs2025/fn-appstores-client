@@ -31,243 +31,7 @@
     .modal-close:hover { color: var(--text-primary); }
     .modal-title { font-size: 16px; font-weight: 500; color: var(--text-primary); margin-bottom: 14px; }
 
-    .modal-overlay-detail {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(60,60,60,0.3);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-    }
-    .modal-overlay-detail.active { display: flex; }
-    .modal-content-detail {
-        background: var(--card-bg);
-        border-radius: 10px;
-        width: 640px;
-        max-width: 94vw;
-        aspect-ratio: 4 / 3;
-        min-height: 320px;
-        max-height: 85vh;
-        overflow-y: auto;
-        padding: 20px 28px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-        animation: modalIn 0.2s;
-    }
-    .modal-close-detail { float: right; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); line-height: 1; padding: 0 4px; }
-    .modal-close-detail:hover { color: var(--text-primary); }
-    .modal-icon-detail {
-        width: 48px; height: 48px;
-        border-radius: 8px;
-        background: #e8eaed;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        margin-bottom: 6px;
-    }
-    .modal-icon-detail img { width: 100%; height: 100%; object-fit: cover; }
-    .modal-title-detail { font-size: 18px; font-weight: 500; color: var(--text-primary); }
-    .modal-version-detail { font-size: 12px; color: var(--text-muted); margin-left: 6px; }
-    .modal-author-detail { font-size: 12px; color: var(--text-secondary); margin: 2px 0 4px; }
-    .modal-desc-detail {
-        font-size: 13px;
-        color: var(--text-secondary);
-        line-height: 1.6;
-        padding: 10px 14px;
-        background: #f8fafc;
-        border-radius: 6px;
-        margin: 6px 0 10px;
-        border-left: 2px solid #e5e7eb;
-    }
-    .modal-desc-detail p { margin: 0 0 6px; }
-
-    .detail-tabs {
-        display: flex;
-        gap: 0;
-        margin: 10px 0 8px;
-        border-bottom: 1px solid var(--border);
-    }
-    .detail-tab {
-        padding: 6px 16px;
-        font-size: 12px;
-        font-weight: 400;
-        color: var(--text-secondary);
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid transparent;
-        cursor: pointer;
-        transition: all 0.2s;
-        border-radius: 0;
-    }
-    .detail-tab:hover { color: var(--text-primary); background: #f5f5f5; }
-    .detail-tab.active { color: var(--text-primary); border-bottom-color: #2563ea; font-weight: 500; }
-
-    .detail-panel { display: none; min-height: 60px; max-height: 300px; overflow-y: auto; padding: 4px 0; }
-    .detail-panel.active { display: block; }
-    .detail-panel .modal-desc-detail { margin: 0; }
-
-    .modal-screenshots-detail { margin: 10px 0; }
-    .modal-screenshots-detail .screenshot-title { font-size: 12px; font-weight: 400; color: var(--text-secondary); margin-bottom: 6px; }
-
-    .carousel-container {
-        position: relative;
-        overflow: hidden;
-        border-radius: 6px;
-        background: #e8eaed;
-        min-height: 80px;
-        display: none;
-    }
-    .carousel-track { display: flex; transition: transform 0.35s ease; }
-    .carousel-track img {
-        width: 100%;
-        flex-shrink: 0;
-        max-height: 220px;
-        object-fit: contain;
-        background: #f8f5f0;
-        cursor: pointer;
-    }
-
-    .carousel-btn {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(60,60,60,0.3);
-        color: white;
-        border: none;
-        width: 26px; height: 26px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 14px;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.15s;
-        z-index: 5;
-    }
-    .carousel-btn:hover { background: rgba(60,60,60,0.5); }
-    .carousel-btn.prev { left: 6px; }
-    .carousel-btn.next { right: 6px; }
-    .carousel-btn.show { display: flex; }
-
-    .carousel-dots { display: flex; justify-content: center; gap: 4px; padding: 5px 0 2px; }
-    .carousel-dots .dot {
-        width: 6px; height: 6px;
-        border-radius: 50%;
-        background: #d0c8c0;
-        border: none;
-        cursor: pointer;
-        transition: all 0.15s;
-        padding: 0;
-    }
-    .carousel-dots .dot.active { background: #8a8a8a; width: 16px; border-radius: 3px; }
-
-    .modal-stats-detail {
-        display: flex;
-        gap: 14px;
-        font-size: 11px;
-        color: var(--text-muted);
-        padding: 6px 0;
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        margin: 4px 0 10px;
-        flex-wrap: wrap;
-    }
-
-    /* ===== 应用评分 ===== */
-    .modal-rating {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 0 4px;
-        font-size: 12px;
-        color: var(--text-secondary);
-        border-top: 1px solid var(--border);
-        margin-top: 4px;
-        flex-wrap: wrap;
-    }
-    .modal-rating .rating-label {
-        font-size: 12px;
-        color: var(--text-muted);
-        flex-shrink: 0;
-    }
-    .rating-stars {
-        display: inline-flex;
-        gap: 2px;
-        cursor: pointer;
-        user-select: none;
-    }
-    .rating-stars .star {
-        font-size: 22px;
-        color: #d0d0d0;
-        transition: color 0.15s, transform 0.15s;
-        line-height: 1;
-    }
-    .rating-stars .star.active,
-    .rating-stars .star.hover {
-        color: #f5b301;
-        transform: scale(1.05);
-    }
-    .rating-info {
-        font-size: 11px;
-        color: var(--text-muted);
-        margin-left: 4px;
-    }
-    .rating-info.loading { color: var(--text-muted); font-style: italic; }
-    .rating-info.error { color: #b55a5a; }
-
-    /* ★ "你已评分"提示行 */
-    .my-rating-hint {
-        font-size: 11px;
-        color: #f5b301;
-        padding: 2px 0 6px 0;
-        display: none;
-    }
-    .my-rating-hint.show { display: block; }
-
-    .modal-actions-detail {
-        display: flex;
-        gap: 6px;
-        margin-top: 4px;
-        flex-wrap: wrap;
-    }
-    .modal-actions-detail .btn {
-        padding: 4px 20px;
-        border: 1px solid #d5d7dd;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 400;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: transparent;
-        color: var(--text-secondary);
-        flex: none;
-        min-width: 80px;
-        text-align: center;
-    }
-    .modal-actions-detail .btn-primary { background: #2563ea; color: #fff; border: none; }
-    .modal-actions-detail .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
-    .modal-actions-detail .btn-danger { background: transparent; color: #b55a5a; border: 1px solid #e8d0d0; }
-    .modal-actions-detail .btn-danger:hover:not(:disabled) { background: #f5e8e8; border-color: #d0b0b0; }
-    .modal-actions-detail .btn-secondary { background: #e6f0e6; color: #4a7a5a; border: none; cursor: default; }
-    .modal-actions-detail .btn-repo {
-        background: transparent;
-        color: var(--text-secondary);
-        border: 1px solid #d5d7dd;
-        padding: 4px 20px;
-        border-radius: 4px;
-        font-size: 12px;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        transition: all 0.2s;
-    }
-    .modal-actions-detail .btn-repo:hover { background: #e8eaed; border-color: #b8bac2; }
-
+    /* 大图预览 */
     .modal-overlay-image {
         display: none;
         position: fixed;
@@ -339,6 +103,7 @@
     .image-nav-btn.next { right: -16px; }
     .image-counter { text-align: center; font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 6px; }
 
+    /* 向导 */
     .wizard-field { margin-bottom: 10px; }
     .wizard-field label { display: block; font-size: 12px; font-weight: 400; margin-bottom: 2px; color: var(--text-secondary); }
     .wizard-field input, .wizard-field select, .wizard-field textarea {
@@ -356,37 +121,10 @@
     .wizard-field .hint { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
     .wizard-field .required { color: #b55a5a; margin-left: 2px; }
 
-    body.dark-mode .modal-content-detail { background: #1e2a45; color: var(--text-primary); }
-    body.dark-mode .modal-desc-detail { background: #16213e; }
-    body.dark-mode .modal-overlay-detail { background: rgba(0,0,0,0.6); }
     body.dark-mode .modal-overlay { background: rgba(0,0,0,0.6); }
     body.dark-mode .modal-content { background: #1e2a45; color: var(--text-primary); }
-    body.dark-mode .modal-close, body.dark-mode .modal-close-detail { color: var(--text-muted); }
-    body.dark-mode .modal-close:hover, body.dark-mode .modal-close-detail:hover { color: var(--text-primary); }
-    body.dark-mode .detail-tab { color: var(--text-secondary); }
-    body.dark-mode .detail-tab:hover { color: var(--text-primary); background: #2a3a5a; }
-    body.dark-mode .detail-tab.active { color: var(--text-primary); border-bottom-color: #4a8ad4; }
-    body.dark-mode .modal-actions-detail .btn-repo { border-color: #2a3a5a; color: var(--text-secondary); }
-    body.dark-mode .modal-actions-detail .btn-repo:hover { background: #2a3a5a; }
-    body.dark-mode .modal-rating { border-top-color: #2a3a5a; }
-    body.dark-mode .rating-stars .star { color: #3a4a6a; }
-    body.dark-mode .rating-stars .star.active,
-    body.dark-mode .rating-stars .star.hover { color: #ffd76a; }
-    body.dark-mode .my-rating-hint { color: #ffd76a; }
-
-    @media (max-width: 768px) {
-        .modal-content-detail { padding: 16px; max-width: 98vw; }
-        .detail-panel { max-height: 200px; }
-    }
-
-    @media (max-width: 550px) {
-        .modal-content { max-width: 100%; margin: 10px; padding: 14px; }
-        .modal-content-detail { max-width: 100%; margin: 10px; padding: 14px; }
-        .carousel-track img { max-height: 140px; }
-        .detail-tab { padding: 4px 10px; font-size: 11px; }
-        .detail-panel { max-height: 150px; }
-        .rating-stars .star { font-size: 18px; }
-    }
+    body.dark-mode .modal-close { color: var(--text-muted); }
+    body.dark-mode .modal-close:hover { color: var(--text-primary); }
 
     /* ============================================ */
     /* 安装进度弹窗 */
@@ -418,15 +156,8 @@
         justify-content: center;
         font-size: 22px;
     }
-    .install-modal-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .install-modal-title {
-        flex: 1;
-        min-width: 0;
-    }
+    .install-modal-icon img { width: 100%; height: 100%; object-fit: cover; }
+    .install-modal-title { flex: 1; min-width: 0; }
     .install-modal-title .name {
         font-size: 15px;
         font-weight: 600;
@@ -451,10 +182,7 @@
         border-radius: 4px;
         transition: all 0.15s;
     }
-    .install-modal-close:hover {
-        color: var(--text-primary);
-        background: rgba(0,0,0,0.05);
-    }
+    .install-modal-close:hover { color: var(--text-primary); background: rgba(0,0,0,0.05); }
 
     .install-modal-bar-wrap { margin: 6px 0 8px; }
     .install-modal-bar-bg {
@@ -471,12 +199,8 @@
         background: linear-gradient(90deg, #4a9eff, #2563ea);
         transition: width 0.3s ease;
     }
-    .install-modal-bar-fill.success {
-        background: linear-gradient(90deg, #5aad5a, #4a8a4a);
-    }
-    .install-modal-bar-fill.error {
-        background: linear-gradient(90deg, #d96a6a, #b54a4a);
-    }
+    .install-modal-bar-fill.success { background: linear-gradient(90deg, #5aad5a, #4a8a4a); }
+    .install-modal-bar-fill.error { background: linear-gradient(90deg, #d96a6a, #b54a4a); }
 
     .install-modal-info {
         display: flex;
@@ -556,58 +280,6 @@
     </div>
 </div>
 
-<!-- 详情弹窗 -->
-<div class="modal-overlay-detail" id="detailModal" onclick="if(event.target===this) closeDetail()">
-    <div class="modal-content-detail">
-        <button class="modal-close-detail" onclick="closeDetail()">✕</button>
-        <div class="modal-icon-detail" id="modalIcon">·</div>
-        <div><span class="modal-title-detail" id="modalTitle">应用名</span><span class="modal-version-detail" id="modalVersion">v1.0.0</span></div>
-        <div class="modal-author-detail" id="modalAuthor">作者</div>
-        <div class="modal-tags-detail" id="modalTags"></div>
-        <div class="detail-tabs">
-            <button class="detail-tab active" data-tab="desc" onclick="switchDetailTab('desc')">说明</button>
-            <button class="detail-tab" data-tab="screenshots" onclick="switchDetailTab('screenshots')">预览</button>
-        </div>
-        <div class="detail-tab-content">
-            <div class="detail-panel active" id="panel-desc"><div class="modal-desc-detail" id="modalDesc">描述</div></div>
-            <div class="detail-panel" id="panel-screenshots" style="display:none;">
-                <div class="modal-screenshots-detail">
-                    <div class="screenshot-title">应用预览</div>
-                    <div class="carousel-container" id="carouselContainer">
-                        <div class="carousel-track" id="carouselTrack"></div>
-                        <button class="carousel-btn prev" id="carouselPrev" onclick="carouselPrev()">‹</button>
-                        <button class="carousel-btn next" id="carouselNext" onclick="carouselNext()">›</button>
-                        <div class="carousel-dots" id="carouselDots"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal-stats-detail" id="modalStats">
-            <span>版本 <span id="modalVersionInfo">--</span></span>
-            <span>来源 <span id="modalSource">本地</span></span>
-        </div>
-
-        <!-- 应用评分 -->
-        <div class="modal-rating" id="modalRating">
-            <span class="rating-label">评分</span>
-            <span class="rating-stars" id="ratingStars">
-                <span class="star" data-value="1">★</span>
-                <span class="star" data-value="2">★</span>
-                <span class="star" data-value="3">★</span>
-                <span class="star" data-value="4">★</span>
-                <span class="star" data-value="5">★</span>
-            </span>
-            <span class="rating-info" id="ratingInfo">加载中...</span>
-        </div>
-        <div class="my-rating-hint" id="myRatingHint"></div>
-
-        <div class="modal-actions-detail" id="modalActions">
-            <button class="btn btn-primary" id="modalInstallBtn" onclick="modalInstall()">安装</button>
-            <a href="#" id="modalRepoBtn" target="_blank" class="btn-repo" style="display:none;">查看 README</a>
-        </div>
-    </div>
-</div>
-
 <!-- 大图预览弹窗 -->
 <div class="modal-overlay-image" id="imageModal" onclick="if(event.target===this) closeImageModal()">
     <div class="modal-content-image">
@@ -625,7 +297,7 @@
 <div class="modal-overlay" id="installModal">
     <div class="install-modal-content" onclick="event.stopPropagation()">
         <div class="install-modal-head">
-            <div class="install-modal-icon" id="installModalIcon">📦</div>
+            <div class="install-modal-icon" id="installModalIcon"></div>
             <div class="install-modal-title">
                 <div class="name" id="installModalName">应用名</div>
                 <div class="stage" id="installModalStage">准备中</div>
@@ -667,34 +339,14 @@
 </div>
 
 <script>
-function switchDetailTab(tabName) {
-    var tabs = document.querySelectorAll('.detail-tab');
-    if (tabs) {
-        tabs.forEach(function(tab) {
-            tab.classList.toggle('active', tab.dataset.tab === tabName);
-        });
-    }
-    var panels = document.querySelectorAll('.detail-panel');
-    if (panels) {
-        panels.forEach(function(panel) {
-            panel.classList.remove('active');
-            panel.style.display = 'none';
-        });
-    }
-    var activePanel = document.getElementById('panel-' + tabName);
-    if (activePanel) {
-        activePanel.classList.add('active');
-        activePanel.style.display = 'block';
-    }
+// 详情弹窗已改为页面切换，这里只保留兼容函数
+function closeDetail() {
+    if (typeof backToAppsList === 'function') backToAppsList();
+    if (typeof currentDetailApp !== 'undefined') currentDetailApp = null;
 }
 
 function closeNoticeDetail() {
     var modal = document.getElementById('noticeDetailModal');
-    if (modal) modal.classList.remove('active');
-}
-
-function closeDetail() {
-    var modal = document.getElementById('detailModal');
     if (modal) modal.classList.remove('active');
 }
 
@@ -708,13 +360,9 @@ function closeWizard() {
     if (modal) modal.classList.remove('active');
 }
 
-function modalInstall() {
-    var btn = document.getElementById('modalInstallBtn');
-    if (!btn) return;
-}
-
-function carouselPrev() {}
-function carouselNext() {}
+// 保留空实现，兼容旧引用
+function modalInstall() {}
+function switchDetailTab(tabName) {}
 function goToSlide(index) {}
 </script>
 {{end}}
