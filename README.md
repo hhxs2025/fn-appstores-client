@@ -1,7 +1,8 @@
 # FN软仓客户端
 
 > 飞牛 OS 第三方应用商店客户端
-
+---
+![宣传图](https://gitee.com/hhxs2025/fn-appstores-client/raw/master/previews/xuanchuantu.png)
 ---
 
 ## 📖 应用简介
