@@ -264,6 +264,77 @@
     body.dark-mode .install-modal-close:hover { background: rgba(255,255,255,0.08); }
     body.dark-mode .install-modal-actions .btn:hover { background: #2a3a5a; }
 
+    /* ============================================ */
+    /* 手动安装弹窗 */
+    /* ============================================ */
+    .manual-install-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    /* 手动安装弹窗里的进度条 */
+    .manual-progress-wrap { display: none; margin-top: 12px; }
+    .manual-progress-bg {
+        height: 6px;
+        background: #e8e8e8;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .manual-progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #4a9eff, #2563ea);
+        border-radius: 3px;
+        transition: width 0.3s;
+    }
+    .manual-progress-text {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* 手动安装弹窗里的日志框 */
+    .manual-log {
+        display: none;
+        margin-top: 12px;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 6px;
+        font-size: 11px;
+        max-height: 280px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        color: #333;
+        line-height: 1.5;
+    }
+
+    body.dark-mode .manual-progress-bg { background: #2a3a5a; }
+    body.dark-mode .manual-log { background: #141c30; color: #c8d4e8; }
+
+    /* 手动安装弹窗的 file input */
+    .manual-file-input {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+    .manual-file-input::file-selector-button {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-secondary);
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: all 0.15s;
+    }
+    .manual-file-input::file-selector-button:hover {
+        background: var(--bg);
+    }
+
     @media (max-width: 550px) {
         .install-modal-content { padding: 18px 20px; }
         .install-modal-icon { width: 40px; height: 40px; font-size: 18px; }
@@ -335,6 +406,40 @@
             <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);" onclick="closeWizard()">取消</button>
         </div>
         <div id="wizardStatus" style="margin-top:6px;font-size:11px;color:var(--text-muted);"></div>
+    </div>
+</div>
+
+<!-- ★ 手动上传安装弹窗 -->
+<div class="modal-overlay" id="manualInstallModal" onclick="if(event.target===this) closeManualInstall()">
+    <div class="modal-content" style="max-width: 560px;">
+        <button class="modal-close" onclick="closeManualInstall()">✕</button>
+        <div class="modal-title">手动安装 FPK</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">
+            选择本地 FPK 文件直接安装。用于调试、排查故障，避免反复从外链下载。
+        </div>
+
+        <input type="file" id="manualFpkFile" accept=".fpk" class="manual-file-input">
+
+        <div class="manual-install-actions">
+            <button class="card-btn btn-install" id="manualInstallBtn" onclick="doManualInstall()"
+                    style="padding: 7px 22px; font-size: 13px;">
+                开始安装
+            </button>
+            <button id="manualSecondaryBtn" onclick="manualSecondaryAction()"
+                    style="display:inline-flex;align-items:center;background:transparent;color:var(--text-secondary);border:1px solid var(--border);padding:7px 20px;border-radius:6px;font-size:13px;cursor:pointer;transition:all 0.15s;">
+                关闭
+            </button>
+        </div>
+
+        <div class="manual-progress-wrap" id="manualInstallProgressWrap">
+            <div class="manual-progress-bg">
+                <div class="manual-progress-bar" id="manualInstallProgressBar"></div>
+            </div>
+            <div class="manual-progress-text" id="manualInstallProgressText"></div>
+        </div>
+
+        <div id="manualInstallStatus" style="margin-top:12px;font-size:12px;"></div>
+        <pre class="manual-log" id="manualInstallLog"></pre>
     </div>
 </div>
 

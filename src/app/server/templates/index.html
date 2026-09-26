@@ -160,6 +160,233 @@
     }
 
     /* ================================================================
+       手动上传安装 FPK（调试/排查用）
+       ================================================================ */
+    var _manualInstallState = 'idle'; // idle | uploading | installing | success | error
+
+    function showManualInstall() {
+        var modal = document.getElementById('manualInstallModal');
+        if (!modal) return;
+        resetManualInstall();
+        modal.classList.add('active');
+    }
+
+    function resetManualInstall() {
+        _manualInstallState = 'idle';
+
+        var fileInput = document.getElementById('manualFpkFile');
+        if (fileInput) fileInput.value = '';
+
+        var statusEl = document.getElementById('manualInstallStatus');
+        if (statusEl) { statusEl.textContent = ''; statusEl.style.color = ''; }
+
+        var logEl = document.getElementById('manualInstallLog');
+        if (logEl) { logEl.style.display = 'none'; logEl.textContent = ''; }
+
+        var progressWrap = document.getElementById('manualInstallProgressWrap');
+        if (progressWrap) progressWrap.style.display = 'none';
+
+        var progressBar = document.getElementById('manualInstallProgressBar');
+        if (progressBar) {
+            progressBar.style.width = '0%';
+            progressBar.style.background = 'linear-gradient(90deg, #4a9eff, #2563ea)';
+        }
+
+        var progressText = document.getElementById('manualInstallProgressText');
+        if (progressText) progressText.textContent = '';
+
+        var btn = document.getElementById('manualInstallBtn');
+        if (btn) {
+            btn.disabled = false;
+            btn.className = 'card-btn btn-install';
+            btn.textContent = '开始安装';
+            btn.onclick = doManualInstall;
+        }
+
+        var secBtn = document.getElementById('manualSecondaryBtn');
+        if (secBtn) {
+            secBtn.textContent = '关闭';
+            secBtn.onclick = manualSecondaryAction;
+        }
+    }
+
+    function manualSecondaryAction() {
+        if (_manualInstallState === 'success') {
+            // 成功状态下，副按钮 = 再装一个
+            resetManualInstall();
+        } else {
+            closeManualInstall();
+        }
+    }
+
+    function closeManualInstall() {
+        var modal = document.getElementById('manualInstallModal');
+        if (modal) modal.classList.remove('active');
+    }
+
+    function doManualInstall() {
+        var fileInput = document.getElementById('manualFpkFile');
+        var statusEl = document.getElementById('manualInstallStatus');
+        var logEl = document.getElementById('manualInstallLog');
+        var btn = document.getElementById('manualInstallBtn');
+        var secBtn = document.getElementById('manualSecondaryBtn');
+        var progressWrap = document.getElementById('manualInstallProgressWrap');
+        var progressBar = document.getElementById('manualInstallProgressBar');
+        var progressText = document.getElementById('manualInstallProgressText');
+
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+            showToast('请选择 FPK 文件', 'warning');
+            return;
+        }
+        var file = fileInput.files[0];
+        var installStartTime = 0;
+        var fakeProgressTimer = null;
+
+        _manualInstallState = 'uploading';
+
+        btn.disabled = true;
+        btn.className = 'card-btn btn-opened';
+        btn.textContent = '上传中...';
+        statusEl.style.color = 'var(--text-secondary)';
+        statusEl.textContent = '正在上传（' + (file.size / 1024 / 1024).toFixed(1) + ' MB）...';
+        logEl.style.display = 'none';
+        progressWrap.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressBar.style.background = 'linear-gradient(90deg, #4a9eff, #2563ea)';
+        progressText.textContent = '准备上传...';
+
+        var fd = new FormData();
+        fd.append('fpk', file);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', API_BASE + '/api/install-local');
+
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                var pct = Math.floor(e.loaded / e.total * 100);
+                progressBar.style.width = pct + '%';
+                progressText.textContent = '上传中 ' + pct + '% · ' +
+                    (e.loaded / 1024 / 1024).toFixed(1) + ' / ' +
+                    (e.total / 1024 / 1024).toFixed(1) + ' MB';
+            }
+        };
+
+        xhr.upload.onload = function() {
+            _manualInstallState = 'installing';
+            btn.className = 'card-btn btn-opened';
+            btn.textContent = '安装中...';
+            statusEl.textContent = '上传完成，正在安装（飞牛 install-fpk 无进度输出，请耐心等待）...';
+            progressBar.style.width = '100%';
+            progressText.textContent = '安装中...';
+
+            installStartTime = Date.now();
+            var fakeProgress = 0;
+            fakeProgressTimer = setInterval(function() {
+                fakeProgress += (95 - fakeProgress) * 0.04;
+                if (fakeProgress > 95) fakeProgress = 95;
+                progressBar.style.width = fakeProgress + '%';
+                var elapsed = Math.floor((Date.now() - installStartTime) / 1000);
+                progressText.textContent = '安装中 ' + Math.floor(fakeProgress) +
+                    '% · 已用时 ' + elapsed + ' 秒（install-fpk 最后阶段可能较慢）';
+            }, 300);
+        };
+
+        xhr.onload = function() {
+            if (fakeProgressTimer) { clearInterval(fakeProgressTimer); fakeProgressTimer = null; }
+
+            var data;
+            try {
+                data = JSON.parse(xhr.responseText);
+            } catch (e) {
+                _manualInstallState = 'error';
+                progressBar.style.background = 'linear-gradient(90deg, #d96a6a, #b54a4a)';
+                progressText.textContent = '❌ 响应解析失败';
+                statusEl.style.color = '#b55a4a';
+                statusEl.textContent = '❌ 响应解析失败';
+                showToast('响应解析失败', 'error');
+
+                btn.disabled = false;
+                btn.className = 'card-btn btn-update';
+                btn.textContent = '重试';
+                btn.onclick = doManualInstall;
+                return;
+            }
+
+            if (data.success) {
+                _manualInstallState = 'success';
+                progressBar.style.width = '100%';
+                progressBar.style.background = 'linear-gradient(90deg, #5aad5a, #4a8a4a)';
+                progressText.textContent = '✅ 安装完成';
+                statusEl.style.color = '#4a8a4a';
+                statusEl.textContent = '✅ ' + (data.message || '安装成功');
+                showToast('安装成功', 'success');
+
+                // 主按钮：变灰"已安装"，点击关闭弹窗
+                btn.disabled = false;
+                btn.className = 'card-btn btn-opened';
+                btn.textContent = '✅ 已安装';
+                btn.style.cursor = 'pointer';
+                btn.onclick = closeManualInstall;
+
+                // 副按钮：变"再装一个"
+                if (secBtn) {
+                    secBtn.textContent = '再装一个';
+                    secBtn.onclick = manualSecondaryAction;
+                }
+            } else {
+                _manualInstallState = 'error';
+                progressBar.style.background = 'linear-gradient(90deg, #d96a6a, #b54a4a)';
+                progressText.textContent = '❌ 安装失败';
+                statusEl.style.color = '#b55a4a';
+                statusEl.textContent = '❌ ' + (data.message || '安装失败');
+                showToast(data.message || '安装失败', 'error');
+
+                // 主按钮：橙底"重试"
+                btn.disabled = false;
+                btn.className = 'card-btn btn-update';
+                btn.textContent = '重试';
+                btn.onclick = doManualInstall;
+
+                if (secBtn) {
+                    secBtn.textContent = '关闭';
+                    secBtn.onclick = manualSecondaryAction;
+                }
+            }
+
+            if (data.data && (data.data.stdout || data.data.stderr)) {
+                logEl.style.display = 'block';
+                logEl.textContent =
+                    '=== app_id ===\n' + (data.data.app_id || '') +
+                    '\n\n=== stdout ===\n' + (data.data.stdout || '(空)') +
+                    '\n\n=== stderr ===\n' + (data.data.stderr || '(空)') +
+                    (data.data.err ? '\n\n=== err ===\n' + data.data.err : '');
+            }
+        };
+
+        xhr.onerror = function() {
+            if (fakeProgressTimer) { clearInterval(fakeProgressTimer); fakeProgressTimer = null; }
+            _manualInstallState = 'error';
+            progressBar.style.background = 'linear-gradient(90deg, #d96a6a, #b54a4a)';
+            progressText.textContent = '❌ 网络错误';
+            statusEl.style.color = '#b55a4a';
+            statusEl.textContent = '❌ 请求失败';
+            showToast('请求失败', 'error');
+
+            btn.disabled = false;
+            btn.className = 'card-btn btn-update';
+            btn.textContent = '重试';
+            btn.onclick = doManualInstall;
+
+            if (secBtn) {
+                secBtn.textContent = '关闭';
+                secBtn.onclick = manualSecondaryAction;
+            }
+        };
+
+        xhr.send(fd);
+    }
+
+    /* ================================================================
        应用评分
        ================================================================ */
     var MY_RATINGS_KEY = 'fnsoft_my_ratings';
