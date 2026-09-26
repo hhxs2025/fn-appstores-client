@@ -355,7 +355,8 @@ function renderQuickList(containerId, apps, type) {
     if (!apps || apps.length === 0) { container.innerHTML = '<div class="empty">暂无应用</div>'; return; }
     var html = '';
     apps.forEach(function(app) {
-        var iconHtml = app.icon ? '<img src="' + app.icon + '" alt="">' : '·';
+        // ★ 修复：走 wrapImageUrl（HTTPS 下走代理），并加 lazy
+        var iconHtml = app.icon ? '<img src="' + wrapImageUrl(app.icon) + '" alt="" loading="lazy">' : '·';
         var meta = type === 'hot' ? '↓ ' + (app.downloads || 0) :
             type === 'installed' ? 'v' + (app.installed_version || app.version) :
             type === 'updatable' ? '⬆ ' + app.version :
