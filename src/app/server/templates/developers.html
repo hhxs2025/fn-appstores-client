@@ -112,7 +112,7 @@
 <div class="dev-container">
     <div class="dev-toolbar">
         <div class="left">
-            <span class="title">✨ 开发者星球</span>
+            <span class="title">开发者星球</span>
             <span class="stats">
                 共 <strong id="devCount">0</strong> 位 ·
                 收录 <strong id="devAppCount">0</strong> 款应用
@@ -189,7 +189,7 @@ function getDevType(dev) {
 }
 function getDevTypeLabel(dev) {
     var t = getDevType(dev);
-    return t === 'official' ? '官方' : t === 'thirdparty' ? '认证' : '个人';
+    return t === 'official' ? '🎖️官方' : t === 'thirdparty' ? '🎖️三方' : '个人';
 }
 function getAvatarChar(name) {
     if (!name) return '?';
@@ -318,11 +318,8 @@ function initStars(devs, W, H) {
 
 // ============================================================
 // 绘制单颗星
-// ★ 新增 isSearchHighlight 参数：白色光圈标识搜索命中
 // ============================================================
 function drawStar(ctx, x, y, size, colors, alpha, isHover, isSearchHighlight) {
-    // alpha 是综合亮度（0~1），决定星的整体透明度/亮度
-
     // ===== 1. 外光晕 =====
     var glowR = size * (isHover ? 6.5 : 4.5);
     var glow = ctx.createRadialGradient(x, y, 0, x, y, glowR);
@@ -334,7 +331,7 @@ function drawStar(ctx, x, y, size, colors, alpha, isHover, isSearchHighlight) {
     ctx.arc(x, y, glowR, 0, Math.PI * 2);
     ctx.fill();
 
-    // ===== 2. 十字星芒（先画星芒，再画核心，核心会盖在上面）=====
+    // ===== 2. 十字星芒 =====
     var spikeLen = size * (isHover ? 6 : 4.5);
     var spikeAlpha = 0.85 * alpha;
 
@@ -381,16 +378,14 @@ function drawStar(ctx, x, y, size, colors, alpha, isHover, isSearchHighlight) {
         ctx.stroke();
     }
 
-    // ===== 5. ★ 搜索命中：白色光圈（悬停时不重复画）=====
+    // ===== 5. 搜索命中：白色光圈 =====
     if (isSearchHighlight && !isHover) {
-        // 内圈实线
         ctx.strokeStyle = 'rgba(255, 255, 255, ' + (0.85 * alpha) + ')';
         ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.arc(x, y, size * 3.6, 0, Math.PI * 2);
         ctx.stroke();
 
-        // 外圈淡光
         ctx.strokeStyle = 'rgba(255, 255, 255, ' + (0.28 * alpha) + ')';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -422,7 +417,7 @@ function sphereRenderLoop() {
     var H = canvas.height / _sphereDPR;
     var time = performance.now();
 
-    // ===== 自动旋转（delta time）=====
+    // ===== 自动旋转 =====
     if (_sphereLastTime === 0) _sphereLastTime = time;
     var dt = time - _sphereLastTime;
     _sphereLastTime = time;
@@ -430,7 +425,6 @@ function sphereRenderLoop() {
 
     if (!_sphereDrag.active) {
         _sphereRotation.y += _SPHERE_ROT_SPEED * dt;
-        // 轻微的 X 轴摆动
         _sphereRotation.x = -0.15 + Math.sin(time * 0.0003) * 0.06;
     }
 
@@ -490,20 +484,16 @@ function sphereRenderLoop() {
         var y0 = star.ny * R;
         var z0 = star.nz * R;
 
-        // 绕 Y 轴
         var x1 = x0 * cosY - z0 * sinY;
         var z1 = x0 * sinY + z0 * cosY;
 
-        // 绕 X 轴
         var y1 = y0 * cosX - z1 * sinX;
         var z2 = y0 * sinX + z1 * cosX;
 
-        // 透视投影
         var scale = perspective / (perspective + z2);
         var sx = _sphereCX + x1 * scale;
         var sy = _sphereCY + y1 * scale;
 
-        // 深度：0（远） ~ 1（近）
         var depth = (z2 + R) / (2 * R);
 
         return {
@@ -516,7 +506,6 @@ function sphereRenderLoop() {
         };
     });
 
-    // 远 → 近 排序
     _starProjected.sort(function(a, b) { return b.sz - a.sz; });
 
     // ===== 逐颗绘制 =====
@@ -534,53 +523,40 @@ function sphereRenderLoop() {
         var star = p.star;
         var isHover = (p.star === hoveredStar);
 
-        // ★ 搜索命中判断
         var isSearchMatch = false;
         if (_sphereSearchActive) {
             isSearchMatch = star.dev.author.toLowerCase().indexOf(_sphereSearchKeyword) !== -1;
         }
 
-        // ===== 呼吸 =====
-        // breath: -1 ~ 1
         var breath = Math.sin(time * star.breathSpeed + star.breathPhase);
 
-        // 呼吸让尺寸变化 ±18%
         var sizeMul = 1 + breath * 0.18;
-        // 呼吸让亮度变化 ±25%
         var brightnessMul = 1 + breath * 0.25;
 
-        // 深度影响亮度：近的亮，远的暗
         var depthBright = 0.35 + p.depth * 0.65;
 
-        // 基础亮度
         var alpha = depthBright * brightnessMul;
         if (alpha > 1) alpha = 1;
         if (alpha < 0.15) alpha = 0.15;
 
-        // 快速微弱闪烁（第二层）
         var twinkle = 0.9 + 0.1 * Math.sin(time * star.twinkleSpeed + star.twinklePhase);
         alpha *= twinkle;
 
         if (isHover) alpha = 1;
 
-        // ★ 搜索激活时的亮度处理
         if (_sphereSearchActive) {
             if (isSearchMatch) {
-                // 命中的提亮到最低可见度
                 if (alpha < 0.7) alpha = 0.7;
             } else {
-                // 未命中的大幅调暗
                 alpha *= 0.22;
                 if (alpha < 0.06) alpha = 0.06;
             }
         }
 
-        // 尺寸：基础尺寸 × 呼吸 × 透视缩放
         var size = star.baseSize * sizeMul * p.scale * (isHover ? 1.35 : 1);
 
         drawStar(ctx, p.sx, p.sy, size, star.colors, alpha, isHover, isSearchMatch);
 
-        // 缓存绘制坐标供点击检测
         star._sx = p.sx;
         star._sy = p.sy;
         star._sr = Math.max(size * 3, 12);
@@ -613,7 +589,6 @@ function sphereResize() {
     _sphereCY = H / 2;
     _sphereRadius = Math.min(W, H) * 0.4;
 
-    // 重建背景散星坐标
     if (_sphereBgStars) {
         _sphereBgStars.forEach(function(bs) {
             bs.x = Math.random() * W;
@@ -640,7 +615,6 @@ function sphereMouseMove(e) {
     var mx = p.clientX - rect.left;
     var my = p.clientY - rect.top;
 
-    // 拖拽旋转
     if (_sphereDrag.active) {
         var dx = p.clientX - _sphereDrag.lastX;
         var dy = p.clientY - _sphereDrag.lastY;
@@ -653,7 +627,6 @@ function sphereMouseMove(e) {
         return;
     }
 
-    // 悬停检测（从近到远）
     var found = null;
     for (var i = _starProjected.length - 1; i >= 0; i--) {
         var pp = _starProjected[i];
@@ -673,7 +646,6 @@ function sphereMouseMove(e) {
     var tip = document.getElementById('sphereTooltip');
     if (tip) {
         if (found) {
-            // 找对应的投影坐标
             for (var j = 0; j < _starProjected.length; j++) {
                 if (_starProjected[j].star.dev === found) {
                     tip.innerHTML = escHtmlDev(found.author) +
@@ -711,7 +683,6 @@ function sphereWheel(e) {
 
 // ============================================================
 // 启动 / 停止
-// ★ 数据/尺寸不变时不重建，避免搜索输入时画面抖动
 // ============================================================
 function startSphere(devs) {
     var canvas = document.getElementById('sphereCanvas');
@@ -721,12 +692,10 @@ function startSphere(devs) {
     var cw = container.clientWidth;
     var ch = container.clientHeight;
 
-    // 尺寸变化或首次初始化 canvas
     if (_sphereCanvas !== canvas || _sphereW !== cw || _sphereH !== ch) {
         sphereResize();
     }
 
-    // 数据变化才重建星星（搜索时不重建）
     var sameData = _stars.length === devs.length &&
         _stars.every(function(s, i) {
             return s.dev && s.dev.author === devs[i].author;
@@ -788,20 +757,17 @@ function renderDevelopers() {
     if (devCountEl) devCountEl.textContent = devs.length;
     if (devAppCountEl) devAppCountEl.textContent = allAppsData.length;
 
-    // ★ 搜索状态：球体保留全量，匹配项加白色光圈
     var searchEl = document.getElementById('devSearchInput');
     var keyword = searchEl ? searchEl.value.trim().toLowerCase() : '';
     _sphereSearchKeyword = keyword;
     _sphereSearchActive = !!keyword;
 
     if (window.innerWidth >= 900) {
-        // ★ 传全量 devs，球体不隐藏星星
         startSphere(devs);
     } else {
         stopSphere();
     }
 
-    // 窄屏列表仍按关键词过滤
     var filteredForGrid = devs;
     if (keyword) {
         filteredForGrid = devs.filter(function(d) {
@@ -824,7 +790,7 @@ function renderGridFallback(devs) {
     var html = '';
     devs.forEach(function(dev) {
         var type = getDevType(dev);
-        var badgeText = type === 'official' ? '官方' : type === 'thirdparty' ? '认证' : '个人';
+        var badgeText = type === 'official' ? '🎖️官方' : type === 'thirdparty' ? '🎖️三方' : '个人';
         var c = getMiniAvatarColor(dev.author);
         var char = escHtmlDev(getAvatarChar(dev.author));
         html += '<div class="dev-card" data-author="' + escHtmlDev(dev.author) + '">' +
@@ -857,8 +823,8 @@ function openDevDetail(author) {
     if (!dev) return;
 
     var type = getDevType(dev);
-    var badgeText = type === 'official' ? '官方开发者' :
-                   type === 'thirdparty' ? '认证开发者' : '个人开发者';
+    var badgeText = type === 'official' ? '🎖️官方开发者' :
+                   type === 'thirdparty' ? '🎖️三方开发者' : '个人开发者';
     var c = getMiniAvatarColor(dev.author);
     var char = escHtmlDev(getAvatarChar(dev.author));
 

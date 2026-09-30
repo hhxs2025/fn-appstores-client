@@ -162,7 +162,7 @@
     /* ================================================================
        手动上传安装 FPK（调试/排查用）
        ================================================================ */
-    var _manualInstallState = 'idle'; // idle | uploading | installing | success | error
+    var _manualInstallState = 'idle';
 
     function showManualInstall() {
         var modal = document.getElementById('manualInstallModal');
@@ -212,7 +212,6 @@
 
     function manualSecondaryAction() {
         if (_manualInstallState === 'success') {
-            // 成功状态下，副按钮 = 再装一个
             resetManualInstall();
         } else {
             closeManualInstall();
@@ -321,14 +320,12 @@
                 statusEl.textContent = '✅ ' + (data.message || '安装成功');
                 showToast('安装成功', 'success');
 
-                // 主按钮：变灰"已安装"，点击关闭弹窗
                 btn.disabled = false;
                 btn.className = 'card-btn btn-opened';
                 btn.textContent = '✅ 已安装';
                 btn.style.cursor = 'pointer';
                 btn.onclick = closeManualInstall;
 
-                // 副按钮：变"再装一个"
                 if (secBtn) {
                     secBtn.textContent = '再装一个';
                     secBtn.onclick = manualSecondaryAction;
@@ -341,7 +338,6 @@
                 statusEl.textContent = '❌ ' + (data.message || '安装失败');
                 showToast(data.message || '安装失败', 'error');
 
-                // 主按钮：橙底"重试"
                 btn.disabled = false;
                 btn.className = 'card-btn btn-update';
                 btn.textContent = '重试';
@@ -796,8 +792,7 @@
     /* ★ 取消分页：直接渲染全部 */
     function renderFilteredApps() {
         var filtered = getFilteredApps();
-        renderApps(filtered);   // 不再走 getCurrentPageData
-        // renderPagination 不再调用
+        renderApps(filtered);
         var countEl = document.getElementById('appCount');
         if (countEl) countEl.textContent = filtered.length;
         updateSettingsStats();
@@ -915,7 +910,6 @@
             return;
         }
 
-        // ★ 如果当前不在 apps tab，先切过去（等切完再调用一次）
         var appsTab = document.getElementById('tabApps');
         if (!appsTab || !appsTab.classList.contains('active')) {
             window._pendingDetailAppId = appId;
@@ -953,8 +947,12 @@
 
         var tags = getTagsArray(app.tags);
         var category = tags.length > 0 ? tags[0] : '';
-        var sourceName = app._source_name || '';
-        if (app._source_id === 'official') sourceName = 'FN官方源';
+        var sourceName = '';
+        if (app._source_id === 'official') {
+            sourceName = '🎖️官方';
+        } else if (app._source_name) {
+            sourceName = '🎖️三方';
+        }
         var parts = [];
         if (category) parts.push(category);
         if (sourceName) parts.push(sourceName);
@@ -962,7 +960,9 @@
         if (subtitleEl) subtitleEl.textContent = parts.join(' · ') || '—';
 
         document.getElementById('detailMetaAuthor').textContent = app.author || '-';
-        document.getElementById('detailMetaSource').textContent = app._source_name || '-';
+        document.getElementById('detailMetaVersion').textContent = app.version ? 'v' + app.version : '-';
+        document.getElementById('detailMetaSource').textContent =
+            app._source_id === 'official' ? '🎖️官方' : '🎖️三方';
         document.getElementById('detailMetaDownloads').textContent = (app.downloads || 0);
         document.getElementById('detailMetaUpdated').textContent = app.updated_at || '-';
         document.getElementById('detailMetaType').textContent = app.type || '未指定';
@@ -1054,7 +1054,6 @@
             switchTab('apps');
             return;
         }
-        // 已在 apps tab，直接切视图
         backToAppsList();
         setTimeout(function () { openDetail(appId); }, 30);
     }
@@ -1086,8 +1085,12 @@
 
             var tags = getTagsArray(app.tags);
             var category = tags.length > 0 ? tags[0] : '';
-            var sourceName = app._source_name || '';
-            if (app._source_id === 'official') sourceName = 'FN官方源';
+            var sourceName = '';
+            if (app._source_id === 'official') {
+                sourceName = '🎖️官方';
+            } else if (app._source_name) {
+                sourceName = '🎖️三方';
+            }
             var parts = [];
             if (category) parts.push(category);
             if (sourceName) parts.push(sourceName);
@@ -1854,7 +1857,6 @@
         renderQuickList('quickNewestList', newest, 'newest');
     }
 
-    /* ★ 限制显示数量为 8，避免首页卡片内出现滑条；点击走 jumpToAppDetail 切 tab */
     function renderQuickList(containerId, apps, type) {
         var container = document.getElementById(containerId);
         if (!container) return;

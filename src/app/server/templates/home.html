@@ -291,7 +291,7 @@
             <div class="home-carousel-dots" id="homeCarouselDots"></div>
         </div>
         <div class="home-notice-wrapper" id="homeNoticeWrapper">
-            <div class="notice-label">📢 公告记录</div>
+            <div class="notice-label">📢公告记录</div>
             <div class="notice-records" id="homeNoticeContent">
                 <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:12px 0;">加载中...</div>
             </div>
@@ -360,7 +360,7 @@ function renderQuickList(containerId, apps, type) {
         var meta = type === 'hot' ? '↓ ' + (app.downloads || 0) :
             type === 'installed' ? 'v' + (app.installed_version || app.version) :
             type === 'updatable' ? '⬆ ' + app.version :
-            '📅 ' + (app.updated_at || '');
+            '📅' + (app.updated_at || '');
         html += '<div class="item" onclick="openDetail(\'' + app.id + '\')">' +
             '<span class="icon-sm">' + iconHtml + '</span>' +
             '<span class="name">' + app.name + '</span>' +
