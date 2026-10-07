@@ -335,6 +335,90 @@
         background: var(--bg);
     }
 
+    /* ============================================ */
+    /* ★ 依赖缺失引导弹窗（v2.9.0 新增） */
+    /* ============================================ */
+    .dep-modal-icon {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #FFF4E5;
+        color: #B45309;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 600;
+    }
+    body.dark-mode .dep-modal-icon {
+        background: rgba(180, 83, 9, 0.22);
+        color: #FBBF24;
+    }
+    .dep-modal-name-box {
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: var(--bg);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .dep-modal-name {
+        flex: 1;
+        min-width: 0;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+        word-break: break-all;
+    }
+    .dep-modal-copy-btn {
+        flex-shrink: 0;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        font-size: 11px;
+        padding: 2px 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .dep-modal-copy-btn:hover {
+        background: var(--card-bg);
+        color: var(--text-primary);
+    }
+    .dep-modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 6px;
+    }
+    .dep-modal-actions .dep-btn {
+        padding: 6px 20px;
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-weight: 500;
+    }
+    .dep-modal-actions .dep-btn-secondary {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+    .dep-modal-actions .dep-btn-secondary:hover {
+        background: var(--bg);
+    }
+    .dep-modal-actions .dep-btn-primary {
+        background: #2563ea;
+        color: #fff;
+        border: none;
+    }
+    .dep-modal-actions .dep-btn-primary:hover {
+        background: #1d4ed8;
+    }
+
     @media (max-width: 550px) {
         .install-modal-content { padding: 18px 20px; }
         .install-modal-icon { width: 40px; height: 40px; font-size: 18px; }
@@ -443,6 +527,35 @@
     </div>
 </div>
 
+<!-- ★ 依赖缺失引导弹窗（v2.9.0 新增） -->
+<div class="modal-overlay" id="missingDepModal" onclick="if(event.target===this) closeMissingDepModal()">
+    <div class="modal-content" style="max-width: 440px;">
+        <button class="modal-close" onclick="closeMissingDepModal()">✕</button>
+        <div class="modal-title">缺少依赖应用</div>
+
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0 16px;">
+            <div class="dep-modal-icon">!</div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;color:var(--text-primary);line-height:1.7;">
+                    安装此应用前，需要先在飞牛应用中心安装以下依赖：
+                </div>
+                <div class="dep-modal-name-box">
+                    <span class="dep-modal-name" id="missingDepName">--</span>
+                    <button class="dep-modal-copy-btn" onclick="copyMissingDepName()">复制</button>
+                </div>
+                <div style="margin-top:10px;font-size:12px;color:var(--text-muted);line-height:1.6;">
+                    安装完成后返回软仓重试即可。
+                </div>
+            </div>
+        </div>
+
+        <div class="dep-modal-actions">
+            <button class="dep-btn dep-btn-secondary" onclick="closeMissingDepModal()">稍后再说</button>
+            <button class="dep-btn dep-btn-primary" onclick="openMissingDepInAppCenter()">去安装依赖</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // 详情弹窗已改为页面切换，这里只保留兼容函数
 function closeDetail() {
@@ -469,5 +582,80 @@ function closeWizard() {
 function modalInstall() {}
 function switchDetailTab(tabName) {}
 function goToSlide(index) {}
+
+// ============================================================
+// ★ 依赖缺失引导（v2.9.0 新增）
+// ============================================================
+var _missingDepName = '';
+
+function showMissingDepModal(depName) {
+    _missingDepName = depName || '';
+    var nameEl = document.getElementById('missingDepName');
+    if (nameEl) nameEl.textContent = _missingDepName || '(未知依赖)';
+    var modal = document.getElementById('missingDepModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeMissingDepModal() {
+    var modal = document.getElementById('missingDepModal');
+    if (modal) modal.classList.remove('active');
+}
+
+async function openMissingDepInAppCenter() {
+    var depName = _missingDepName;
+    closeMissingDepModal();
+    if (!depName) return;
+
+    // 优先用飞牛 SDK 打开应用中心
+    if (window.trimSdk && typeof window.trimSdk.openAppSetting === 'function') {
+        try {
+            await window.trimSdk.openAppSetting();
+            setTimeout(function () {
+                if (typeof showToast === 'function') {
+                    showToast('请在应用中心搜索「' + depName + '」并安装', 'info');
+                }
+            }, 300);
+            return;
+        } catch (e) {
+            console.warn('打开应用中心失败:', e);
+        }
+    }
+
+    // 回退：用提示条告诉用户手动操作
+    if (typeof showToast === 'function') {
+        showToast('请手动打开飞牛应用中心，搜索「' + depName + '」并安装', 'warning');
+    }
+}
+
+function copyMissingDepName() {
+    if (!_missingDepName) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(_missingDepName).then(function () {
+            if (typeof showToast === 'function') {
+                showToast('已复制依赖名', 'success');
+            }
+        }).catch(function () {
+            _fallbackCopy(_missingDepName);
+        });
+    } else {
+        _fallbackCopy(_missingDepName);
+    }
+}
+
+function _fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        if (typeof showToast === 'function') {
+            showToast('已复制依赖名', 'success');
+        }
+    } catch (e) {}
+    document.body.removeChild(ta);
+}
 </script>
 {{end}}

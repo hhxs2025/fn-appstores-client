@@ -218,6 +218,13 @@
         body.dark-mode .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: #60a5fa; }
         body.dark-mode .sidebar-footer { border-top-color: var(--border); }
 
+        /* ★ 防闪：html 上也加 class 时，先铺深色背景 */
+        html.dark-mode,
+        html.dark-mode body {
+            background: #1a1a2e;
+            color: #e8e8f0;
+        }
+
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #d5d5dd; border-radius: 4px; }
@@ -311,6 +318,20 @@
             .main-content { padding: 0 4px; }
         }
     </style>
+
+    <!-- ★ 防闪：尽早把主题 class 打到 <html> 上 -->
+    <script>
+    (function() {
+        try {
+            var u = localStorage.getItem('fnsoft_theme');
+            var s = localStorage.getItem('fnsoft_system_theme');
+            var theme = (u === 'light' || u === 'dark') ? u : ((s === 'light' || s === 'dark') ? s : 'light');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+        } catch (e) {}
+    })();
+    </script>
 </head>
 <body>
 
@@ -384,39 +405,102 @@
             if (overlay) overlay.classList.remove('active');
         }
 
-        function getTheme() { return localStorage.getItem('fnsoft_theme') || 'light'; }
+        // ============================================================
+        // 主题系统（v2.8.6 改造）
+        //   - USER_THEME_KEY：用户手动切换的主题（设置里选的）
+        //   - SYS_THEME_KEY：飞牛系统主题（SDK 提供）
+        //   优先级：用户手动 > 系统主题 > light
+        // ============================================================
+        var USER_THEME_KEY = 'fnsoft_theme';
+        var SYS_THEME_KEY = 'fnsoft_system_theme';
 
-        function setTheme(theme) {
-            localStorage.setItem('fnsoft_theme', theme);
+        function applyThemeClass(theme) {
             if (theme === 'dark') {
                 document.body.classList.add('dark-mode');
+                document.documentElement.classList.add('dark-mode');
             } else {
                 document.body.classList.remove('dark-mode');
+                document.documentElement.classList.remove('dark-mode');
             }
         }
 
-        function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+        function getTheme() {
+            var u = localStorage.getItem(USER_THEME_KEY);
+            if (u === 'light' || u === 'dark') return u;
+            var s = localStorage.getItem(SYS_THEME_KEY);
+            if (s === 'light' || s === 'dark') return s;
+            return 'light';
+        }
 
-        function initTheme() { setTheme(getTheme()); }
+        function setTheme(theme) {
+            // 用户手动切换 → 写入 USER_THEME_KEY
+            localStorage.setItem(USER_THEME_KEY, theme);
+            applyThemeClass(theme);
+        }
 
-        /* ★ 全局搜索（侧边栏顶部） */
-        var _globalSearchTimer = null;
+        function setSystemTheme(theme) {
+            // 系统主题变化 → 只写 SYS_THEME_KEY
+            localStorage.setItem(SYS_THEME_KEY, theme);
+            // 用户没手动选过，才跟随系统
+            if (!localStorage.getItem(USER_THEME_KEY)) {
+                applyThemeClass(theme);
+            }
+        }
+
+        function toggleTheme() {
+            setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+        }
+
+        function initTheme() {
+            applyThemeClass(getTheme());
+        }
+
+        // ★ 新增：从飞牛 SDK 拉取系统主题
+        async function initSystemTheme() {
+            try {
+                var mod = await import('https://cdn.jsdelivr.net/npm/@trimjs/web-app/+esm');
+                var sdk = new mod.TrimApp();
+                window.trimSdk = sdk;
+
+                var config = await sdk.getPlatformConfig();
+                if (config && config.theme) {
+                    setSystemTheme(config.theme);
+                    console.log('[theme] 系统主题:', config.theme);
+                }
+
+                // 仅在 Web 宿主环境监听变化
+                if (sdk.isWeb === true && sdk.isStandaloneWeb === false) {
+                    try {
+                        await sdk.$on('os/theme', function(theme) {
+                            console.log('[theme] 系统主题变化:', theme);
+                            setSystemTheme(theme);
+                        });
+                    } catch (e) {
+                        console.warn('[theme] $on 监听失败:', e);
+                    }
+                }
+            } catch (e) {
+                console.warn('[theme] SDK 初始化失败（使用本地缓存主题）:', e);
+            }
+        }
+
+        // ★ 新增：用户手动切换主题后，清除"手动覆盖"标记（用于恢复跟随系统）
+        // 这个函数不主动调用，留给未来"跟随系统"开关使用
+        function clearUserTheme() {
+            localStorage.removeItem(USER_THEME_KEY);
+            initTheme();
+        }
+
         function onGlobalSearchInput(val) {
-            if (_globalSearchTimer) clearTimeout(_globalSearchTimer);
-            _globalSearchTimer = setTimeout(function () {
-                _globalSearchTimer = null;
-                // 切到 apps tab
-                var appsTab = document.getElementById('tabApps');
-                if (!appsTab || !appsTab.classList.contains('active')) {
-                    switchTab('apps');
-                }
-                // 同步到应用页搜索框
-                var localInput = document.getElementById('searchInput');
-                if (localInput) {
-                    localInput.value = val;
-                    if (typeof searchApps === 'function') searchApps();
-                }
-            }, 250);
+            var appsTab = document.getElementById('tabApps');
+            if (appsTab && !appsTab.classList.contains('active')) {
+                switchTab('apps');
+            }
+            var localInput = document.getElementById('searchInput');
+            if (localInput) {
+                localInput.value = val;
+                if (typeof searchApps === 'function') searchApps();
+            }
         }
 
         function switchTab(tab) {
@@ -435,9 +519,7 @@
 
             closeSidebar();
 
-            // 从别的 tab 切到 apps 时，先回到列表视图
             if (tab === 'apps' && typeof backToAppsList === 'function') {
-                // 如果带着 pendingDetail，就别回列表（让待打开的详情直接显示）
                 if (!window._pendingDetailAppId) {
                     backToAppsList();
                 }
@@ -455,7 +537,6 @@
                 loadHome();
             }
 
-            // ★ 处理从首页跳转过来的"待打开详情"
             if (tab === 'apps' && window._pendingDetailAppId && typeof openDetail === 'function') {
                 var id = window._pendingDetailAppId;
                 window._pendingDetailAppId = null;
@@ -466,7 +547,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // ★ 第一步：应用本地缓存主题（防闪）
             initTheme();
+
+            // ★ 第二步：异步拉取系统主题（不阻塞）
+            initSystemTheme();
 
             switchTab('home');
 
