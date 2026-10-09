@@ -41,6 +41,8 @@ var refreshCooldown = false;
 var refreshTimer = null;
 var REFRESH_COOLDOWN = 30;
 var currentWizardSessionId = null;
+var _wizardPendingAppID = null;
+var _wizardPollTimer = null;   // ★ 加强版：向导状态轮询计时器
 var imageList = [];
 var currentImageIndex = 0;
 var homeSlideIndex = 0;
@@ -964,8 +966,8 @@ function processInstallQueue() {
                 event: 'install',
                 data: {
                     app_id: task.appId,
-                    download_url: urls[0] || '',   // 兼容老服务端
-                    download_urls: urls             // ★ v4 新字段
+                    download_url: urls[0] || '',
+                    download_urls: urls
                 }
             }));
         } catch (e) {
@@ -980,7 +982,6 @@ function processInstallQueue() {
     }
 }
 
-// ★ v4：addInstallTask 接收数组
 function addInstallTask(appId, downloadUrls) {
     var existing = pendingInstallQueue.some(function (t) {return t.appId === appId;});
     if (existing) { processInstallQueue(); return; }
@@ -1016,7 +1017,7 @@ function handleWsMessage(msg) {
         isInstalling = false;
         if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
         closeInstallModal();
-        showWizardFromSession(msg.data.session_id, msg.data.steps, msg.data.title);
+        showWizardFromSession(msg.data.session_id, msg.data.steps, msg.data.title, msg.data.app_id);
         processInstallQueue();
         return;
     }
@@ -1054,11 +1055,12 @@ function handleWsMessage(msg) {
                 app.installed = true;
                 app.installed_version = data.version || app.version;
                 app.has_update = false;
+                app._justInstalledAt = Date.now();
                 if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
                 updateSettingsStats();
                 writeAppsCache(allAppsData);
             }
-            setTimeout(function () {refreshApps();}, 5000);
+            setTimeout(function () {refreshApps();}, 12000);
             setTimeout(processInstallQueue, 500);
         } else {
             updateInstallButtonUI(appId, 'idle');
@@ -1070,7 +1072,7 @@ function handleWsMessage(msg) {
 }
 
 // ================================================================
-// ★ v4 安装 / 更新：读取 download_urls 数组（回退 download_url）
+// 安装 / 更新：读取 download_urls 数组（回退 download_url）
 // ================================================================
 async function installApp(appId) {
     if (appId === 'fn-appstores-client') {
@@ -1097,7 +1099,6 @@ async function installApp(appId) {
             updateInstallButtonUI(appId, 'idle');
             return;
         }
-        // ★ v4：优先用候选数组，回退单地址
         var urls = data.data.download_urls || [];
         if (urls.length === 0 && data.data.download_url) {
             urls = [data.data.download_url];
@@ -1142,7 +1143,6 @@ async function updateApp(appId) {
             updateInstallButtonUI(appId, 'idle');
             return;
         }
-        // ★ v4：优先用候选数组，回退单地址
         var urls = data.data.download_urls || [];
         if (urls.length === 0 && data.data.download_url) {
             urls = [data.data.download_url];
@@ -1257,8 +1257,9 @@ function checkAndShowDownloaded() {
 // ================================================================
 // 向导
 // ================================================================
-function showWizardFromSession(sessionId, steps, title) {
+function showWizardFromSession(sessionId, steps, title, appId) {
     currentWizardSessionId = sessionId;
+    _wizardPendingAppID = appId || null;
     var modal = document.getElementById('wizardModal');
     if (!modal) return;
     var body = document.getElementById('wizardBody');
@@ -1304,11 +1305,16 @@ function showWizardFromSession(sessionId, steps, title) {
     }
     if (body) body.innerHTML = htmlContent;
     var submitBtn = document.getElementById('wizardSubmitBtn');
-    if (submitBtn) submitBtn.disabled = false;
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '确认安装'; }
     modal.classList.add('active');
 }
 
 function closeWizard() {
+    // ★ 加强版：取消时先停掉轮询
+    if (_wizardPollTimer) {
+        clearInterval(_wizardPollTimer);
+        _wizardPollTimer = null;
+    }
     if (currentWizardSessionId) {
         fetch(API_BASE + '/api/wizard/cancel', {
             method: 'POST',
@@ -1317,16 +1323,19 @@ function closeWizard() {
         }).catch(function () { });
         currentWizardSessionId = null;
     }
+    _wizardPendingAppID = null;
     var modal = document.getElementById('wizardModal');
     if (modal) modal.classList.remove('active');
 }
 
+// ★ 加强版：submitWizard 轮询 /api/wizard/status 查询真实状态
 async function submitWizard() {
     var btn = document.getElementById('wizardSubmitBtn');
     if (!btn || btn.disabled) return;
     btn.disabled = true;
+    btn.textContent = '提交中...';
     var status = document.getElementById('wizardStatus');
-    if (status) status.textContent = '安装中...';
+    if (status) status.textContent = '提交中...';
 
     var inputs = {};
     document.querySelectorAll('#wizardBody input, #wizardBody select, #wizardBody textarea').forEach(function (el) {
@@ -1335,13 +1344,92 @@ async function submitWizard() {
         inputs[name] = el.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
     });
 
+    var sessionId = currentWizardSessionId;
+    if (!sessionId) {
+        if (status) status.textContent = '会话已过期';
+        btn.disabled = false;
+        btn.textContent = '确认安装';
+        return;
+    }
+
     try {
         var resp = await fetch(API_BASE + '/api/wizard/install', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({session_id: currentWizardSessionId, inputs: inputs})
+            body: JSON.stringify({session_id: sessionId, inputs: inputs})
         });
         var result = await resp.json();
+
+        // ★ 加强版：异步模式
+        if (result.success && result.async) {
+            if (status) status.textContent = '安装中，请稍候...';
+            btn.textContent = '安装中...';
+
+            // 禁用取消按钮（已经进入执行阶段）
+            var cancelBtn = document.querySelector('#wizardModal .btn:not(.btn-primary)');
+            if (cancelBtn) cancelBtn.disabled = true;
+
+            // 每 2 秒轮询一次状态
+            var checkCount = 0;
+            var maxChecks = 60;   // 60 次 × 2 秒 = 120 秒上限
+            if (_wizardPollTimer) clearInterval(_wizardPollTimer);
+            _wizardPollTimer = setInterval(function () {
+                checkCount++;
+                if (status) status.textContent = '安装中，请稍候... (' + (checkCount * 2) + 's)';
+
+                fetch(API_BASE + '/api/wizard/status?session_id=' + encodeURIComponent(sessionId))
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (!d.success) {
+                            // 会话不存在 → 说明可能已过期，视为超时
+                            return;
+                        }
+
+                        if (d.status === 'success') {
+                            clearInterval(_wizardPollTimer);
+                            _wizardPollTimer = null;
+                            if (status) status.textContent = '安装成功';
+                            showToast('安装成功', 'success');
+                            isInstalling = false;
+                            if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
+                            closeWizard();
+                            setTimeout(function () { refreshApps(); }, 500);
+                            processInstallQueue();
+                        } else if (d.status === 'failed') {
+                            clearInterval(_wizardPollTimer);
+                            _wizardPollTimer = null;
+                            var errMsg = d.message || '未知错误';
+                            if (status) status.textContent = '安装失败: ' + errMsg;
+                            showToast('安装失败: ' + errMsg, 'error');
+                            isInstalling = false;
+                            if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
+                            btn.disabled = false;
+                            btn.textContent = '确认安装';
+                            if (cancelBtn) cancelBtn.disabled = false;
+                            processInstallQueue();
+                        }
+                        // running / pending 继续轮询
+                    })
+                    .catch(function () {});
+
+                if (checkCount >= maxChecks) {
+                    clearInterval(_wizardPollTimer);
+                    _wizardPollTimer = null;
+                    if (status) status.textContent = '安装超时，请刷新页面查看结果';
+                    showToast('安装超时，请刷新页面查看', 'warning');
+                    isInstalling = false;
+                    if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
+                    btn.disabled = false;
+                    btn.textContent = '确认安装';
+                    if (cancelBtn) cancelBtn.disabled = false;
+                    setTimeout(function () { refreshApps(); }, 1000);
+                    processInstallQueue();
+                }
+            }, 2000);
+            return;
+        }
+
+        // 兼容老服务端：同步返回
         if (result.success) {
             if (status) status.textContent = '安装成功';
             showToast('安装成功', 'success');
@@ -1349,10 +1437,11 @@ async function submitWizard() {
             isInstalling = false;
             if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
             processInstallQueue();
-            setTimeout(function () {refreshApps();}, 2000);
+            setTimeout(function () { refreshApps(); }, 2000);
         } else {
             if (status) status.textContent = result.message;
             btn.disabled = false;
+            btn.textContent = '确认安装';
             isInstalling = false;
             if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
             processInstallQueue();
@@ -1360,6 +1449,7 @@ async function submitWizard() {
     } catch (e) {
         if (status) status.textContent = e.message;
         btn.disabled = false;
+        btn.textContent = '确认安装';
         isInstalling = false;
         if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
         processInstallQueue();
@@ -1884,7 +1974,12 @@ async function loadInstalledVersions() {
         if (data.success) {
             installedAppsCache = {};
             data.apps.forEach(function (app) {installedAppsCache[app.id] = app.version;});
+            var now = Date.now();
             allAppsData.forEach(function (app) {
+                // ★ v2.9.0 补丁：刚装完 30 秒内，以本地状态为准，忽略服务端老 manifest
+                if (app._justInstalledAt && now - app._justInstalledAt < 30000) {
+                    return;
+                }
                 if (app.id in installedAppsCache) {
                     app.installed = true;
                     app.installed_version = installedAppsCache[app.id];
@@ -2017,6 +2112,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
         if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
+        if (_wizardPollTimer) { clearInterval(_wizardPollTimer); _wizardPollTimer = null; }
     });
 
     document.addEventListener('visibilitychange', function () {

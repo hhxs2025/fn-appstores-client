@@ -273,7 +273,6 @@
         margin-top: 14px;
     }
 
-    /* 手动安装弹窗里的进度条 */
     .manual-progress-wrap { display: none; margin-top: 12px; }
     .manual-progress-bg {
         height: 6px;
@@ -295,7 +294,6 @@
         font-variant-numeric: tabular-nums;
     }
 
-    /* 手动安装弹窗里的日志框 */
     .manual-log {
         display: none;
         margin-top: 12px;
@@ -315,7 +313,6 @@
     body.dark-mode .manual-progress-bg { background: #2a3a5a; }
     body.dark-mode .manual-log { background: #141c30; color: #c8d4e8; }
 
-    /* 手动安装弹窗的 file input */
     .manual-file-input {
         font-size: 12px;
         color: var(--text-secondary);
@@ -336,7 +333,7 @@
     }
 
     /* ============================================ */
-    /* ★ 依赖缺失引导弹窗（v2.9.0 新增） */
+    /* 依赖缺失引导弹窗 */
     /* ============================================ */
     .dep-modal-icon {
         flex-shrink: 0;
@@ -493,7 +490,7 @@
     </div>
 </div>
 
-<!-- ★ 手动上传安装弹窗 -->
+<!-- 手动上传安装弹窗 -->
 <div class="modal-overlay" id="manualInstallModal" onclick="if(event.target===this) closeManualInstall()">
     <div class="modal-content" style="max-width: 560px;">
         <button class="modal-close" onclick="closeManualInstall()">✕</button>
@@ -527,7 +524,7 @@
     </div>
 </div>
 
-<!-- ★ 依赖缺失引导弹窗（v2.9.0 新增） -->
+<!-- 依赖缺失引导弹窗 -->
 <div class="modal-overlay" id="missingDepModal" onclick="if(event.target===this) closeMissingDepModal()">
     <div class="modal-content" style="max-width: 440px;">
         <button class="modal-close" onclick="closeMissingDepModal()">✕</button>
@@ -584,7 +581,7 @@ function switchDetailTab(tabName) {}
 function goToSlide(index) {}
 
 // ============================================================
-// ★ 依赖缺失引导（v2.9.0 新增）
+// 依赖缺失引导
 // ============================================================
 var _missingDepName = '';
 
@@ -606,7 +603,6 @@ async function openMissingDepInAppCenter() {
     closeMissingDepModal();
     if (!depName) return;
 
-    // 优先用飞牛 SDK 打开应用中心
     if (window.trimSdk && typeof window.trimSdk.openAppSetting === 'function') {
         try {
             await window.trimSdk.openAppSetting();
@@ -621,7 +617,6 @@ async function openMissingDepInAppCenter() {
         }
     }
 
-    // 回退：用提示条告诉用户手动操作
     if (typeof showToast === 'function') {
         showToast('请手动打开飞牛应用中心，搜索「' + depName + '」并安装', 'warning');
     }
@@ -656,6 +651,160 @@ function _fallbackCopy(text) {
         }
     } catch (e) {}
     document.body.removeChild(ta);
+}
+
+// ============================================================
+// ★ 手动上传 FPK 安装
+//
+// 修复（2026-10-09）：
+//   - 后端检测到带向导时返回 { wizard: true, session_id, steps, ... }
+//   - 前端收到后关闭手动安装弹窗，打开向导弹窗
+//   - 用户在向导填完提交 → 走标准向导流程 → 后端 install
+// ============================================================
+
+function showManualInstall() {
+    var modal = document.getElementById('manualInstallModal');
+    if (!modal) return;
+
+    var fileInput = document.getElementById('manualFpkFile');
+    if (fileInput) fileInput.value = '';
+
+    var progressWrap = document.getElementById('manualInstallProgressWrap');
+    if (progressWrap) progressWrap.style.display = 'none';
+
+    var bar = document.getElementById('manualInstallProgressBar');
+    if (bar) bar.style.width = '0%';
+
+    var text = document.getElementById('manualInstallProgressText');
+    if (text) text.textContent = '';
+
+    var status = document.getElementById('manualInstallStatus');
+    if (status) { status.textContent = ''; status.style.color = ''; status.className = ''; }
+
+    var log = document.getElementById('manualInstallLog');
+    if (log) { log.textContent = ''; log.style.display = 'none'; }
+
+    var btn = document.getElementById('manualInstallBtn');
+    if (btn) { btn.disabled = false; btn.textContent = '开始安装'; }
+
+    var sec = document.getElementById('manualSecondaryBtn');
+    if (sec) { sec.textContent = '关闭'; sec.onclick = closeManualInstall; }
+
+    modal.classList.add('active');
+}
+
+function closeManualInstall() {
+    var modal = document.getElementById('manualInstallModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function doManualInstall() {
+    var fileInput = document.getElementById('manualFpkFile');
+    var file = fileInput && fileInput.files && fileInput.files[0];
+    if (!file) {
+        if (typeof showToast === 'function') showToast('请先选择 FPK 文件', 'warning');
+        return;
+    }
+    if (!file.name.toLowerCase().endsWith('.fpk')) {
+        if (typeof showToast === 'function') showToast('文件必须是 .fpk', 'warning');
+        return;
+    }
+
+    var btn = document.getElementById('manualInstallBtn');
+    var status = document.getElementById('manualInstallStatus');
+    var progressWrap = document.getElementById('manualInstallProgressWrap');
+    var bar = document.getElementById('manualInstallProgressBar');
+    var text = document.getElementById('manualInstallProgressText');
+    var log = document.getElementById('manualInstallLog');
+    var sec = document.getElementById('manualSecondaryBtn');
+
+    btn.disabled = true;
+    btn.textContent = '上传中...';
+    if (progressWrap) progressWrap.style.display = 'block';
+    if (status) { status.textContent = ''; status.style.color = ''; }
+    if (log) { log.textContent = ''; log.style.display = 'none'; }
+
+    var fd = new FormData();
+    fd.append('fpk', file);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_BASE + '/api/install-local');
+
+    xhr.upload.onprogress = function (e) {
+        if (!e.lengthComputable) return;
+        var pct = Math.round(e.loaded / e.total * 100);
+        if (bar) bar.style.width = pct + '%';
+        if (text) {
+            text.textContent = pct + '% · ' +
+                (e.loaded / 1024 / 1024).toFixed(1) + ' / ' +
+                (e.total / 1024 / 1024).toFixed(1) + ' MB';
+        }
+    };
+
+    xhr.onload = function () {
+        var data = {};
+        try { data = JSON.parse(xhr.responseText); } catch (e) {}
+
+        // ★ 带向导：关闭手动安装弹窗，打开向导弹窗
+        if (xhr.status === 200 && data.success && data.wizard) {
+            closeManualInstall();
+            if (typeof showWizardFromSession === 'function') {
+                showWizardFromSession(data.session_id, data.steps, data.title, data.app_id);
+            } else if (typeof showToast === 'function') {
+                showToast('此应用需要填写安装向导', 'info');
+            }
+            return;
+        }
+
+        if (xhr.status === 200 && data.success) {
+            btn.textContent = '安装成功';
+            btn.disabled = true;
+            if (status) {
+                status.textContent = data.message || '安装成功';
+                status.style.color = '#4a8a4a';
+            }
+            if (text) text.textContent = '上传完成，安装完成';
+            if (sec) sec.textContent = '关闭';
+            if (typeof showToast === 'function') showToast('安装成功', 'success');
+            setTimeout(function () {
+                closeManualInstall();
+                if (typeof refreshApps === 'function') refreshApps();
+            }, 2000);
+            return;
+        }
+
+        // 失败
+        btn.disabled = false;
+        btn.textContent = '重试';
+        var msg = data.message || ('HTTP ' + xhr.status);
+        if (status) {
+            status.textContent = msg;
+            status.style.color = '#b54a4a';
+        }
+        if (log && data.data) {
+            log.style.display = 'block';
+            var out = (data.data.stdout || '') + '\n' + (data.data.stderr || '');
+            log.textContent = out.trim();
+        }
+        if (sec) sec.textContent = '关闭';
+        if (typeof showToast === 'function') showToast(msg, 'error');
+    };
+
+    xhr.onerror = function () {
+        btn.disabled = false;
+        btn.textContent = '重试';
+        if (status) {
+            status.textContent = '网络错误';
+            status.style.color = '#b54a4a';
+        }
+        if (typeof showToast === 'function') showToast('网络错误', 'error');
+    };
+
+    xhr.send(fd);
+}
+
+function manualSecondaryAction() {
+    closeManualInstall();
 }
 </script>
 {{end}}

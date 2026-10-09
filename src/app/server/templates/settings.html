@@ -123,8 +123,54 @@
         margin: 0 auto;
     }
 
+    /* ★ 打赏卡片样式 */
+    .reward-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px 20px 16px;
+        margin-bottom: 12px;
+        text-align: center;
+    }
+    .reward-card .reward-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+    }
+    .reward-card .reward-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        margin-bottom: 14px;
+    }
+    .reward-card .reward-img-wrap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .reward-card .reward-img-wrap img {
+        max-width: 180px;
+        max-height: 180px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: white;
+        padding: 6px;
+    }
+    .reward-card .reward-tip {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 10px;
+    }
+
     body.dark-mode .settings-card { background: #1e2a45; border-color: #2a3a5a; }
     body.dark-mode .settings-card .row { border-bottom-color: #2a3a5a; }
+    body.dark-mode .reward-card { background: #1e2a45; border-color: #2a3a5a; }
 
     @media (max-width: 768px) {
         .settings-tabs { gap: 0; }
@@ -134,6 +180,7 @@
 
     @media (max-width: 550px) {
         .settings-tab { padding: 4px 12px; font-size: 12px; }
+        .reward-card .reward-img-wrap img { max-width: 140px; max-height: 140px; }
     }
 
     @media (max-width: 400px) {
@@ -156,6 +203,20 @@
                 <div class="row"><span class="label">深色模式</span><label class="switch"><input type="checkbox" id="themeSwitch" onchange="handleThemeSwitch(this.checked)"><span class="slider"></span></label></div>
                 <div class="row"><span class="label">导出日志</span><button class="action-btn" onclick="exportLogs()">导出</button></div>
                 <div class="row"><span class="label">清除本地缓存</span><button class="action-btn" onclick="clearCache()">清除</button></div>
+            </div>
+
+            <!-- ★ 打赏卡片（从"关于"移到"通用"） -->
+            <div class="reward-card" id="rewardCard">
+                <div class="reward-title">☕ 请作者喝杯咖啡</div>
+                <div class="reward-desc">
+                    如果 FN软仓 帮到了你<br>
+                    欢迎请作者喝杯咖啡，你的支持是持续更新的动力
+                </div>
+                <div class="reward-img-wrap">
+                    <img src="{{.StaticBase}}/static/reward.jpg" alt="打赏二维码"
+                         onerror="document.getElementById('rewardCard').style.display='none';">
+                </div>
+                <div class="reward-tip">微信 / 支付宝 扫一扫</div>
             </div>
         </div>
         <div class="settings-panel" id="spanel-system">
@@ -250,7 +311,6 @@ function switchSettingTab(tab) {
 // 深色模式切换（由 layout.html 的 toggleTheme 调用，此处暴露给 onchange）
 function handleThemeSwitch(checked) {
     setTheme(checked ? 'dark' : 'light');
-    // 同步 switch 状态
     var themeSwitch = document.getElementById('themeSwitch');
     if (themeSwitch) themeSwitch.checked = checked;
 }
