@@ -14,22 +14,49 @@
     .modal-overlay.active { display: flex; }
     .modal-content {
         background: var(--card-bg);
-        border-radius: 10px;
-        max-width: 480px;
+        border-radius: 12px;
+        max-width: 520px;
         width: 100%;
         max-height: 85vh;
         overflow-y: auto;
-        padding: 20px 24px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        padding: 28px 32px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
         animation: modalIn 0.2s;
     }
     @keyframes modalIn {
         from { opacity:0; transform:scale(0.98) translateY(6px); }
         to { opacity:1; transform:scale(1) translateY(0); }
     }
-    .modal-close { float: right; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); line-height: 1; padding: 0 4px; }
-    .modal-close:hover { color: var(--text-primary); }
-    .modal-title { font-size: 16px; font-weight: 500; color: var(--text-primary); margin-bottom: 14px; }
+    .modal-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); line-height: 1; padding: 4px 8px; border-radius: 4px; transition: all 0.15s; }
+    .modal-close:hover { color: var(--text-primary); background: rgba(0,0,0,0.05); }
+    .modal-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 20px; }
+
+    /* 统一按钮组 */
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 24px;
+    }
+    .modal-btn {
+        padding: 9px 28px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-secondary);
+    }
+    .modal-btn:hover { background: var(--bg); }
+    .modal-btn-primary {
+        background: #2563ea;
+        color: #fff;
+        border: none;
+    }
+    .modal-btn-primary:hover { background: #1d4ed8; }
+    .modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* 大图预览 */
     .modal-overlay-image {
@@ -103,28 +130,56 @@
     .image-nav-btn.next { right: -16px; }
     .image-counter { text-align: center; font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 6px; }
 
-    /* 向导 */
-    .wizard-field { margin-bottom: 10px; }
-    .wizard-field label { display: block; font-size: 12px; font-weight: 400; margin-bottom: 2px; color: var(--text-secondary); }
-    .wizard-field input, .wizard-field select, .wizard-field textarea {
+    /* ============================================ */
+    /* ★ v2.9.1 向导（放大字号/间距，贴近飞牛官方观感） */
+    /* ============================================ */
+    .wizard-field { margin-bottom: 18px; }
+    .wizard-field label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 6px;
+        color: var(--text-primary);
+    }
+    .wizard-field input,
+    .wizard-field select,
+    .wizard-field textarea {
         width: 100%;
-        padding: 6px 10px;
+        padding: 10px 14px;
         border: 1px solid #d5d7dd;
-        border-radius: 4px;
-        font-size: 12px;
+        border-radius: 6px;
+        font-size: 14px;
         outline: none;
         background: var(--card-bg);
         color: var(--text-primary);
         transition: all 0.2s;
+        box-sizing: border-box;
     }
-    .wizard-field input:focus, .wizard-field select:focus, .wizard-field textarea:focus { border-color: #b0a8a0; box-shadow: 0 0 0 2px rgba(0,0,0,0.03); }
-    .wizard-field .hint { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .wizard-field input:focus,
+    .wizard-field select:focus,
+    .wizard-field textarea:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .wizard-field .hint {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
+        line-height: 1.5;
+    }
     .wizard-field .required { color: #b55a5a; margin-left: 2px; }
 
     body.dark-mode .modal-overlay { background: rgba(0,0,0,0.6); }
     body.dark-mode .modal-content { background: #1e2a45; color: var(--text-primary); }
     body.dark-mode .modal-close { color: var(--text-muted); }
     body.dark-mode .modal-close:hover { color: var(--text-primary); }
+    body.dark-mode .wizard-field input,
+    body.dark-mode .wizard-field select,
+    body.dark-mode .wizard-field textarea {
+        background: #16213e;
+        border-color: #2a3a5a;
+        color: #e8e8f0;
+    }
 
     /* ============================================ */
     /* 安装进度弹窗 */
@@ -132,34 +187,34 @@
     .install-modal-content {
         background: var(--card-bg);
         border-radius: 12px;
-        width: 480px;
+        width: 500px;
         max-width: 94vw;
-        padding: 24px 28px;
+        padding: 28px 32px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.12);
         animation: modalIn 0.2s;
     }
     .install-modal-head {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
+        gap: 14px;
+        margin-bottom: 20px;
     }
     .install-modal-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
         background: #e8eaed;
         overflow: hidden;
         flex-shrink: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 22px;
+        font-size: 24px;
     }
     .install-modal-icon img { width: 100%; height: 100%; object-fit: cover; }
     .install-modal-title { flex: 1; min-width: 0; }
     .install-modal-title .name {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 600;
         color: var(--text-primary);
         white-space: nowrap;
@@ -167,35 +222,35 @@
         text-overflow: ellipsis;
     }
     .install-modal-title .stage {
-        font-size: 11px;
+        font-size: 12px;
         color: var(--text-muted);
-        margin-top: 2px;
+        margin-top: 3px;
     }
     .install-modal-close {
         background: none;
         border: none;
-        font-size: 18px;
+        font-size: 20px;
         cursor: pointer;
         color: var(--text-muted);
         line-height: 1;
-        padding: 4px 6px;
+        padding: 6px 8px;
         border-radius: 4px;
         transition: all 0.15s;
     }
     .install-modal-close:hover { color: var(--text-primary); background: rgba(0,0,0,0.05); }
 
-    .install-modal-bar-wrap { margin: 6px 0 8px; }
+    .install-modal-bar-wrap { margin: 8px 0 10px; }
     .install-modal-bar-bg {
         width: 100%;
-        height: 6px;
+        height: 8px;
         background: #e8e8e8;
-        border-radius: 3px;
+        border-radius: 4px;
         overflow: hidden;
     }
     .install-modal-bar-fill {
         height: 100%;
         width: 0%;
-        border-radius: 3px;
+        border-radius: 4px;
         background: linear-gradient(90deg, #4a9eff, #2563ea);
         transition: width 0.3s ease;
     }
@@ -206,12 +261,12 @@
         display: flex;
         justify-content: space-between;
         align-items: baseline;
-        font-size: 12px;
+        font-size: 13px;
         color: var(--text-secondary);
-        margin-bottom: 4px;
+        margin-bottom: 6px;
     }
     .install-modal-info .pct {
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 700;
         color: var(--text-primary);
         font-variant-numeric: tabular-nums;
@@ -220,9 +275,9 @@
     .install-modal-info .pct.error   { color: #b54a4a; }
 
     .install-modal-status {
-        font-size: 12px;
+        font-size: 13px;
         color: var(--text-secondary);
-        min-height: 18px;
+        min-height: 20px;
         margin-bottom: 2px;
         word-break: break-all;
     }
@@ -230,22 +285,30 @@
     .install-modal-status.error   { color: #b54a4a; }
 
     .install-modal-detail {
-        font-size: 11px;
+        font-size: 12px;
         color: var(--text-muted);
-        min-height: 16px;
+        min-height: 18px;
         font-variant-numeric: tabular-nums;
+    }
+    /* ★ v2.9.1 当前线路 */
+    .install-modal-line {
+        font-size: 12px;
+        color: var(--text-muted);
+        min-height: 18px;
+        margin-top: 4px;
+        word-break: break-all;
     }
 
     .install-modal-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 8px;
-        margin-top: 16px;
+        gap: 12px;
+        margin-top: 20px;
     }
     .install-modal-actions .btn {
-        padding: 6px 22px;
+        padding: 9px 26px;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 14px;
         cursor: pointer;
         transition: all 0.15s;
         border: 1px solid var(--border);
@@ -269,38 +332,38 @@
     /* ============================================ */
     .manual-install-actions {
         display: flex;
-        gap: 8px;
-        margin-top: 14px;
+        gap: 10px;
+        margin-top: 18px;
     }
 
-    .manual-progress-wrap { display: none; margin-top: 12px; }
+    .manual-progress-wrap { display: none; margin-top: 14px; }
     .manual-progress-bg {
-        height: 6px;
+        height: 8px;
         background: #e8e8e8;
-        border-radius: 3px;
+        border-radius: 4px;
         overflow: hidden;
     }
     .manual-progress-bar {
         height: 100%;
         width: 0%;
         background: linear-gradient(90deg, #4a9eff, #2563ea);
-        border-radius: 3px;
+        border-radius: 4px;
         transition: width 0.3s;
     }
     .manual-progress-text {
-        font-size: 11px;
+        font-size: 12px;
         color: var(--text-muted);
-        margin-top: 4px;
+        margin-top: 5px;
         font-variant-numeric: tabular-nums;
     }
 
     .manual-log {
         display: none;
-        margin-top: 12px;
-        padding: 10px;
+        margin-top: 14px;
+        padding: 12px;
         background: #f5f5f5;
         border-radius: 6px;
-        font-size: 11px;
+        font-size: 12px;
         max-height: 280px;
         overflow: auto;
         white-space: pre-wrap;
@@ -314,18 +377,18 @@
     body.dark-mode .manual-log { background: #141c30; color: #c8d4e8; }
 
     .manual-file-input {
-        font-size: 12px;
+        font-size: 13px;
         color: var(--text-secondary);
     }
     .manual-file-input::file-selector-button {
         border: 1px solid var(--border);
         background: transparent;
         color: var(--text-secondary);
-        padding: 5px 12px;
+        padding: 8px 16px;
         border-radius: 6px;
-        font-size: 12px;
+        font-size: 13px;
         cursor: pointer;
-        margin-right: 10px;
+        margin-right: 12px;
         transition: all 0.15s;
     }
     .manual-file-input::file-selector-button:hover {
@@ -337,15 +400,15 @@
     /* ============================================ */
     .dep-modal-icon {
         flex-shrink: 0;
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         background: #FFF4E5;
         color: #B45309;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 600;
     }
     body.dark-mode .dep-modal-icon {
@@ -353,19 +416,19 @@
         color: #FBBF24;
     }
     .dep-modal-name-box {
-        margin-top: 8px;
-        padding: 8px 12px;
+        margin-top: 10px;
+        padding: 10px 14px;
         background: var(--bg);
         border-radius: 6px;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
     }
     .dep-modal-name {
         flex: 1;
         min-width: 0;
         font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 500;
         color: var(--text-primary);
         word-break: break-all;
@@ -375,8 +438,8 @@
         background: transparent;
         border: 1px solid var(--border);
         border-radius: 4px;
-        font-size: 11px;
-        padding: 2px 8px;
+        font-size: 12px;
+        padding: 4px 10px;
         color: var(--text-secondary);
         cursor: pointer;
         transition: all 0.15s;
@@ -387,14 +450,14 @@
     }
     .dep-modal-actions {
         display: flex;
-        gap: 8px;
+        gap: 10px;
         justify-content: flex-end;
-        margin-top: 6px;
+        margin-top: 10px;
     }
     .dep-modal-actions .dep-btn {
-        padding: 6px 20px;
+        padding: 8px 22px;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 14px;
         cursor: pointer;
         transition: all 0.15s;
         font-weight: 500;
@@ -404,22 +467,19 @@
         border: 1px solid var(--border);
         color: var(--text-secondary);
     }
-    .dep-modal-actions .dep-btn-secondary:hover {
-        background: var(--bg);
-    }
+    .dep-modal-actions .dep-btn-secondary:hover { background: var(--bg); }
     .dep-modal-actions .dep-btn-primary {
         background: #2563ea;
         color: #fff;
         border: none;
     }
-    .dep-modal-actions .dep-btn-primary:hover {
-        background: #1d4ed8;
-    }
+    .dep-modal-actions .dep-btn-primary:hover { background: #1d4ed8; }
 
     @media (max-width: 550px) {
-        .install-modal-content { padding: 18px 20px; }
-        .install-modal-icon { width: 40px; height: 40px; font-size: 18px; }
-        .install-modal-info .pct { font-size: 17px; }
+        .modal-content { padding: 20px; }
+        .install-modal-content { padding: 20px; }
+        .install-modal-icon { width: 44px; height: 44px; font-size: 20px; }
+        .install-modal-info .pct { font-size: 19px; }
     }
 </style>
 
@@ -427,8 +487,8 @@
 <div class="modal-overlay" id="noticeDetailModal" onclick="if(event.target===this) closeNoticeDetail()">
     <div class="modal-content">
         <button class="modal-close" onclick="closeNoticeDetail()">✕</button>
-        <div class="modal-title" id="noticeDetailTitle">📢公告详情</div>
-        <div id="noticeDetailBody" style="font-size:13px;color:var(--text-secondary);line-height:1.8;max-height:60vh;overflow-y:auto;">加载中...</div>
+        <div class="modal-title" id="noticeDetailTitle">📢 公告详情</div>
+        <div id="noticeDetailBody" style="font-size:14px;color:var(--text-secondary);line-height:1.8;max-height:60vh;overflow-y:auto;">加载中...</div>
     </div>
 </div>
 
@@ -469,6 +529,7 @@
         </div>
 
         <div class="install-modal-detail" id="installModalDetail"></div>
+        <div class="install-modal-line" id="installModalLine"></div>
 
         <div class="install-modal-actions" id="installModalActions" style="display:none;">
             <button class="btn" onclick="closeInstallModal()">关闭</button>
@@ -482,32 +543,30 @@
         <button class="modal-close" onclick="closeWizard()">✕</button>
         <div class="modal-title" id="wizardTitle">安装向导</div>
         <div id="wizardBody"></div>
-        <div style="margin-top:12px;display:flex;gap:6px;">
-            <button class="btn btn-primary" id="wizardSubmitBtn" onclick="submitWizard()">确认安装</button>
-            <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);" onclick="closeWizard()">取消</button>
+        <div class="modal-actions">
+            <button class="modal-btn" onclick="closeWizard()">取消</button>
+            <button class="modal-btn modal-btn-primary" id="wizardSubmitBtn" onclick="submitWizard()">确认安装</button>
         </div>
-        <div id="wizardStatus" style="margin-top:6px;font-size:11px;color:var(--text-muted);"></div>
+        <div id="wizardStatus" style="margin-top:10px;font-size:12px;color:var(--text-muted);"></div>
     </div>
 </div>
 
 <!-- 手动上传安装弹窗 -->
 <div class="modal-overlay" id="manualInstallModal" onclick="if(event.target===this) closeManualInstall()">
-    <div class="modal-content" style="max-width: 560px;">
+    <div class="modal-content" style="max-width: 600px;">
         <button class="modal-close" onclick="closeManualInstall()">✕</button>
         <div class="modal-title">手动安装 FPK</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:18px;line-height:1.7;">
             选择本地 FPK 文件直接安装。用于调试、排查故障，避免反复从外链下载。
         </div>
 
         <input type="file" id="manualFpkFile" accept=".fpk" class="manual-file-input">
 
         <div class="manual-install-actions">
-            <button class="card-btn btn-install" id="manualInstallBtn" onclick="doManualInstall()"
-                    style="padding: 7px 22px; font-size: 13px;">
+            <button class="modal-btn modal-btn-primary" id="manualInstallBtn" onclick="doManualInstall()">
                 开始安装
             </button>
-            <button id="manualSecondaryBtn" onclick="manualSecondaryAction()"
-                    style="display:inline-flex;align-items:center;background:transparent;color:var(--text-secondary);border:1px solid var(--border);padding:7px 20px;border-radius:6px;font-size:13px;cursor:pointer;transition:all 0.15s;">
+            <button class="modal-btn" id="manualSecondaryBtn" onclick="manualSecondaryAction()">
                 关闭
             </button>
         </div>
@@ -519,28 +578,28 @@
             <div class="manual-progress-text" id="manualInstallProgressText"></div>
         </div>
 
-        <div id="manualInstallStatus" style="margin-top:12px;font-size:12px;"></div>
+        <div id="manualInstallStatus" style="margin-top:14px;font-size:13px;"></div>
         <pre class="manual-log" id="manualInstallLog"></pre>
     </div>
 </div>
 
 <!-- 依赖缺失引导弹窗 -->
 <div class="modal-overlay" id="missingDepModal" onclick="if(event.target===this) closeMissingDepModal()">
-    <div class="modal-content" style="max-width: 440px;">
+    <div class="modal-content" style="max-width: 460px;">
         <button class="modal-close" onclick="closeMissingDepModal()">✕</button>
         <div class="modal-title">缺少依赖应用</div>
 
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0 16px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;padding:8px 0 16px;">
             <div class="dep-modal-icon">!</div>
             <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;color:var(--text-primary);line-height:1.7;">
+                <div style="font-size:14px;color:var(--text-primary);line-height:1.7;">
                     安装此应用前，需要先在飞牛应用中心安装以下依赖：
                 </div>
                 <div class="dep-modal-name-box">
                     <span class="dep-modal-name" id="missingDepName">--</span>
                     <button class="dep-modal-copy-btn" onclick="copyMissingDepName()">复制</button>
                 </div>
-                <div style="margin-top:10px;font-size:12px;color:var(--text-muted);line-height:1.6;">
+                <div style="margin-top:12px;font-size:13px;color:var(--text-muted);line-height:1.6;">
                     安装完成后返回软仓重试即可。
                 </div>
             </div>
@@ -552,259 +611,4 @@
         </div>
     </div>
 </div>
-
-<script>
-// 详情弹窗已改为页面切换，这里只保留兼容函数
-function closeDetail() {
-    if (typeof backToAppsList === 'function') backToAppsList();
-    if (typeof currentDetailApp !== 'undefined') currentDetailApp = null;
-}
-
-function closeNoticeDetail() {
-    var modal = document.getElementById('noticeDetailModal');
-    if (modal) modal.classList.remove('active');
-}
-
-function closeImageModal() {
-    var modal = document.getElementById('imageModal');
-    if (modal) modal.classList.remove('active');
-}
-
-function closeWizard() {
-    var modal = document.getElementById('wizardModal');
-    if (modal) modal.classList.remove('active');
-}
-
-// 保留空实现，兼容旧引用
-function modalInstall() {}
-function switchDetailTab(tabName) {}
-function goToSlide(index) {}
-
-// ============================================================
-// 依赖缺失引导
-// ============================================================
-var _missingDepName = '';
-
-function showMissingDepModal(depName) {
-    _missingDepName = depName || '';
-    var nameEl = document.getElementById('missingDepName');
-    if (nameEl) nameEl.textContent = _missingDepName || '(未知依赖)';
-    var modal = document.getElementById('missingDepModal');
-    if (modal) modal.classList.add('active');
-}
-
-function closeMissingDepModal() {
-    var modal = document.getElementById('missingDepModal');
-    if (modal) modal.classList.remove('active');
-}
-
-async function openMissingDepInAppCenter() {
-    var depName = _missingDepName;
-    closeMissingDepModal();
-    if (!depName) return;
-
-    if (window.trimSdk && typeof window.trimSdk.openAppSetting === 'function') {
-        try {
-            await window.trimSdk.openAppSetting();
-            setTimeout(function () {
-                if (typeof showToast === 'function') {
-                    showToast('请在应用中心搜索「' + depName + '」并安装', 'info');
-                }
-            }, 300);
-            return;
-        } catch (e) {
-            console.warn('打开应用中心失败:', e);
-        }
-    }
-
-    if (typeof showToast === 'function') {
-        showToast('请手动打开飞牛应用中心，搜索「' + depName + '」并安装', 'warning');
-    }
-}
-
-function copyMissingDepName() {
-    if (!_missingDepName) return;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(_missingDepName).then(function () {
-            if (typeof showToast === 'function') {
-                showToast('已复制依赖名', 'success');
-            }
-        }).catch(function () {
-            _fallbackCopy(_missingDepName);
-        });
-    } else {
-        _fallbackCopy(_missingDepName);
-    }
-}
-
-function _fallbackCopy(text) {
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-        document.execCommand('copy');
-        if (typeof showToast === 'function') {
-            showToast('已复制依赖名', 'success');
-        }
-    } catch (e) {}
-    document.body.removeChild(ta);
-}
-
-// ============================================================
-// ★ 手动上传 FPK 安装
-//
-// 修复（2026-10-09）：
-//   - 后端检测到带向导时返回 { wizard: true, session_id, steps, ... }
-//   - 前端收到后关闭手动安装弹窗，打开向导弹窗
-//   - 用户在向导填完提交 → 走标准向导流程 → 后端 install
-// ============================================================
-
-function showManualInstall() {
-    var modal = document.getElementById('manualInstallModal');
-    if (!modal) return;
-
-    var fileInput = document.getElementById('manualFpkFile');
-    if (fileInput) fileInput.value = '';
-
-    var progressWrap = document.getElementById('manualInstallProgressWrap');
-    if (progressWrap) progressWrap.style.display = 'none';
-
-    var bar = document.getElementById('manualInstallProgressBar');
-    if (bar) bar.style.width = '0%';
-
-    var text = document.getElementById('manualInstallProgressText');
-    if (text) text.textContent = '';
-
-    var status = document.getElementById('manualInstallStatus');
-    if (status) { status.textContent = ''; status.style.color = ''; status.className = ''; }
-
-    var log = document.getElementById('manualInstallLog');
-    if (log) { log.textContent = ''; log.style.display = 'none'; }
-
-    var btn = document.getElementById('manualInstallBtn');
-    if (btn) { btn.disabled = false; btn.textContent = '开始安装'; }
-
-    var sec = document.getElementById('manualSecondaryBtn');
-    if (sec) { sec.textContent = '关闭'; sec.onclick = closeManualInstall; }
-
-    modal.classList.add('active');
-}
-
-function closeManualInstall() {
-    var modal = document.getElementById('manualInstallModal');
-    if (modal) modal.classList.remove('active');
-}
-
-function doManualInstall() {
-    var fileInput = document.getElementById('manualFpkFile');
-    var file = fileInput && fileInput.files && fileInput.files[0];
-    if (!file) {
-        if (typeof showToast === 'function') showToast('请先选择 FPK 文件', 'warning');
-        return;
-    }
-    if (!file.name.toLowerCase().endsWith('.fpk')) {
-        if (typeof showToast === 'function') showToast('文件必须是 .fpk', 'warning');
-        return;
-    }
-
-    var btn = document.getElementById('manualInstallBtn');
-    var status = document.getElementById('manualInstallStatus');
-    var progressWrap = document.getElementById('manualInstallProgressWrap');
-    var bar = document.getElementById('manualInstallProgressBar');
-    var text = document.getElementById('manualInstallProgressText');
-    var log = document.getElementById('manualInstallLog');
-    var sec = document.getElementById('manualSecondaryBtn');
-
-    btn.disabled = true;
-    btn.textContent = '上传中...';
-    if (progressWrap) progressWrap.style.display = 'block';
-    if (status) { status.textContent = ''; status.style.color = ''; }
-    if (log) { log.textContent = ''; log.style.display = 'none'; }
-
-    var fd = new FormData();
-    fd.append('fpk', file);
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', API_BASE + '/api/install-local');
-
-    xhr.upload.onprogress = function (e) {
-        if (!e.lengthComputable) return;
-        var pct = Math.round(e.loaded / e.total * 100);
-        if (bar) bar.style.width = pct + '%';
-        if (text) {
-            text.textContent = pct + '% · ' +
-                (e.loaded / 1024 / 1024).toFixed(1) + ' / ' +
-                (e.total / 1024 / 1024).toFixed(1) + ' MB';
-        }
-    };
-
-    xhr.onload = function () {
-        var data = {};
-        try { data = JSON.parse(xhr.responseText); } catch (e) {}
-
-        // ★ 带向导：关闭手动安装弹窗，打开向导弹窗
-        if (xhr.status === 200 && data.success && data.wizard) {
-            closeManualInstall();
-            if (typeof showWizardFromSession === 'function') {
-                showWizardFromSession(data.session_id, data.steps, data.title, data.app_id);
-            } else if (typeof showToast === 'function') {
-                showToast('此应用需要填写安装向导', 'info');
-            }
-            return;
-        }
-
-        if (xhr.status === 200 && data.success) {
-            btn.textContent = '安装成功';
-            btn.disabled = true;
-            if (status) {
-                status.textContent = data.message || '安装成功';
-                status.style.color = '#4a8a4a';
-            }
-            if (text) text.textContent = '上传完成，安装完成';
-            if (sec) sec.textContent = '关闭';
-            if (typeof showToast === 'function') showToast('安装成功', 'success');
-            setTimeout(function () {
-                closeManualInstall();
-                if (typeof refreshApps === 'function') refreshApps();
-            }, 2000);
-            return;
-        }
-
-        // 失败
-        btn.disabled = false;
-        btn.textContent = '重试';
-        var msg = data.message || ('HTTP ' + xhr.status);
-        if (status) {
-            status.textContent = msg;
-            status.style.color = '#b54a4a';
-        }
-        if (log && data.data) {
-            log.style.display = 'block';
-            var out = (data.data.stdout || '') + '\n' + (data.data.stderr || '');
-            log.textContent = out.trim();
-        }
-        if (sec) sec.textContent = '关闭';
-        if (typeof showToast === 'function') showToast(msg, 'error');
-    };
-
-    xhr.onerror = function () {
-        btn.disabled = false;
-        btn.textContent = '重试';
-        if (status) {
-            status.textContent = '网络错误';
-            status.style.color = '#b54a4a';
-        }
-        if (typeof showToast === 'function') showToast('网络错误', 'error');
-    };
-
-    xhr.send(fd);
-}
-
-function manualSecondaryAction() {
-    closeManualInstall();
-}
-</script>
 {{end}}

@@ -82,7 +82,6 @@
             width: 100%;
         }
 
-        /* ===== 左侧导航 ===== */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
@@ -95,7 +94,6 @@
             z-index: 50;
         }
 
-        /* ★ 侧边栏顶部搜索框 */
         .sidebar-search {
             padding: 0 10px 10px;
             flex-shrink: 0;
@@ -201,7 +199,8 @@
         }
         .tab-content.active { display: flex; }
 
-        /* 深色模式 */
+        /* ===== 暗色模式：变量合并到 html 和 body 上 ===== */
+        html.dark-mode,
         body.dark-mode {
             --bg: #1a1a2e;
             --content-bg: #16213e;
@@ -211,19 +210,19 @@
             --text-primary: #e8e8f0;
             --text-secondary: #a8b8d0;
             --text-muted: #6a7a9a;
-        }
-        body.dark-mode .header { background: #16213e; border-bottom-color: var(--border); }
-        body.dark-mode .sidebar { background: #141c30; border-right-color: var(--border); }
-        body.dark-mode .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); }
-        body.dark-mode .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: #60a5fa; }
-        body.dark-mode .sidebar-footer { border-top-color: var(--border); }
-
-        /* ★ 防闪：html 上也加 class 时，先铺深色背景 */
-        html.dark-mode,
-        html.dark-mode body {
             background: #1a1a2e;
             color: #e8e8f0;
         }
+        html.dark-mode .header,
+        body.dark-mode .header { background: #16213e; border-bottom-color: var(--border); }
+        html.dark-mode .sidebar,
+        body.dark-mode .sidebar { background: #141c30; border-right-color: var(--border); }
+        html.dark-mode .sidebar-nav .nav-item:hover,
+        body.dark-mode .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.05); }
+        html.dark-mode .sidebar-nav .nav-item.active,
+        body.dark-mode .sidebar-nav .nav-item.active { background: rgba(37,99,235,0.2); color: #60a5fa; }
+        html.dark-mode .sidebar-footer,
+        body.dark-mode .sidebar-footer { border-top-color: var(--border); }
 
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -319,7 +318,6 @@
         }
     </style>
 
-    <!-- ★ 防闪：尽早把主题 class 打到 <html> 上 -->
     <script>
     (function() {
         try {
@@ -352,8 +350,6 @@
 
     <div class="app-layout">
         <aside class="sidebar" id="sidebar">
-
-            <!-- ★ 全局搜索框 -->
             <div class="sidebar-search">
                 <input type="text" id="globalSearchInput" placeholder="搜索应用..." oninput="onGlobalSearchInput(this.value)">
             </div>
@@ -406,10 +402,15 @@
         }
 
         // ============================================================
-        // 主题系统（v2.8.6 改造）
-        //   - USER_THEME_KEY：用户手动切换的主题（设置里选的）
-        //   - SYS_THEME_KEY：飞牛系统主题（SDK 提供）
-        //   优先级：用户手动 > 系统主题 > light
+        // 主题系统（简化版：只有一个深色模式开关）
+        //
+        //   状态：
+        //     - USER_THEME_KEY 存在 → 用户手动模式（'dark' / 'light'）
+        //     - USER_THEME_KEY 不存在 → 跟随系统（用 SYS_THEME_KEY）
+        //
+        //   用户操作：
+        //     - 拨动"深色模式"开关 → 进入手动模式
+        //     - 点"恢复跟随系统" → 清除 USER_THEME_KEY，回到跟随系统
         // ============================================================
         var USER_THEME_KEY = 'fnsoft_theme';
         var SYS_THEME_KEY = 'fnsoft_system_theme';
@@ -422,8 +423,10 @@
                 document.body.classList.remove('dark-mode');
                 document.documentElement.classList.remove('dark-mode');
             }
+            syncThemeSwitches();
         }
 
+        // 计算当前应该显示的主题（用户手动优先，否则跟系统）
         function getTheme() {
             var u = localStorage.getItem(USER_THEME_KEY);
             if (u === 'light' || u === 'dark') return u;
@@ -432,63 +435,166 @@
             return 'light';
         }
 
-        function setTheme(theme) {
-            // 用户手动切换 → 写入 USER_THEME_KEY
-            localStorage.setItem(USER_THEME_KEY, theme);
-            applyThemeClass(theme);
-        }
-
+        // 系统主题更新（由轮询调用）
         function setSystemTheme(theme) {
-            // 系统主题变化 → 只写 SYS_THEME_KEY
+            if (theme !== 'light' && theme !== 'dark') return;
+            var old = localStorage.getItem(SYS_THEME_KEY);
             localStorage.setItem(SYS_THEME_KEY, theme);
-            // 用户没手动选过，才跟随系统
+            if (old !== theme) {
+                console.log('[theme] 系统主题更新:', old, '→', theme,
+                            '| 用户手动 =', localStorage.getItem(USER_THEME_KEY));
+            }
+            // 只有跟随系统时才应用
             if (!localStorage.getItem(USER_THEME_KEY)) {
                 applyThemeClass(theme);
             }
         }
 
-        function toggleTheme() {
-            setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+        function resolveSystemTheme(theme) {
+            if (theme === 'light' || theme === 'dark') return theme;
+            if (theme === 'auto') {
+                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            }
+            return 'light';
+        }
+
+        function bindMatchMedia() {
+            if (!window.matchMedia) return;
+            var mq = window.matchMedia('(prefers-color-scheme: dark)');
+            var handler = function (e) {
+                setSystemTheme(e.matches ? 'dark' : 'light');
+            };
+            if (mq.addEventListener) mq.addEventListener('change', handler);
+            else if (mq.addListener) mq.addListener(handler);
+            setSystemTheme(mq.matches ? 'dark' : 'light');
         }
 
         function initTheme() {
             applyThemeClass(getTheme());
+            syncThemeSwitches();
         }
 
-        // ★ 新增：从飞牛 SDK 拉取系统主题
+        // ============================================================
+        // initSystemTheme：轮询 + $on 加速
+        // ============================================================
         async function initSystemTheme() {
-            try {
-                var mod = await import('https://cdn.jsdelivr.net/npm/@trimjs/web-app/+esm');
-                var sdk = new mod.TrimApp();
-                window.trimSdk = sdk;
-
-                var config = await sdk.getPlatformConfig();
-                if (config && config.theme) {
-                    setSystemTheme(config.theme);
-                    console.log('[theme] 系统主题:', config.theme);
+            var sdk = window.trimSdk;
+            if (!sdk) {
+                try {
+                    var mod = await Promise.race([
+                        import('https://cdn.jsdelivr.net/npm/@trimjs/web-app/+esm'),
+                        new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('CDN 加载超时')); }, 3000); })
+                    ]);
+                    sdk = new mod.TrimApp();
+                    window.trimSdk = sdk;
+                    console.log('[theme] SDK 首次加载完成');
+                } catch (e) {
+                    console.warn('[theme] SDK 加载失败/超时，退回 matchMedia:', e);
+                    bindMatchMedia();
+                    return;
                 }
-
-                // 仅在 Web 宿主环境监听变化
-                if (sdk.isWeb === true && sdk.isStandaloneWeb === false) {
-                    try {
-                        await sdk.$on('os/theme', function(theme) {
-                            console.log('[theme] 系统主题变化:', theme);
-                            setSystemTheme(theme);
-                        });
-                    } catch (e) {
-                        console.warn('[theme] $on 监听失败:', e);
-                    }
-                }
-            } catch (e) {
-                console.warn('[theme] SDK 初始化失败（使用本地缓存主题）:', e);
+            } else {
+                console.log('[theme] 复用已有 SDK 实例');
             }
+
+            console.log('[theme] sdk.isWeb:', sdk.isWeb, 'isStandaloneWeb:', sdk.isStandaloneWeb);
+
+            async function fetchRealTheme() {
+                try {
+                    var config = await Promise.race([
+                        sdk.getPlatformConfig(),
+                        new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('timeout')); }, 2000); })
+                    ]);
+                    if (config && config.theme) {
+                        return resolveSystemTheme(config.theme);
+                    }
+                } catch (e) {
+                    console.warn('[theme] getPlatformConfig 失败:', e);
+                }
+                return null;
+            }
+
+            // 首次拉取
+            var initial = await fetchRealTheme();
+            if (initial) {
+                console.log('[theme] 初始系统主题:', initial);
+                setSystemTheme(initial);
+            } else {
+                console.warn('[theme] 初始系统主题获取失败，退回 matchMedia');
+                bindMatchMedia();
+            }
+
+            // 每 2 秒轮询
+            var lastPolled = localStorage.getItem(SYS_THEME_KEY);
+            function poll() {
+                if (document.hidden) return;
+                fetchRealTheme().then(function(real) {
+                    if (real && real !== lastPolled) {
+                        lastPolled = real;
+                        setSystemTheme(real);
+                    }
+                });
+            }
+            setInterval(poll, 2000);
+
+            // $on 事件 → 立即触发一次轮询
+            if (sdk.isWeb === true && sdk.isStandaloneWeb === false) {
+                try {
+                    var ret = sdk.$on('os/theme', function (theme) {
+                        console.log('[theme] $on 事件:', theme, '→ 立即触发轮询');
+                        setTimeout(poll, 100);
+                    });
+                    if (ret && typeof ret.catch === 'function') {
+                        ret.catch(function(e) {
+                            console.warn('[theme] $on 监听失败（不影响轮询）:', e);
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[theme] $on 抛异常（不影响轮询）:', e);
+                }
+            }
+
+            // 页面重新可见时立即轮询
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) setTimeout(poll, 200);
+            });
         }
 
-        // ★ 新增：用户手动切换主题后，清除"手动覆盖"标记（用于恢复跟随系统）
-        // 这个函数不主动调用，留给未来"跟随系统"开关使用
-        function clearUserTheme() {
+        // ============================================================
+        // 开关逻辑（方案 A）
+        // ============================================================
+
+        // 拨动"深色模式"开关 → 进入用户手动模式
+        function handleThemeSwitch(checked) {
+            var theme = checked ? 'dark' : 'light';
+            localStorage.setItem(USER_THEME_KEY, theme);
+            applyThemeClass(theme);
+            syncThemeSwitches();
+            console.log('[theme] 用户手动切换:', theme);
+        }
+
+        // 点"恢复跟随系统" → 回到跟随系统
+        function resetToSystemTheme() {
             localStorage.removeItem(USER_THEME_KEY);
-            initTheme();
+            applyThemeClass(getTheme());
+            syncThemeSwitches();
+            console.log('[theme] 恢复跟随系统，当前系统主题 =',
+                        localStorage.getItem(SYS_THEME_KEY));
+        }
+
+        // 同步 UI 状态
+        function syncThemeSwitches() {
+            var themeSwitch = document.getElementById('themeSwitch');
+            var followHint = document.getElementById('followSystemHint');
+
+            var isAuto = !localStorage.getItem(USER_THEME_KEY);
+
+            if (themeSwitch) {
+                themeSwitch.checked = (getTheme() === 'dark');
+            }
+            if (followHint) {
+                followHint.style.display = isAuto ? 'none' : '';
+            }
         }
 
         function onGlobalSearchInput(val) {
@@ -536,6 +642,9 @@
             if (tab === 'home' && typeof loadHome === 'function') {
                 loadHome();
             }
+            if (tab === 'settings' && typeof syncThemeSwitches === 'function') {
+                setTimeout(function() { syncThemeSwitches(); }, 30);
+            }
 
             if (tab === 'apps' && window._pendingDetailAppId && typeof openDetail === 'function') {
                 var id = window._pendingDetailAppId;
@@ -547,10 +656,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // ★ 第一步：应用本地缓存主题（防闪）
             initTheme();
-
-            // ★ 第二步：异步拉取系统主题（不阻塞）
             initSystemTheme();
 
             switchTab('home');

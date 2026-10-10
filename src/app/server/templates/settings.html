@@ -70,6 +70,26 @@
     }
     .settings-card .row .action-btn:hover { background: var(--hover-bg); border-color: var(--border-hover); }
 
+    /* 恢复跟随系统的提示行 */
+    .settings-card .row.follow-hint {
+        padding-top: 2px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border);
+    }
+    .settings-card .row.follow-hint .hint-text {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+    .settings-card .row.follow-hint .hint-text a {
+        color: var(--blue);
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .settings-card .row.follow-hint .hint-text a:hover {
+        text-decoration: underline;
+    }
+
     .switch {
         position: relative;
         width: 38px;
@@ -98,6 +118,7 @@
     }
     .switch input:checked + .slider { background: #2563ea; }
     .switch input:checked + .slider::before { transform: translateX(18px); }
+    .switch input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 
     .qrcode-row {
         border-bottom: none !important;
@@ -123,7 +144,6 @@
         margin: 0 auto;
     }
 
-    /* ★ 打赏卡片样式 */
     .reward-card {
         background: var(--card-bg);
         border: 1px solid var(--border);
@@ -200,23 +220,33 @@
         <div class="settings-panel active" id="spanel-general">
             <div class="settings-card">
                 <div class="title">通用设置</div>
-                <div class="row"><span class="label">深色模式</span><label class="switch"><input type="checkbox" id="themeSwitch" onchange="handleThemeSwitch(this.checked)"><span class="slider"></span></label></div>
+                <div class="row">
+                    <span class="label">深色模式</span>
+                    <label class="switch">
+                        <input type="checkbox" id="themeSwitch" onchange="handleThemeSwitch(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="row follow-hint" id="followSystemHint" style="display:none;">
+                    <span class="hint-text">
+                        已手动设置，<a onclick="resetToSystemTheme()">恢复跟随系统</a>
+                    </span>
+                </div>
                 <div class="row"><span class="label">导出日志</span><button class="action-btn" onclick="exportLogs()">导出</button></div>
                 <div class="row"><span class="label">清除本地缓存</span><button class="action-btn" onclick="clearCache()">清除</button></div>
             </div>
 
-            <!-- ★ 打赏卡片（从"关于"移到"通用"） -->
             <div class="reward-card" id="rewardCard">
-                <div class="reward-title">☕ 请作者喝杯咖啡</div>
+                <div class="reward-title">☕打赏</div>
                 <div class="reward-desc">
-                    如果 FN软仓 帮到了你<br>
-                    欢迎请作者喝杯咖啡，你的支持是持续更新的动力
+                    FN软仓系病中所做，如有bug请静待修复<br>
+                    如喜欢，欢迎打赏个医药费
                 </div>
                 <div class="reward-img-wrap">
                     <img src="{{.StaticBase}}/static/reward.jpg" alt="打赏二维码"
                          onerror="document.getElementById('rewardCard').style.display='none';">
                 </div>
-                <div class="reward-tip">微信 / 支付宝 扫一扫</div>
+                <div class="reward-tip">微信扫一扫</div>
             </div>
         </div>
         <div class="settings-panel" id="spanel-system">
@@ -273,7 +303,8 @@
                 <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
                     <b>① 部署</b> · Docker 一条命令起服务端<br>
                     <b>② 上架</b> · 后台上传 FPK，或 Gitee + 上架助手（群里拿）<br>
-                    <b>③ 分享</b> · 把源地址发给朋友
+                    <b>③ 分享</b> · 把源地址发给朋友<br>
+                    <b>提示:</b> 其实还可以找我开通开发者后台，只需要一个fnrc.json就能参与哦
                 </div>
             </div>
 
@@ -290,31 +321,4 @@
         </div>
     </div>
 </div>
-
-<script>
-// 空值保护：所有元素操作前检查
-function switchSettingTab(tab) {
-    var tabs = document.querySelectorAll('.settings-tab');
-    if (tabs) {
-        tabs.forEach(function(el) {
-            el.classList.toggle('active', el.dataset.stab === tab);
-        });
-    }
-    var panels = document.querySelectorAll('.settings-panel');
-    if (panels) {
-        panels.forEach(function(el) {
-            el.classList.toggle('active', el.id === 'spanel-' + tab);
-        });
-    }
-}
-
-// 深色模式切换（由 layout.html 的 toggleTheme 调用，此处暴露给 onchange）
-function handleThemeSwitch(checked) {
-    setTheme(checked ? 'dark' : 'light');
-    var themeSwitch = document.getElementById('themeSwitch');
-    if (themeSwitch) themeSwitch.checked = checked;
-}
-
-// 其他函数（exportLogs, clearCache, checkClientUpdate 等）已在 index.html 定义，此处无需重复
-</script>
 {{end}}
