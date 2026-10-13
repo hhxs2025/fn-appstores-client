@@ -1,6 +1,7 @@
 # FN软仓客户端
 
 > 飞牛 OS 第三方应用商店客户端
+
 ---
 ![宣传图](https://gitee.com/hhxs2025/fn-appstores-client/raw/master/previews/xuanchuantu.png)
 ---
@@ -10,7 +11,7 @@
 FN软仓是飞牛 OS 上的第三方应用商店客户端，支持**多软件源聚合**。用户可以自由添加自托管服务端地址，浏览、安装、更新飞牛官方应用中心没有的三方应用。
 
 - **项目地址**：[https://gitee.com/hhxs2025/fn-appstores](https://gitee.com/hhxs2025/fn-appstores)
-- **服务端镜像**：`docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.0`
+- **服务端镜像**：`docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.1`
 - **平台**：飞牛 OS
 - **架构**：x86 / ARM 双架构兼容
 - **开源协议**：MIT
@@ -19,9 +20,9 @@ FN软仓是飞牛 OS 上的第三方应用商店客户端，支持**多软件源
 >
 > **微应用支持**：v2.9.0 起声明 `micro_app=true`，可在飞牛应用中心宿主环境内加载，跟随系统主题。
 
-> **⚠️ v2.9.0 重要提示**：v2.9.0 修复了**应用更新功能从未生效**的历史遗留问题（飞牛官方 CLI 没有 `update` 命令，`install-fpk` 对已安装应用是空操作），并把版本读取源从磁盘 manifest 改为飞牛内部数据库。**v2.8.4 及以前的所有版本，应用更新功能均未真正生效**，请务必升级到此版本或更高版本。
+> **✅ v2.9.2 重要改进**：**下载链路打通 + 学习闭环激活**。修复了 v2.9.1 遗留的三个链路问题——① 主源半托管 / fnrc 聚合源的 GitHub 直链客户端拿不到多条候选；② 失败上报空转（只发 app_id 服务端定位不到规则）；③ 客户端二次展开候选打破服务端排序。同时让主源地址永远排候选第 1 位，兼顾统计准确和 302 兜底。
 
-> **✅ v2.9.1 重要改进**：彻底重写主题系统。**合并为一个深色模式开关**（不再需要"跟随系统主题"+"深色模式"两个开关互相配合），并新增 **2 秒轮询 + `$on` 加速器**双通道机制，解决飞牛 `$on('os/theme')` 事件不可靠导致"系统主题切换后页面只变顶部"的问题。同时把 `appcenter-cli list` 的版本读取结果缓存 5 秒，避免一次安装流程内重复调用，安装速度更快。
+> **⚠️ v2.9.0 重要提示**：v2.9.0 修复了**应用更新功能从未生效**的历史遗留问题（飞牛官方 CLI 没有 `update` 命令，`install-fpk` 对已安装应用是空操作），并把版本读取源从磁盘 manifest 改为飞牛内部数据库。**v2.8.4 及以前的所有版本，应用更新功能均未真正生效**，请务必升级到此版本或更高版本。
 
 ---
 
@@ -40,15 +41,18 @@ FN软仓是飞牛 OS 上的第三方应用商店客户端，支持**多软件源
 
 - **应用更新真正生效**：走飞牛 `stop → uninstall → install-fpk` 完整流程，卸载时飞牛自动保留 `@appdata` 用户数据目录，更新前后用户数据零损失
 - **版本读取源修复**：从飞牛 `appcenter-cli list`（内部数据库）读实际安装版本，不再依赖可能与数据库不同步的 manifest 文件；辅以 `fixManifestVersion` 在装完后主动同步 manifest，保持数据一致
-- **CLI 版本读取缓存（v2.9.1 新增）**：`appcenter-cli list` 加 5 秒内存缓存，一次安装流程内的 5~6 次读取合并为 1 次；装完后主动 invalidate，保证版本校验读到最新数据
+- **CLI 版本读取缓存（v2.9.1）**：`appcenter-cli list` 加 5 秒内存缓存，一次安装流程内的 5~6 次读取合并为 1 次；装完后主动 invalidate，保证版本校验读到最新数据
+- **下载链路打通（v2.9.2 新增）**：客户端不再二次展开候选，服务端下发的候选列表直接用；主源地址永远排第 1，兼顾统计和 302 兜底
+- **候选数量与重试次数匹配（v2.9.2 新增）**：重试次数从硬编码 3 改为**按候选数动态计算**（上限 8，保底 3），不再"18 条候选只试 3 条"
+- **失败上报闭环（v2.9.2 修复）**：客户端上报失败时**带 URL**，服务端能反查规则并降权；之前只发 app_id，服务端"无法定位规则"什么也不做
 - **手动安装**：应用页工具栏「手动安装」按钮，支持本地 FPK 上传，显示完整安装日志；**同时支持带向导的 FPK**——检测到 `wizard/install` 时自动弹出向导，与在线安装行为一致
 - **多线路下载**：从服务端获取候选 URL 列表（`download_urls` 数组），依次尝试，某条线路失效自动降级到下一条；全部失败时回退原始外链
-- **三层加速兜底**：服务端候选 + 服务端加速器池 + 客户端内置加速器池，即使服务端挂掉也能从 GitHub 原始地址展开成十几条候选
+- **三层加速兜底**：服务端候选 + 服务端加速器池 + 客户端内置加速器池（仅当服务端无候选时启用）
 - **加速器本地学习**：本地记录每条线路对当前 NAS 的成功/失败次数，按成功率排序，优先复用最靠谱的线路
+- **主源地址优先（v2.9.2 新增）**：主源地址在候选列表中永远排第 1，不参与本地学习排序，保证每次下载先经过主源统计
 - **智能切线路**：首块 5 秒速度检测（低于 100KB/s 自动切）+ 30 秒 stall 检测，卡住不再死等
 - **实时进度**：WebSocket 推送下载进度、速度、当前尝试线路等信息
 - **完整性校验**：gzip 魔数 + HTML 错误页检测 + hash/size 校验（服务端提供时启用），多层防护，避免错误页被当作 FPK 安装
-- **加速器失败上报**：所有线路下载失败时，客户端主动 POST 到源服务端 `/api/accelerator/report-failed`，服务端据此给对应加速规则降权
 - **Docker 应用验证**：容器必须 `running` 才算成功，失败自动清理残留容器
 - **依赖缺失引导**：识别飞牛返回的依赖缺失报错，一键跳转飞牛应用中心安装依赖
 - **客户端自更新**：设置页一键检测最新版本，下载后引导手动安装
@@ -137,53 +141,63 @@ FN软仓是飞牛 OS 上的第三方应用商店客户端，支持**多软件源
 
 ## 📜 版本记录
 
-### v2.9.1（当前版本）
+### v2.9.2（当前版本）
+
+**下载链路打通 + 学习闭环激活 + 主源候选修复**
+
+**🐛 修复**
+
+- **修复主源半托管 / fnrc 聚合源只有 1 条候选**：v2.9.1 及以前，客户端从服务端拿到的 `download_urls` 只有 1 条（主源地址），导致本地学习、失败上报、动态切线路全部失效。v2.9.2 起客户端不再二次展开候选，直接使用服务端下发的完整列表（主源 + 5 条加速器 + 原始兜底）
+- **修复失败上报空转**：`reportAcceleratorFailure` 之前只发 `app_id`，服务端 `APIReportAcceleratorFailed` 无法反查规则，走"已记录"分支什么也不做。v2.9.2 起客户端带上 `failedURL`，服务端能定位规则并降权 5 分钟
+- **修复候选与重试次数不匹配**：`maxDownloadRetries` 之前硬编码 3 次，但候选可能 15~20 条，"18 条候选只试前 3 条"。v2.9.2 起按 `len(candidates)` 动态计算（上限 8，保底 3）
+- **修复服务端 health check 排序失效**：`buildAllCandidates` 之前会二次展开候选，打破服务端的两档排序。v2.9.2 起服务端已给候选时直接返回，不再二次展开
+
+**✨ 新增**
+
+- **主源地址优先排序**：新增 `isPrimarySourceURL` 函数，识别任意已启用源的 `/apps/xxx.fpk` 地址；`sortByAccelHistory` 让主源地址**永远排第 1**，不参与本地学习排序，保证：
+  1. 每次下载先经过主源 → 服务端 `ServeApp` 在 302 前 `IncrementDownload` → **统计准确**
+  2. 服务端 302 会选一条加速器 → **加速兜底**
+  3. 主源 302 后失败时，客户端切加速器直连 → **动态切换**
+
+**🔧 内部改动**
+
+- `install.go` `reportAcceleratorFailure` 签名加 `failedURL` 参数，payload 加 `"url"` 字段
+- `install.go` `InstallAppWithProgress` 新增 `lastFailedURL` 变量，失败时传给上报函数
+- `install.go` `InstallAppWithProgress` 的 `maxDownloadRetries` 改为动态计算
+- `install.go` `buildAllCandidates` 服务端已给候选时直接 return，二次展开降级为"仅服务端无候选时启用"
+- `accel_history.go` 新增 `isPrimarySourceURL` 函数
+- `accel_history.go` `sortByAccelHistory` 加 `isPrimary` 判定，主源地址固定满分排序
+
+**🔌 兼容性**
+
+- **服务端 v2.9.2 配套最佳**：服务端 `buildDownloadCandidates` 展开主源 + 加速器候选，客户端直接使用
+- **服务端 v2.9.1 及以前**：客户端对老服务端自动降级，走 `buildAllCandidates` 的兜底二次展开（行为同 v2.9.1）
+- **服务端 v2.8.x**：新接口不可用时自动回退旧的单 URL 302 路径
+
+### v2.9.1
 
 **主题系统重构 + CLI 缓存 + 向导装后刷新**
 
 **🎨 主题系统重构（核心改动）**
 
-- **合并开关**：删除"跟随系统主题"和"深色模式"两个开关的复杂交互，**简化为单个「深色模式」开关**，逻辑直白
+- **合并开关**：删除"跟随系统主题"和"深色模式"两个开关的复杂交互，**简化为单个「深色模式」开关**
   - 默认状态：自动跟随飞牛系统主题
   - 用户拨动开关：进入手动模式，偏好保存本地
-  - 手动模式下，设置页出现「恢复跟随系统」小链接，一键回到跟随状态
-- **双通道监听机制**：飞牛的 `$on('os/theme')` 事件实测**不可靠**（切换系统主题时不推送或推送 `'auto'`），新增 **2 秒轮询 `getPlatformConfig()`** 兜底
-  - 轮询为主：每 2 秒检测一次实际主题，变化才应用
-  - `$on` 为辅：收到事件时立即触发一次轮询，抢在轮询周期前响应
-  - 页面重新可见时立即拉一次，切回标签页即刻响应
-  - 页面在后台时跳过轮询，省电省资源
-- **CSS 变量作用域修复**：把 `body.dark-mode` 的变量定义合并到 `html.dark-mode, body.dark-mode`，确保无论 `dark-mode` 类加在 `<html>` 还是 `<body>` 上，所有组件的暗色变量都能生效
-- **彻底解决"系统主题切换后页面只变顶部"**：此前飞牛 `$on` 事件不触发导致主区域不跟随，现在轮询兜底，最多 2 秒延迟
+  - 手动模式下，设置页出现「恢复跟随系统」小链接
+- **双通道监听机制**：新增 **2 秒轮询 `getPlatformConfig()`** 兜底 + `$on('os/theme')` 事件加速
+- **CSS 变量作用域修复**：`body.dark-mode` → `html.dark-mode, body.dark-mode`
+- **彻底解决"系统主题切换后页面只变顶部"**：轮询兜底，最多 2 秒延迟
 
 **⚡ 性能优化**
 
-- **CLI 版本读取缓存**：`appcenter-cli list` 加 5 秒内存缓存
-  - 一次安装流程内的 5~6 次读取（`GetInstalledApps`、`readInstalledVersion`、`checkInstallResultWithVersion` 等调用点）合并为 1 次
-  - 每次 CLI 调用 200~500ms，缓存后安装流程明显更快
-  - 装完后调用 `invalidateInstalledCLICache()` 主动失效，保证下一次版本校验读到最新数据
-- **手动安装无向导分支刷新应用状态**：安装成功后调用 `refreshAppStatus(appID)`，确保前端 12 秒刷新能读到新版本
+- **CLI 版本读取缓存**：`appcenter-cli list` 加 5 秒内存缓存，装完后主动 invalidate
+- **手动安装无向导分支刷新应用状态**：安装成功后调用 `refreshAppStatus(appID)`
 
 **🐛 修复**
 
-- **修复手动安装带向导的 FPK 走裸流程**：检测到 `wizard/install` 时返回 session 给前端弹向导，与在线安装行为一致（v2.9.0 引入，v2.9.1 补强无向导分支的状态刷新）
-- **修复向导安装完成后版本可能读旧值**：`doWizardInstallAsync` 入口先调 `invalidateInstalledCLICache()`，确保版本校验不读 5 秒前的旧版本
-- **修复无向导安装后前端可能仍显示"可更新"**：安装成功后主动调 `refreshAppStatus`，内部已触发缓存失效
-
-**🔧 内部改动**
-
-- `apps.go` 新增 `installedCLICache` 缓存层（`installedCLICacheMu` 保护）
-- `install.go` 的 `refreshAppStatus` 末尾新增 `invalidateInstalledCLICache()` 调用
-- `wizard.go` 的 `doWizardInstallAsync` 入口新增缓存失效
-- `layout.html` 主题系统 JS 重写：删除 `handleAutoThemeSwitch`、`setSystemTheme` 采用新逻辑
-- `settings.html` 删除"跟随系统主题"开关，新增"恢复跟随系统"链接
-- `modals.html` 补齐 `showManualInstall` / `closeManualInstall` / `doManualInstall` / `manualSecondaryAction` 四个函数（v2.9.0 引入，本版本确认完备）
-
-**🔌 兼容性**
-
-- **向后兼容 2.9.0 服务端**：所有 API 接口未变，直接复用
-- **向后兼容 2.8.x 服务端**：新接口不可用时自动回退旧的单 URL 302 路径
-- **x86 / ARM 双架构**：单 fpk 内同时打包 amd64 / arm64 二进制，安装时自动选择
-- **主题设置自动迁移**：老用户 `fnsoft_theme` / `fnsoft_system_theme` 本地存储保留，`fnsoft_theme` 为空时自动跟随系统，有值时进入手动模式
+- **修复手动安装带向导的 FPK 走裸流程**
+- **修复向导安装完成后版本可能读旧值**
+- **修复无向导安装后前端可能仍显示"可更新"**
 
 ### v2.9.0
 
@@ -191,35 +205,21 @@ FN软仓是飞牛 OS 上的第三方应用商店客户端，支持**多软件源
 
 **🐛 修复**
 
-- **修复应用更新功能从未生效（重大问题）**：飞牛官方 `appcenter-cli` 没有 `update` / `upgrade` 命令，`install-fpk` 对已安装应用只是空操作（返回 `Application is installed`），导致此前所有版本的"更新"实际上没有真正把新版本装上去。本版本改为走 `stop → uninstall → install-fpk` 完整流程，卸载时飞牛自动保留 `@appdata` 用户数据目录，更新后用户数据零损失、版本真正升级。**由于这个问题的存在，v2.8.4 及以前的所有版本应用更新功能均未真正生效。**
-- **修复"更新完还显示可更新"**：飞牛的版本信息存在 `trim_sac` 内部数据库，不读 manifest 文件；此前客户端读 manifest 判断已装版本，三方应用的 manifest 常与数据库不同步，导致 `has_update` 误判。本版本改为**从 `appcenter-cli list`（飞牛内部数据库）读实际安装版本**，并在装完后主动调用 `fixManifestVersion` 把期望版本写回 manifest 保持数据一致。**此修复同时覆盖在线安装、向导安装、手动上传三条路径。**
-- **修复手动安装对带向导应用失败**：此前手动上传的 FPK 走裸调 `install-fpk`，绕过了向导流程，带向导的应用会报 `Something wrong with environment variables.`。本版本改为先解压检测 `wizard/install`，若存在则返回 session 给前端弹向导，行为与在线安装一致。
-- **修复手动安装按钮点击无反应**：`modals.html` 补齐 `showManualInstall` / `closeManualInstall` / `doManualInstall` / `manualSecondaryAction` 四个函数，之前点击只触发 ReferenceError
-- **修复安装失败时 UI 卡"安装中"**：`installAndReport` 失败分支先发 `result` 事件再异步清理，避免 `cleanupFailedInstall` 挂住导致前端收不到结果
+- **修复应用更新功能从未生效（重大问题）**：飞牛官方 `appcenter-cli` 没有 `update` / `upgrade` 命令，`install-fpk` 对已安装应用只是空操作。本版本改为走 `stop → uninstall → install-fpk` 完整流程。**v2.8.4 及以前的所有版本应用更新功能均未真正生效。**
+- **修复"更新完还显示可更新"**：版本判断从读磁盘 manifest 改为**从 `appcenter-cli list`（飞牛内部数据库）读**，并辅以 `fixManifestVersion` 主动写回
+- **修复手动安装对带向导应用失败**
+- **修复手动安装按钮点击无反应**
+- **修复安装失败时 UI 卡"安装中"**
 
 **✨ 新增**
 
-- **三层加速兜底**：候选来源分三层——① 服务端下发的 `download_urls`；② 服务端加速器池（`/api/accelerator/presets`）展开 GitHub 原始地址；③ 客户端内置加速器池兜底。服务端离线、加速器全挂也能自救
-- **加速器本地学习**：本地记录每条加速器对当前 NAS 的成功/失败次数，按成功率排序，下次优先复用最靠谱的线路
-- **智能切线路**：首块 5 秒速度检测（低于 100KB/s 立即切）+ 30 秒 stall 检测（无新数据自动切），不再死等 30 分钟
-- **加速器池自动更新**：启动时异步从官方源拉取 `/api/accelerator/presets`，缓存 24 小时，无需重新发版即可学会新加速器
-- **依赖缺失引导**：识别飞牛返回的依赖缺失报错，一键跳转飞牛应用中心安装依赖
-- **系统主题跟随**：通过飞牛 SDK 读取系统主题并实时监听变化，用户手动切换后优先用户选择（**v2.9.1 重写为单开关 + 轮询机制**）
-- **微应用声明**：`manifest` 新增 `micro_app=true`，可在飞牛应用中心宿主环境内加载
-
-**⚙️ 优化**
-
-- **下载完整性校验强化**：gzip 魔数 + HTML 错误页检测 + hash/size 校验（服务端提供时启用）
-- **评分用户身份聚合**：通过统一网关注入的 uid 识别用户，回退到本地 client_id
-- **WebSocket 协议扩展**：`install` 事件新增 `download_urls` 字段，同时保留 `download_url` 兼容旧服务端
-
-**🔌 兼容性**
-
-- **向前兼容 2.8.x 服务端**：新接口不可用时自动回退旧的单 URL 302 路径
-- **服务端 v4 加速器对接**：配合服务端 v4 使用，客户端自动读取 `download_urls` 数组；如服务端未升级，回退 `download_url` 单地址
-- **x86 / ARM 双架构**：单 fpk 内同时打包 amd64 / arm64 二进制，安装时自动选择
-
-> **与服务端 v4 加速器的配合**：服务端 v4 在 `/api/apps` 和 `/api/app/:id` 中下发候选 URL 列表；客户端优先读取该数组，按顺序尝试。服务端只负责生成候选列表，不做预检；客户端负责实际调度决策，失败时自动切换并上报。老服务端（无 `download_urls`）自动回退单地址 302 流程。
+- **三层加速兜底**：候选来源分三层——① 服务端下发的 `download_urls`；② 服务端加速器池；③ 客户端内置加速器池
+- **加速器本地学习**：本地记录每条加速器对当前 NAS 的成功/失败次数
+- **智能切线路**：首块 5 秒速度检测 + 30 秒 stall 检测
+- **加速器池自动更新**：启动时异步从官方源拉取 `/api/accelerator/presets`，缓存 24 小时
+- **依赖缺失引导**
+- **系统主题跟随**
+- **微应用声明**：`manifest` 新增 `micro_app=true`
 
 ### v2.8.4 及以前
 
@@ -243,13 +243,17 @@ FN软仓是飞牛 OS 上的第三方应用商店客户端，支持**多软件源
 
 客户端需要配合 **FN软仓服务端** 使用，服务端负责聚合应用列表、下发候选下载地址、维护加速器规则、公告和轮播图。
 
-- **服务端镜像**：`docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.0`
+- **服务端镜像**：`docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.2`
 - **服务端仓库**：[https://gitee.com/hhxs2025/fn-appstores](https://gitee.com/hhxs2025/fn-appstores)
 
-服务端 v2.9.0（v4 加速器）的核心能力：
-- **候选 URL 列表下放**：`/api/apps` 与 `/api/app/:id` 返回 `download_urls` 数组
-- **加速器健康检查**：定期探测各加速站可用性
+服务端 v2.9.1（配套客户端 v2.9.2）的核心能力：
+
+- **候选 URL 列表下放**：`/api/apps` 与 `/api/app/:id` 返回 `download_urls` 数组（主源 + 5 条加速器 + 原始兜底）
+- **主源半托管 / fnrc 聚合源候选展开**：v2.9.1起服务端 `buildDownloadCandidates` 会为主源半托管和 fnrc 聚合源展开加速器候选，客户端能拿到完整列表
+- **302 优先 online**：`applyAccelerator` 两轮遍历，优先落 online 线路，degraded 兜底
+- **加速器健康检查**：5 秒探测窗口 + 100KB/s 阈值，分 online / degraded 两档
 - **失败上报接收**：`/api/accelerator/report-failed` 接收客户端上报，动态调整规则
+- **仪表盘分栏**：本地源 / 聚合源分开统计
 
 ---
 

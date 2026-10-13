@@ -1,5 +1,5 @@
 appname=fn-appstores-client
-version=2.9.1
+version=2.9.2
 display_name=FN软仓
 desc="""<p>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。它让用户可以方便地发现、安装和管理非官方的飞牛应用，同时也为开发者提供了一个简单开放的应用发布渠道。</p><p>📖<strong>核心功能:</strong></p><p><strong>1.首页:</strong>轮播图 + 公告记录 + 快捷卡片（已安装 / 可更新 / 热度榜 / 新应用）。</p><p><strong>2.应用页:</strong>应用列表、应用卡片信息、应用详情页、预览图、五星评分、README 一键直达。</p><p><strong>3.源管理:</strong>内置应用源，支持添加 / 启用 / 禁用 / 删除，源状态缓存 5 分钟（可手动刷新）。</p><p><strong>4.开发者星球:</strong>以 3D 星球视图展示所有开发者，每颗星星代表一位开发者，支持拖动旋转、滚轮缩放、悬停查看、点击进入。</p><p><strong>5.设置中心:</strong>通用（深色模式 / 导出日志 / 清除缓存）、系统（版本 / 检查更新）、关于（源码 / 交流群 / 应用上架 / 聚合申请 / 源查询）、统计、建源指南。</p><img src="https://gitee.com/hhxs2025/fn-appstores/raw/master/previews/xuanchuantu.webp"  width="90%"/>`"""
 platform=all
@@ -14,6 +14,6 @@ desktop_applaunchname=fn-appstores-client.Application
 service_port=5660
 checkport=false
 disable_authorization_path=false
-changelog=<p><b>v2.9.1</b></p> <p>1.修复跟随系统主题问题；<br>2.优化应用安装向导UI；<br>3/优化应用页搜索逻辑</p>
+changelog=v2.9.2 重要改进：下载链路打通 + 学习闭环激活。修复了 v2.9.1 遗留的三个链路问题——① 主源半托管 / fnrc 聚合源的 GitHub 直链客户端拿不到多条候选；② 失败上报空转（只发 app_id 服务端定位不到规则）；③ 客户端二次展开候选打破服务端排序。同时让主源地址永远排候选第 1 位，兼顾统计准确和 302 兜底。
 micro_app=true
-checksum=c74cbf7187839afe9f8585ffdce39a5f
+checksum=958bcc082eac3bd42ad1063643c458e6
