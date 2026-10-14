@@ -2,6 +2,53 @@
 // FN软仓 - 首页 + 公告 + 快捷卡片
 // ================================================================
 
+// ★ 需求2：公告已读状态（localStorage）
+var READ_NOTICES_KEY = 'fnsoft_read_notices';
+
+// 生成公告唯一 ID（date + title 组合，与顺序无关）
+function noticeRecordId(record) {
+    if (!record) return '';
+    var date = record.date || '';
+    var title = record.title || '';
+    return date + '|' + title;
+}
+
+function getReadNotices() {
+    try {
+        var raw = localStorage.getItem(READ_NOTICES_KEY);
+        if (!raw) return {};
+        var obj = JSON.parse(raw);
+        return (obj && typeof obj === 'object') ? obj : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function isNoticeRead(record) {
+    var id = noticeRecordId(record);
+    if (!id) return true;
+    var map = getReadNotices();
+    return !!map[id];
+}
+
+function markNoticeRead(record) {
+    var id = noticeRecordId(record);
+    if (!id) return;
+    var map = getReadNotices();
+    if (map[id]) return; // 已读，不重复写
+    map[id] = Date.now();
+    // 简单裁剪：最多保留最近 500 条已读记录，防止 localStorage 撑爆
+    var keys = Object.keys(map);
+    if (keys.length > 500) {
+        keys.sort(function(a, b) { return map[a] - map[b]; });
+        var remove = keys.slice(0, keys.length - 500);
+        remove.forEach(function(k) { delete map[k]; });
+    }
+    try {
+        localStorage.setItem(READ_NOTICES_KEY, JSON.stringify(map));
+    } catch (e) {}
+}
+
 async function loadHome() {
     if (homeLoaded) return;
     if (_loadingHome) return;
@@ -78,6 +125,7 @@ function openHomeCarouselImage(index) {
     openImageModal(homeNoticeData.carousel, index);
 }
 
+// ★ 需求2：渲染公告记录，带未读红点
 function renderNoticeRecords(data) {
     var container = document.getElementById('homeNoticeContent');
     if (!container) return;
@@ -87,7 +135,11 @@ function renderNoticeRecords(data) {
     }
     var html = '<div class="notice-records">';
     data.records.slice(0, 5).forEach(function (record, index) {
-        html += '<div class="notice-record" onclick="openNoticeDetail(' + index + ')">' +
+        var unread = !isNoticeRead(record);
+        html += '<div class="notice-record' + (unread ? ' unread' : '') + '" ' +
+            'data-notice-id="' + escapeAttr(noticeRecordId(record)) + '" ' +
+            'onclick="openNoticeDetail(' + index + ')">' +
+            '<span class="record-unread-dot"></span>' +
             '<div class="record-date">' + record.date + '</div>' +
             '<div class="record-title">' + record.title + '</div>' +
             '</div>';
@@ -95,6 +147,12 @@ function renderNoticeRecords(data) {
     if (data.records.length > 5) html += '<div class="notice-more" onclick="openAllNotices()">查看全部公告 →</div>';
     html += '</div>';
     container.innerHTML = html;
+}
+
+function escapeAttr(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function homeCarouselUpdate() {
@@ -158,10 +216,19 @@ function renderQuickList(containerId, apps, type) {
     container.innerHTML = html;
 }
 
+// ★ 需求2：打开公告详情 → 标记已读
 function openNoticeDetail(index) {
     var data = homeNoticeData;
     if (!data || !data.records || !data.records[index]) return;
     var record = data.records[index];
+
+    // 标记已读
+    markNoticeRead(record);
+    // 更新 DOM（去掉 unread）
+    var id = noticeRecordId(record);
+    var el = document.querySelector('.notice-record[data-notice-id="' + cssEscape(id) + '"]');
+    if (el) el.classList.remove('unread');
+
     var titleEl = document.getElementById('noticeDetailTitle');
     if (titleEl) titleEl.textContent = record.title;
     var bodyEl = document.getElementById('noticeDetailBody');
@@ -170,6 +237,7 @@ function openNoticeDetail(index) {
     if (modal) modal.classList.add('active');
 }
 
+// ★ 需求2：全部公告 → 每条可单独标记已读
 function openAllNotices() {
     var data = homeNoticeData;
     if (!data || !data.records || data.records.length === 0) return;
@@ -177,9 +245,14 @@ function openAllNotices() {
     if (titleEl) titleEl.textContent = '全部公告';
     var html = '';
     data.records.forEach(function (record, idx) {
-        html += '<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">' +
+        var unread = !isNoticeRead(record);
+        html += '<div class="notice-all-item' + (unread ? ' unread' : '') + '" ' +
+            'data-notice-id="' + escapeAttr(noticeRecordId(record)) + '" ' +
+            'style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">' +
+            '<span class="notice-all-unread"></span>' +
             '<div style="font-size:11px;color:var(--text-muted);">' + record.date + '</div>' +
-            '<div style="font-size:14px;font-weight:600;color:var(--text-primary);cursor:pointer;" onclick="event.stopPropagation();openNoticeDetail(' + idx + ')">' + record.title + '</div>' +
+            '<div style="font-size:14px;font-weight:600;color:var(--text-primary);cursor:pointer;" ' +
+            'onclick="event.stopPropagation();openNoticeDetail(' + idx + ')">' + record.title + '</div>' +
             '</div>';
     });
     var bodyEl = document.getElementById('noticeDetailBody');
@@ -191,6 +264,12 @@ function openAllNotices() {
 function closeNoticeDetail() {
     var modal = document.getElementById('noticeDetailModal');
     if (modal) modal.classList.remove('active');
+}
+
+// CSS.escape 兜底
+function cssEscape(s) {
+    if (window.CSS && CSS.escape) return CSS.escape(s);
+    return String(s).replace(/[^a-zA-Z0-9_\u00A0-\uFFFF-]/g, '\\$&');
 }
 
 function sanitizeDesc(html) {

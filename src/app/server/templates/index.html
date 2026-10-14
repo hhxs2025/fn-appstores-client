@@ -8,13 +8,13 @@
 {{end}}
 
 {{define "extra_js"}}
-<!-- FN软仓前端脚本（按依赖顺序加载） -->
-<script src="{{.StaticBase}}/static/js/core.js"></script>
-<script src="{{.StaticBase}}/static/js/websocket.js"></script>
-<script src="{{.StaticBase}}/static/js/apps.js"></script>
-<script src="{{.StaticBase}}/static/js/wizard.js"></script>
-<script src="{{.StaticBase}}/static/js/sources.js"></script>
-<script src="{{.StaticBase}}/static/js/home.js"></script>
-<script src="{{.StaticBase}}/static/js/settings.js"></script>
-<script src="{{.StaticBase}}/static/js/main.js"></script>
+<!-- ?v={{.StaticVer}} 由 Go 自动计算（= static/js|css 最新文件修改时间） -->
+<script src="{{.StaticBase}}/static/js/core.js?v={{.StaticVer}}"></script>
+<script src="{{.StaticBase}}/static/js/websocket.js?v={{.StaticVer}}"></script>
+<script src="{{.StaticBase}}/static/js/apps.js?v={{.StaticVer}}"></script>
+<script src="{{.StaticBase}}/static/js/wizard.js?v={{.StaticVer}}"></script>
+<script src="{{.StaticBase}}/static/js/sources.js?v={{.StaticVer}}"></script>
+<script src="{{.StaticBase}}/static/js/home.js?v={{.StaticVer}}"></script>
+<script src="{{.StaticBase}}/static/js/settings.js?v={{.StaticVer}}"></script>
+<script src="{{.StaticBase}}/static/js/main.js?v={{.StaticVer}}"></script>
 {{end}}

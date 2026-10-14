@@ -115,8 +115,11 @@
         gap: 4px;
         padding-right: 2px;
     }
+
+    /* ★ 需求2：公告记录条 - 支持未读红点 */
     .notice-record {
-        padding: 4px 6px;
+        position: relative;
+        padding: 4px 6px 4px 14px;   /* 左侧留出红点空间 */
         border-radius: 4px;
         cursor: pointer;
         transition: background 0.15s;
@@ -124,6 +127,34 @@
     }
     .notice-record:last-child { border-bottom: none; }
     .notice-record:hover { background: var(--bg); }
+
+    /* 未读红点：绝对定位在左侧中部 */
+    .notice-record .record-unread-dot {
+        position: absolute;
+        left: 3px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #e53935;
+        box-shadow: 0 0 0 2px var(--card-bg);
+        display: none;
+    }
+    .notice-record.unread .record-unread-dot {
+        display: block;
+        animation: noticeUnreadPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes noticeUnreadPulse {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: 0.55; }
+    }
+
+    /* 未读时标题加粗一点，视觉上更明显 */
+    .notice-record.unread .record-title {
+        font-weight: 600;
+    }
+
     .notice-record .record-date { font-size: 9px; color: var(--text-muted); }
     .notice-record .record-title {
         font-size: 12px;
@@ -133,6 +164,23 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+
+    /* ★ 需求2：「全部公告」里的未读红点 */
+    .notice-all-item {
+        position: relative;
+        padding-left: 14px;
+    }
+    .notice-all-item .notice-all-unread {
+        position: absolute;
+        left: 0;
+        top: 6px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #e53935;
+        display: none;
+    }
+    .notice-all-item.unread .notice-all-unread { display: block; }
 
     .notice-more {
         font-size: 11px;

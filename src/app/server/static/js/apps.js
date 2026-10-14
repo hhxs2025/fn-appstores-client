@@ -13,6 +13,7 @@ function filterByTag(tag) {
     currentPage = 1;
     renderFilteredApps();
 }
+window.filterByTag = filterByTag;
 
 function filterByAppType(type) {
     currentAppType = type;
@@ -22,20 +23,28 @@ function filterByAppType(type) {
     currentPage = 1;
     renderFilteredApps();
 }
+window.filterByAppType = filterByAppType;
 
 function filterBySource(sourceName) {
     currentSourceFilter = sourceName || 'all';
     currentPage = 1;
     renderFilteredApps();
 }
+window.filterBySource = filterBySource;
 
 function changeSort() {
     var select = document.getElementById('sortSelect');
-    if (!select) return;
+    if (!select) {
+        console.warn('[sort] sortSelect 不存在');
+        return;
+    }
     currentSort = select.value || 'default';
     currentPage = 1;
+    console.log('[sort] 切换排序:', currentSort,
+                '| allAppsData.length =', (allAppsData || []).length);
     renderFilteredApps();
 }
+window.changeSort = changeSort;
 
 function renderFilterButtons() {
     var container = document.getElementById('filterBar');
@@ -70,21 +79,58 @@ function updateSourceFilterOptions() {
 }
 
 function sortApps(apps) {
+    if (!apps || apps.length <= 1) return apps;
     if (currentSort === 'default') return apps;
+
     var sorted = apps.slice();
+
     switch (currentSort) {
         case 'name':
-            sorted.sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
+            sorted.sort(function(a, b) {
+                var an = String(a.name || '');
+                var bn = String(b.name || '');
+                if (an === bn) return 0;
+                return an < bn ? -1 : 1;
+            });
             break;
+
+        case 'author':
+            function normAuthor(s) {
+                return String(s == null ? '' : s).trim().replace(/\s+/g, ' ');
+            }
+            sorted.sort(function(a, b) {
+                var aa = normAuthor(a.author);
+                var bb = normAuthor(b.author);
+                if (!aa && !bb) {
+                    var an = String(a.name || '');
+                    var bn = String(b.name || '');
+                    return an < bn ? -1 : (an > bn ? 1 : 0);
+                }
+                if (!aa) return 1;
+                if (!bb) return -1;
+                var la = aa.toLowerCase();
+                var lb = bb.toLowerCase();
+                if (la !== lb) return la < lb ? -1 : 1;
+                var an = String(a.name || '');
+                var bn = String(b.name || '');
+                return an < bn ? -1 : (an > bn ? 1 : 0);
+            });
+            break;
+
         case 'downloads':
             sorted.sort(function(a, b) { return (b.downloads || 0) - (a.downloads || 0); });
             break;
+
         case 'updated':
             sorted.sort(function(a, b) {
-                return new Date(b.updated_at || '1970-01-01') - new Date(a.updated_at || '1970-01-01');
+                var da = String(a.updated_at || '');
+                var db = String(b.updated_at || '');
+                if (da === db) return 0;
+                return da < db ? 1 : -1;
             });
             break;
     }
+
     return sorted;
 }
 
@@ -148,6 +194,7 @@ function getFilteredApps() {
 
 function renderFilteredApps() {
     var filtered = getFilteredApps();
+    console.log('[render] 过滤后', filtered.length, '个应用 | 排序:', currentSort);
     renderApps(filtered);
     var countEl = document.getElementById('appCount');
     if (countEl) countEl.textContent = filtered.length;
@@ -195,6 +242,9 @@ function updateCarousel() {
 function carouselPrev() { if (slideCount > 1) { currentSlide = (currentSlide - 1 + slideCount) % slideCount; updateCarousel(); } }
 function carouselNext() { if (slideCount > 1) { currentSlide = (currentSlide + 1) % slideCount; updateCarousel(); } }
 function goToSlide(index) { currentSlide = index; updateCarousel(); }
+window.carouselPrev = carouselPrev;
+window.carouselNext = carouselNext;
+window.goToSlide = goToSlide;
 
 // ================================================================
 // 大图预览
@@ -235,6 +285,10 @@ function imageNext() {
     var counter = document.getElementById('imageCounter');
     if (counter) counter.textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
 }
+window.openImageModal = openImageModal;
+window.closeImageModal = closeImageModal;
+window.imagePrev = imagePrev;
+window.imageNext = imageNext;
 
 document.addEventListener('keydown', function(e) {
     var modal = document.getElementById('imageModal');
@@ -357,7 +411,9 @@ function openDetail(appId) {
         btn.dataset.appId = app.id;
     }
 
-    // ★ v2.9.1：Issues 反馈按钮
+    syncDetailFavoriteBtn(app.id);
+    showManageButtons(!!app.installed);
+
     var repoBtn = document.getElementById('detailRepoBtn');
     if (repoBtn) {
         if (app.repo) {
@@ -379,6 +435,87 @@ function openDetail(appId) {
 
     loadRating(app.id);
 }
+window.openDetail = openDetail;
+
+// ================================================================
+// 收藏按钮（详情页 + 卡片快捷）
+// ================================================================
+function syncDetailFavoriteBtn(appId) {
+    var btn = document.getElementById('detailFavBtn');
+    var icon = document.getElementById('detailFavIcon');
+    var text = document.getElementById('detailFavText');
+    if (!btn || !icon || !text) return;
+    var isFav = (typeof isFavorite === 'function') && isFavorite(appId);
+    btn.dataset.appId = appId;
+    if (isFav) {
+        btn.classList.add('active');
+        icon.textContent = '★';
+        text.textContent = '已收藏';
+    } else {
+        btn.classList.remove('active');
+        icon.textContent = '☆';
+        text.textContent = '收藏';
+    }
+}
+window.syncDetailFavoriteBtn = syncDetailFavoriteBtn;
+
+function toggleDetailFavorite() {
+    try {
+        if (!currentDetailApp) {
+            console.warn('[fav] 无 currentDetailApp');
+            return;
+        }
+        if (typeof toggleFavorite !== 'function') {
+            console.warn('[fav] toggleFavorite 未定义');
+            return;
+        }
+        var nowFav = toggleFavorite(currentDetailApp.id);
+        syncDetailFavoriteBtn(currentDetailApp.id);
+
+        var cardBtn = document.querySelector('.card-fav-btn[data-app-id="' + currentDetailApp.id + '"]');
+        if (cardBtn) cardBtn.classList.toggle('active', nowFav);
+
+        showToast(nowFav ? '已收藏' : '已取消收藏', 'success');
+
+        var panel = document.getElementById('spanel-favorites');
+        if (panel && panel.classList.contains('active') && typeof window.renderFavorites === 'function') {
+            window.renderFavorites();
+        }
+        if (typeof updateSettingsStats === 'function') updateSettingsStats();
+    } catch (e) {
+        console.error('[fav] toggleDetailFavorite 异常:', e);
+        showToast('操作失败：' + e.message, 'error');
+    }
+}
+window.toggleDetailFavorite = toggleDetailFavorite;
+
+function toggleCardFavorite(appId) {
+    try {
+        if (!appId) return;
+        if (typeof toggleFavorite !== 'function') {
+            console.warn('[fav] toggleFavorite 未定义');
+            return;
+        }
+        var nowFav = toggleFavorite(appId);
+        var btn = document.querySelector('.card-fav-btn[data-app-id="' + appId + '"]');
+        if (btn) {
+            btn.classList.toggle('active', nowFav);
+            btn.textContent = nowFav ? '★' : '☆';
+        }
+        if (currentDetailApp && currentDetailApp.id === appId) syncDetailFavoriteBtn(appId);
+        showToast(nowFav ? '已收藏' : '已取消收藏', 'success');
+
+        var panel = document.getElementById('spanel-favorites');
+        if (panel && panel.classList.contains('active') && typeof window.renderFavorites === 'function') {
+            window.renderFavorites();
+        }
+        if (typeof updateSettingsStats === 'function') updateSettingsStats();
+    } catch (e) {
+        console.error('[fav] toggleCardFavorite 异常:', e);
+        showToast('操作失败：' + e.message, 'error');
+    }
+}
+window.toggleCardFavorite = toggleCardFavorite;
 
 function backToAppsList() {
     var listView = document.getElementById('appsListView');
@@ -387,6 +524,7 @@ function backToAppsList() {
     if (listView) listView.classList.add('active');
     currentDetailApp = null;
 }
+window.backToAppsList = backToAppsList;
 
 function detailInstall() {
     var btn = document.getElementById('detailInstallBtn');
@@ -397,6 +535,7 @@ function detailInstall() {
     if (btn.dataset.action === 'update') updateApp(appId);
     else installApp(appId);
 }
+window.detailInstall = detailInstall;
 
 function jumpToAppDetail(appId) {
     var appsTab = document.getElementById('tabApps');
@@ -408,6 +547,7 @@ function jumpToAppDetail(appId) {
     backToAppsList();
     setTimeout(function () { openDetail(appId); }, 30);
 }
+window.jumpToAppDetail = jumpToAppDetail;
 
 // ================================================================
 // 渲染应用卡片
@@ -449,7 +589,15 @@ function renderApps(apps) {
 
         var updateDot = (app.installed && app.has_update) ? '<span class="update-dot"></span>' : '';
 
+        var favActive = (typeof isFavorite === 'function' && isFavorite(app.id)) ? ' active' : '';
+        var favStar = favActive ? '★' : '☆';
+        var favBtnHtml = '<button class="card-fav-btn' + favActive + '" ' +
+            'data-app-id="' + app.id + '" ' +
+            'title="收藏/取消收藏" ' +
+            'onclick="event.stopPropagation();toggleCardFavorite(\'' + app.id + '\');">' + favStar + '</button>';
+
         return '<div class="app-card" id="card-' + app.id + '" onclick="openDetail(\'' + app.id + '\')">' +
+            favBtnHtml +
             '<div class="card-icon">' +
                 (app.icon ? '<img src="' + wrapImageUrl(app.icon) + '" loading="lazy" alt="">' : '·') +
             '</div>' +
@@ -485,6 +633,7 @@ async function loadApps() {
     }
     await loadAppsFromServer(false);
 }
+window.loadApps = loadApps;
 
 async function loadAppsFromServer(silent) {
     try {
@@ -565,6 +714,7 @@ function restoreAppsView() {
     }
     loadApps();
 }
+window.restoreAppsView = restoreAppsView;
 
 async function loadInstalledVersions() {
     try {
@@ -650,6 +800,7 @@ async function refreshApps() {
         btn.textContent = '刷新';
     }
 }
+window.refreshApps = refreshApps;
 
 function startCooldown(seconds) {
     var btn = document.getElementById('refreshBtn');
@@ -672,3 +823,132 @@ function startCooldown(seconds) {
         }
     }, 1000);
 }
+
+// ================================================================
+// ★ 应用管理：停止 / 启动 / 重启 / 卸载
+// ================================================================
+
+function showManageButtons(installed) {
+    var ids = ['detailStopBtn', 'detailStartBtn', 'detailRestartBtn', 'detailUninstallBtn'];
+    ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = installed ? '' : 'none';
+    });
+}
+window.showManageButtons = showManageButtons;
+
+async function manageApp(action, appId) {
+    if (!appId) {
+        showToast('缺少应用 ID', 'error');
+        return;
+    }
+
+    var actionText = {
+        stop: '停止',
+        start: '启动',
+        restart: '重启',
+        uninstall: '卸载'
+    }[action] || action;
+
+    var btnMap = {
+        stop: 'detailStopBtn',
+        start: 'detailStartBtn',
+        restart: 'detailRestartBtn',
+        uninstall: 'detailUninstallBtn'
+    };
+
+    var appName = currentDetailApp ? (currentDetailApp.name || appId) : appId;
+    if (action === 'uninstall') {
+        if (!confirm('确定要卸载「' + appName + '」吗？\n\n应用的配置数据、用户数据会保留（飞牛系统默认行为）。')) return;
+    } else if (action === 'restart') {
+        if (!confirm('确定要重启「' + appName + '」吗？')) return;
+    } else if (action === 'stop') {
+        if (!confirm('确定要停止「' + appName + '」吗？\n\n停止后应用将无法访问，可随时重新启动。')) return;
+    }
+
+    var allBtns = ['detailStopBtn', 'detailStartBtn', 'detailRestartBtn', 'detailUninstallBtn'];
+    var origText = {};
+    allBtns.forEach(function(id) {
+        var b = document.getElementById(id);
+        if (b) { b.disabled = true; origText[id] = b.textContent; }
+    });
+    var self = document.getElementById(btnMap[action]);
+    if (self) self.textContent = actionText + '中...';
+
+    showToast(actionText + '中，请稍候...', 'info');
+
+    try {
+        var resp = await fetch(
+            API_BASE + '/api/app/' + encodeURIComponent(appId) + '/' + action,
+            { method: 'POST', headers: {'Content-Type': 'application/json'} }
+        );
+        var data = await resp.json();
+
+        if (data.success) {
+            showToast(data.message || (actionText + '成功'), 'success');
+
+            if (action === 'uninstall' && currentDetailApp) {
+                currentDetailApp.installed = false;
+                currentDetailApp.installed_version = '';
+                currentDetailApp.has_update = false;
+                var appInList = allAppsData.find(function(a) { return a.id === appId; });
+                if (appInList) {
+                    appInList.installed = false;
+                    appInList.installed_version = '';
+                    appInList.has_update = false;
+                }
+                if (typeof writeAppsCache === 'function') writeAppsCache(allAppsData);
+                setTimeout(function() {
+                    if (typeof refreshApps === 'function') refreshApps();
+                    if (typeof backToAppsList === 'function') backToAppsList();
+                }, 800);
+            } else {
+                setTimeout(function() {
+                    if (currentDetailApp && currentDetailApp.id === appId) {
+                        openDetail(appId);
+                    }
+                }, 500);
+            }
+
+            if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
+            if (typeof updateSettingsStats === 'function') updateSettingsStats();
+        } else {
+            showToast(data.message || (actionText + '失败'), 'error');
+            console.error('[manage] ' + action + ' 失败:', data);
+        }
+    } catch (e) {
+        showToast(actionText + '失败: ' + e.message, 'error');
+        console.error('[manage] ' + action + ' 异常:', e);
+    } finally {
+        allBtns.forEach(function(id) {
+            var b = document.getElementById(id);
+            if (b) {
+                b.disabled = false;
+                if (origText[id] !== undefined) b.textContent = origText[id];
+            }
+        });
+    }
+}
+window.manageApp = manageApp;
+
+function stopApp() {
+    if (!currentDetailApp) return;
+    manageApp('stop', currentDetailApp.id);
+}
+function startApp() {
+    if (!currentDetailApp) return;
+    manageApp('start', currentDetailApp.id);
+}
+function restartApp() {
+    if (!currentDetailApp) return;
+    manageApp('restart', currentDetailApp.id);
+}
+function uninstallApp() {
+    if (!currentDetailApp) return;
+    manageApp('uninstall', currentDetailApp.id);
+}
+
+window.stopApp = stopApp;
+window.startApp = startApp;
+window.restartApp = restartApp;
+window.uninstallApp = uninstallApp;

@@ -69,8 +69,8 @@
         transition: all 0.2s;
     }
     .settings-card .row .action-btn:hover { background: var(--hover-bg); border-color: var(--border-hover); }
+    .settings-card .row .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* 恢复跟随系统的提示行 */
     .settings-card .row.follow-hint {
         padding-top: 2px;
         padding-bottom: 6px;
@@ -188,9 +188,89 @@
         margin-top: 10px;
     }
 
+    .fav-list { display: flex; flex-direction: column; gap: 6px; }
+    .fav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .fav-item:hover {
+        border-color: #c5c7d0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .fav-item .fav-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: #e8eaed;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        overflow: hidden;
+    }
+    .fav-item .fav-icon img { width: 100%; height: 100%; object-fit: cover; }
+    .fav-item .fav-info { flex: 1; min-width: 0; }
+    .fav-item .fav-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .fav-item .fav-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .fav-item .fav-remove {
+        flex-shrink: 0;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: #d0d0d0;
+        cursor: pointer;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+    }
+    .fav-item .fav-remove:hover {
+        background: rgba(220, 80, 80, 0.12);
+        color: #e05353;
+    }
+    .fav-empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+    .fav-empty .fav-empty-icon {
+        font-size: 32px;
+        opacity: 0.35;
+        display: block;
+        margin-bottom: 8px;
+    }
+
     body.dark-mode .settings-card { background: #1e2a45; border-color: #2a3a5a; }
     body.dark-mode .settings-card .row { border-bottom-color: #2a3a5a; }
     body.dark-mode .reward-card { background: #1e2a45; border-color: #2a3a5a; }
+    body.dark-mode .fav-item { background: #1e2a45; border-color: #2a3a5a; }
+    body.dark-mode .fav-item .fav-icon { background: #2a3a5a; }
 
     @media (max-width: 768px) {
         .settings-tabs { gap: 0; }
@@ -211,10 +291,10 @@
 <div class="settings-container">
     <div class="settings-tabs">
         <button class="settings-tab active" data-stab="general" onclick="switchSettingTab('general')">通用</button>
+        <button class="settings-tab" data-stab="favorites" onclick="switchSettingTab('favorites')">收藏</button>
         <button class="settings-tab" data-stab="system" onclick="switchSettingTab('system')">系统</button>
         <button class="settings-tab" data-stab="about" onclick="switchSettingTab('about')">关于</button>
         <button class="settings-tab" data-stab="stats" onclick="switchSettingTab('stats')">统计</button>
-        <button class="settings-tab" data-stab="host" onclick="switchSettingTab('host')">建源</button>
     </div>
     <div class="settings-panels">
         <div class="settings-panel active" id="spanel-general">
@@ -234,6 +314,7 @@
                 </div>
                 <div class="row"><span class="label">导出日志</span><button class="action-btn" onclick="exportLogs()">导出</button></div>
                 <div class="row"><span class="label">清除本地缓存</span><button class="action-btn" onclick="clearCache()">清除</button></div>
+                <div class="row"><span class="label">刷新加速器池</span><button class="action-btn" id="refreshAccelPoolBtn" onclick="refreshAccelPool()">刷新</button></div>
             </div>
 
             <div class="reward-card" id="rewardCard">
@@ -249,6 +330,23 @@
                 <div class="reward-tip">微信扫一扫</div>
             </div>
         </div>
+
+        <div class="settings-panel" id="spanel-favorites">
+            <div class="settings-card" style="padding: 12px 20px;">
+                <div class="row" style="border-bottom:none;">
+                    <span class="label">共收藏 <strong id="favCount" style="color:var(--text-primary);">0</strong> 个应用</span>
+                    <button class="action-btn" onclick="clearAllFavorites()" id="favClearBtn" style="display:none;">清空收藏</button>
+                </div>
+            </div>
+            <div id="favoritesList" class="fav-list">
+                <div class="fav-empty">
+                    <span class="fav-empty-icon">☆</span>
+                    还没有收藏的应用<br>
+                    <span style="font-size:11px;">在应用详情页点「收藏」即可加入</span>
+                </div>
+            </div>
+        </div>
+
         <div class="settings-panel" id="spanel-system">
             <div class="settings-card">
                 <div class="title">系统信息</div>
@@ -272,7 +370,7 @@
                 <div class="row"><span class="label">交流群</span><span class="value">2154077576</span></div>
                 <div class="row"><span class="label">应用上架</span><span class="value"><a href="https://f.wps.cn/g/L7KeYADl/" target="_blank">提交应用 →</a></span></div>
                 <div class="row"><span class="label">聚合申请</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores/issues/new/choose" target="_blank">提交申请 →</a></span></div>
-                <div class="row"><span class="label">官方源查询</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores/raw/master/源.md" target="_blank">查看源列表 →</a></span></div>
+                <div class="row"><span class="label">建源指南</span><span class="value"><a href="{{.StaticBase}}/static/docs/readme.html" target="_blank">查看完整指南 →</a></span></div>
                 <div class="row qrcode-row">
                     <span class="label">扫一扫加群</span>
                     <img src="{{.StaticBase}}/static/qrcode.jpg" alt="QQ群二维码">
@@ -285,38 +383,8 @@
                 <div class="row"><span class="label">总应用数</span><span class="value" id="settingsTotalApps">--</span></div>
                 <div class="row"><span class="label">已安装</span><span class="value" id="settingsInstalled">--</span></div>
                 <div class="row"><span class="label">可更新</span><span class="value" id="settingsUpdatable">--</span></div>
+                <div class="row"><span class="label">已收藏</span><span class="value" id="settingsFavorites">--</span></div>
                 <div class="row"><span class="label">已配置源</span><span class="value" id="settingsSourceCount">--</span></div>
-            </div>
-        </div>
-        <div class="settings-panel" id="spanel-host">
-            <div class="settings-card">
-                <div class="title">☆成为源主</div>
-                <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
-                    自建源 · 应用只在自己的圈子里分发<br>
-                    不想等官方收录？自己搭一个 FN软仓服务端。<br>
-                    Docker 一键部署，镜像仅 15MB、内存 10MB。
-                </div>
-            </div>
-
-            <div class="settings-card">
-                <div class="title">☆三步搞定</div>
-                <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
-                    <b>① 部署</b> · Docker 一条命令起服务端<br>
-                    <b>② 上架</b> · 后台上传 FPK，或 Gitee + 上架助手（群里拿）<br>
-                    <b>③ 分享</b> · 把源地址发给朋友<br>
-                    <b>提示:</b> 其实还可以找我开通开发者后台，只需要一个fnrc.json就能参与哦
-                </div>
-            </div>
-
-            <div style="display:flex;gap:10px;margin-top:12px;">
-                <a href="https://gitee.com/hhxs2025/fn-appstores/blob/master/README.md" target="_blank"
-                   style="flex:1;text-align:center;padding:10px;background:#2563ea;color:#fff;text-decoration:none;border-radius:6px;font-size:13px;">
-                    查看建源指南
-                </a>
-                <a href="https://gitee.com/hhxs2025/fn-appstores/issues/new/choose" target="_blank"
-                   style="flex:1;text-align:center;padding:10px;background:transparent;color:#2563ea;text-decoration:none;border-radius:6px;font-size:13px;border:1px solid #2563ea;">
-                    聚合申请
-                </a>
             </div>
         </div>
     </div>

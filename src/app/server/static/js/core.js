@@ -1,6 +1,6 @@
 // ================================================================
 // FN软仓 - 核心模块
-// 全局变量 + 工具函数 + 缓存 + 评分 + 搜索
+// 全局变量 + 工具函数 + 缓存 + 评分 + 搜索 + 收藏
 // ================================================================
 
 // ================================================================
@@ -10,9 +10,9 @@ var GATEWAY_PREFIX = '/app/fn-appstores-client';
 var API_BASE = '';
 if (window.location.pathname.indexOf(GATEWAY_PREFIX) === 0) {
     API_BASE = GATEWAY_PREFIX;
-    console.log('🔗统一网关模式，API_BASE =', API_BASE);
+    console.log('🔗 统一网关模式，API_BASE =', API_BASE);
 } else {
-    console.log('🔗端口模式，API_BASE = (相对根路径)');
+    console.log('🔗 端口模式，API_BASE = (相对根路径)');
 }
 
 // ================================================================
@@ -149,6 +149,7 @@ function clearAppsCache() {
     localStorage.removeItem(CACHE_KEY);
     localStorage.removeItem('fnsoft_notice_cache');
     localStorage.removeItem('fnsoft_downloaded_version');
+    // ★ 注意：不清收藏、不清已读公告 —— 这两个是用户主动留下的状态
 }
 
 function exportLogs() {
@@ -165,7 +166,84 @@ function clearCache() {
 window.clearCache = clearCache;
 
 // ================================================================
-// 设置 tab 切换
+// ★ 需求3：应用收藏工具（全部显式挂 window）
+// ================================================================
+var FAVORITES_KEY = 'fnsoft_favorites';
+
+// 结构：{ "app_id": 收藏时间戳, ... }
+function getFavorites() {
+    try {
+        var raw = localStorage.getItem(FAVORITES_KEY);
+        if (!raw) return {};
+        var obj = JSON.parse(raw);
+        return (obj && typeof obj === 'object') ? obj : {};
+    } catch (e) {
+        console.warn('[fav] 解析收藏数据失败:', e);
+        return {};
+    }
+}
+window.getFavorites = getFavorites;
+
+function isFavorite(appId) {
+    if (!appId) return false;
+    var map = getFavorites();
+    return !!map[appId];
+}
+window.isFavorite = isFavorite;
+
+// 切换收藏状态；返回切换后是否为收藏
+function toggleFavorite(appId) {
+    if (!appId) return false;
+    var map = getFavorites();
+    var nowFav;
+    if (map[appId]) {
+        delete map[appId];
+        nowFav = false;
+    } else {
+        map[appId] = Date.now();
+        nowFav = true;
+    }
+    try {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify(map));
+        console.log('[fav] 切换收藏:', appId, '→', nowFav);
+    } catch (e) {
+        console.warn('[fav] 写入失败:', e);
+    }
+    return nowFav;
+}
+window.toggleFavorite = toggleFavorite;
+
+// 返回按收藏时间倒序的 app_id 数组
+function getFavoriteList() {
+    var map = getFavorites();
+    var ids = Object.keys(map);
+    ids.sort(function(a, b) { return map[b] - map[a]; });
+    return ids;
+}
+window.getFavoriteList = getFavoriteList;
+
+// 从当前 allAppsData 里过滤出收藏的应用（保留收藏顺序）
+function getFavoriteApps() {
+    var ids = getFavoriteList();
+    if (ids.length === 0 || !allAppsData || allAppsData.length === 0) return [];
+    var map = {};
+    allAppsData.forEach(function(a) { map[a.id] = a; });
+    var result = [];
+    ids.forEach(function(id) {
+        if (map[id]) result.push(map[id]);
+    });
+    return result;
+}
+window.getFavoriteApps = getFavoriteApps;
+
+// 显式清空收藏
+function clearFavorites() {
+    localStorage.removeItem(FAVORITES_KEY);
+}
+window.clearFavorites = clearFavorites;
+
+// ================================================================
+// 设置 tab 切换（显式挂 window）
 // ================================================================
 function switchSettingTab(tab) {
     var tabs = document.querySelectorAll('.settings-tab');
@@ -180,19 +258,31 @@ function switchSettingTab(tab) {
             el.classList.toggle('active', el.id === 'spanel-' + tab);
         });
     }
+    // ★ 需求3：切到收藏 tab 时渲染
+    if (tab === 'favorites' && typeof window.renderFavorites === 'function') {
+        setTimeout(function() {
+            try {
+                window.renderFavorites();
+            } catch (e) {
+                console.error('[fav] renderFavorites 异常:', e);
+            }
+        }, 20);
+    }
     // 切换时同步主题开关
     if (typeof syncThemeSwitches === 'function') {
         setTimeout(syncThemeSwitches, 20);
     }
 }
+window.switchSettingTab = switchSettingTab;
 
 // ================================================================
-// ★ v2.9.1：搜索（带防抖）
+// 搜索（带防抖）
 // ================================================================
 function searchApps() {
     currentPage = 1;
     renderFilteredApps();
 }
+window.searchApps = searchApps;
 
 var _searchDebounceTimer = null;
 function searchAppsDebounced() {
@@ -202,9 +292,10 @@ function searchAppsDebounced() {
         renderFilteredApps();
     }, 250);
 }
+window.searchAppsDebounced = searchAppsDebounced;
 
 // ================================================================
-// 应用统计（供 renderFilteredApps / handleWsMessage 调用）
+// 应用统计
 // ================================================================
 function updateSettingsStats() {
     if (!allAppsData || allAppsData.length === 0) return;
@@ -215,7 +306,10 @@ function updateSettingsStats() {
     if (installedEl) installedEl.textContent = filteredData.filter(function (app) {return app.installed;}).length;
     var updatableEl = document.getElementById('settingsUpdatable');
     if (updatableEl) updatableEl.textContent = filteredData.filter(function (app) {return app.has_update;}).length;
+    var favEl = document.getElementById('settingsFavorites');
+    if (favEl) favEl.textContent = getFavoriteList().length;
 }
+window.updateSettingsStats = updateSettingsStats;
 
 // ================================================================
 // 评分系统
@@ -358,3 +452,4 @@ function initRatingWidget() {
         });
     });
 }
+window.initRatingWidget = initRatingWidget;

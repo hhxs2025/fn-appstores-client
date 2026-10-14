@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>FN软仓服务端 · 使用指南</title>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e5e7eb;
+            --border-soft: #f3f4f6;
+            --text-strong: #111827;
+            --text-primary: #1f2937;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+            --text-faint: #9ca3af;
+            --link: #2563ea;
+            --link-hover-bg: #e5e7eb;
+            --code-bg: #f1f3f5;
+            --code-fg: #d63384;
+            --pre-bg: #1e293b;
+            --pre-fg: #e2e8f0;
+            --chip-bg: #f3f4f6;
+            --th-bg: #f9fafb;
+            --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1a1a2e;
+                --card-bg: #1e2a45;
+                --border: #2a3a5a;
+                --border-soft: #2a3a5a;
+                --text-strong: #e8e8f0;
+                --text-primary: #e8e8f0;
+                --text-secondary: #c8d4e8;
+                --text-muted: #a8b8d0;
+                --text-faint: #6a7a9a;
+                --link: #60a5fa;
+                --link-hover-bg: #2a3a5a;
+                --code-bg: #16213e;
+                --code-fg: #ffb8d8;
+                --pre-bg: #0f1a30;
+                --pre-fg: #c8d4e8;
+                --chip-bg: #2a3a5a;
+                --th-bg: #16213e;
+                --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                         "Microsoft YaHei", sans-serif;
+            color: var(--text-primary);
+            line-height: 1.75;
+            font-size: clamp(14px, 3.6vw, 15px);
+            padding: 24px 20px 60px;
+            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+            margin: 0;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        h1 {
+            font-size: clamp(22px, 5.5vw, 28px);
+            font-weight: 800;
+            color: var(--text-strong);
+            margin: 0 0 8px;
+            letter-spacing: -0.5px;
+            line-height: 1.3;
+        }
+
+        .subtitle {
+            font-size: clamp(12px, 3.2vw, 14px);
+            color: var(--text-muted);
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border-soft);
+            line-height: 1.6;
+        }
+
+        h2 {
+            font-size: clamp(17px, 4.6vw, 21px);
+            font-weight: 700;
+            color: var(--text-strong);
+            margin: 32px 0 14px;
+            padding-top: 8px;
+            line-height: 1.35;
+        }
+
+        h3 {
+            font-size: clamp(15px, 3.8vw, 16px);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 22px 0 10px;
+            line-height: 1.4;
+        }
+
+        p { margin: 0 0 14px; color: var(--text-secondary); }
+        ul, ol { padding-left: 22px; color: var(--text-secondary); margin: 12px 0 16px; }
+        li { margin-bottom: 6px; }
+
+        code {
+            background: var(--code-bg);
+            color: var(--code-fg);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 0.88em;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            word-break: break-word;
+        }
+
+        pre {
+            background: var(--pre-bg);
+            color: var(--pre-fg);
+            padding: 14px 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 14px 0 18px;
+            font-size: 12.5px;
+            line-height: 1.65;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            white-space: pre;
+        }
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-size: inherit;
+            word-break: normal;
+        }
+        pre::-webkit-scrollbar { height: 6px; }
+        pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 14px 0 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .table-wrap::-webkit-scrollbar { height: 6px; }
+        .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+            min-width: 480px;
+        }
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        th {
+            background: var(--th-bg);
+            font-weight: 600;
+            font-size: 12.5px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        tr:last-child td { border-bottom: none; }
+        td code { white-space: nowrap; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px 24px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 18px;
+        }
+
+        .callout {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-size: 13.5px;
+            line-height: 1.7;
+        }
+        .callout.info    { background: #eff6ff; border-left: 4px solid #2563ea; color: #1e40af; }
+        .callout.warn    { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+        .callout.success { background: #f0fdf4; border-left: 4px solid #10b981; color: #065f46; }
+
+        @media (prefers-color-scheme: dark) {
+            .callout.info    { background: rgba(37,99,234,0.14); color: #a8c8ff; }
+            .callout.warn    { background: rgba(245,158,11,0.14); color: #fcd88a; }
+            .callout.success { background: rgba(16,185,129,0.14); color: #86e0b8; }
+        }
+
+        .step {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+        .step-num {
+            flex-shrink: 0;
+            width: 26px;
+            height: 26px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: #fff;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 26px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .step-body { flex: 1; min-width: 0; }
+        .step-title { font-size: 14.5px; font-weight: 600; color: var(--text-strong); margin-bottom: 4px; }
+        .step-desc { font-size: 13.5px; color: var(--text-secondary); line-height: 1.7; }
+
+        .tag-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 2px 6px 2px 0;
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+        @media (prefers-color-scheme: dark) {
+            .tag-badge { background: rgba(79,70,229,0.18); color: #b8b0ff; }
+        }
+
+        .footer-note {
+            margin-top: 48px;
+            padding-top: 22px;
+            border-top: 1px solid var(--border);
+            font-size: 12.5px;
+            color: var(--text-faint);
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .toc {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 24px;
+        }
+        .toc-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        .toc-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .toc-list a {
+            display: inline-flex;
+            align-items: center;
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: var(--chip-bg);
+            transition: all 0.15s;
+            min-height: 32px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .toc-list a:hover,
+        .toc-list a:active {
+            background: var(--link-hover-bg);
+            color: var(--link);
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .back-to-top {
+            position: fixed;
+            right: 16px;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 18px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            z-index: 999;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .back-to-top.show { display: flex; }
+        .back-to-top:active { transform: scale(0.94); }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px 14px 40px;
+                padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+                font-size: 14px;
+            }
+
+            h1 { font-size: 21px; }
+            .subtitle { font-size: 12.5px; padding-bottom: 14px; margin-bottom: 18px; }
+            h2 { font-size: 17px; margin: 26px 0 12px; }
+            h3 { font-size: 15px; margin: 18px 0 8px; }
+
+            .card {
+                border-radius: 10px;
+                padding: 16px 16px;
+                margin-bottom: 14px;
+            }
+
+            .toc { padding: 10px 12px; margin-bottom: 18px; }
+            .toc-list { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+            .toc-list::-webkit-scrollbar { display: none; }
+            .toc-list a { flex-shrink: 0; padding: 6px 12px; font-size: 12px; }
+
+            pre {
+                padding: 12px 14px;
+                border-radius: 6px;
+                font-size: 12px;
+                margin: 12px 0 14px;
+            }
+
+            table { font-size: 13px; min-width: 420px; }
+            th, td { padding: 8px 12px; }
+
+            .callout { padding: 10px 14px; font-size: 13px; }
+
+            .step { gap: 10px; margin-bottom: 14px; }
+            .step-num { width: 24px; height: 24px; line-height: 24px; font-size: 11px; }
+            .step-title { font-size: 14px; }
+            .step-desc { font-size: 13px; }
+
+            ul, ol { padding-left: 20px; }
+        }
+
+        @media (max-width: 380px) {
+            body { padding: 14px 12px 36px; }
+            h1 { font-size: 19px; }
+            .card { padding: 14px 14px; }
+            pre { font-size: 11.5px; padding: 10px 12px; }
+        }
+
+        @media (min-width: 900px) {
+            .back-to-top { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>FN软仓服务端 · 使用指南</h1>
+    <div class="subtitle">
+        版本 v2.9.3（Go 版） · 自托管部署 · 开发者聚合 · 外链加速
+    </div>
+
+    <!-- 目录 -->
+    <nav class="toc">
+        <div class="toc-title">快速导航</div>
+        <div class="toc-list">
+            <a href="#intro">项目简介</a>
+            <a href="#ways">两种参与方式</a>
+            <a href="#deploy">部署步骤</a>
+            <a href="#features">核心功能</a>
+            <a href="#dev">开发者系统</a>
+            <a href="#upgrade">升级说明</a>
+            <a href="#faq">常见问题</a>
+        </div>
+    </nav>
+
+    <!-- 项目简介 -->
+    <div class="card" id="intro">
+        <h2 style="margin-top:0;">项目简介</h2>
+        <p>
+            FN软仓服务端是 FN软仓的<strong>管理后端</strong>。除提供 FN软仓自己的官方源给软仓客户端外，
+            还具有公告管理、三方源管理、应用明细查看、仪表盘统计、应用编辑、应用上传、
+            访问限速、外链加速、<strong>开发者聚合系统</strong>等功能。
+        </p>
+        <div class="callout success">
+            <strong>优势</strong>：任何人拿走服务端，改个 <code>BASE_URL</code> 环境变量就能<strong>另起炉灶</strong>。
+            Go + Docker，镜像约 15MB，内存约 10MB，支持全托管 / 半托管自由组合。
+        </div>
+    </div>
+
+    <!-- 两种参与方式 -->
+    <div class="card" id="ways">
+        <h2 style="margin-top:0;">两种参与方式</h2>
+
+        <h3>方式一 · 自建服务端（做源主）</h3>
+        <p>
+            你搭一个服务端，自己收录、自己分发。用户主动添加你的源地址，就能看到你的应用。
+            <strong>自己当源主。</strong>
+        </p>
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+                <div class="step-title">部署</div>
+                <div class="step-desc">Docker 一条命令拉起服务端，镜像约 15MB。</div>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+                <div class="step-title">上架</div>
+                <div class="step-desc">后台拖入 FPK，或使用外链托管（FPK 走 Gitee / GitHub / OSS）。</div>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+                <div class="step-title">分享</div>
+                <div class="step-desc">把源地址发给朋友或公开。</div>
+            </div>
+        </div>
+
+        <h3 style="margin-top:32px;">方式二 · 开发者聚合（把应用交给官方源）</h3>
+        <p>
+            你<strong>不用搭服务器</strong>，只要提供一份 <code>fnrc.json</code>，就能把应用聚合到源主的源里，
+            <strong>该源的所有用户都能看到。</strong>
+        </p>
+        <p>
+            <strong>v2.9.3 起流程大幅简化</strong>：从"进群 → 等源主开号 → 填应用 → 再申请聚合"，
+            变成"公开填表 → 一次审核 → 拿 token 直接用"。
+        </p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+                <div class="step-title">公开申请</div>
+                <div class="step-desc">
+                    打开 <code>/dev/apply</code>，填源名称 + fnrc.json 直链 + 联系方式，提交。
+                    如果<strong>还没有 fnrc.json</strong>，申请页顶部提供两种生成方式：
+                    <ul style="margin-top:6px;">
+                        <li><strong>下载空模板</strong>：改几个字段就能用</li>
+                        <li><strong>在线生成器</strong>：图形化表单，填几个字段就能生成 JSON，零基础也能用</li>
+                    </ul>
+                    生成的文件推到 Gitee 后，回到申请页提交即可。<br>
+                    提交成功后会拿到一个 <strong>申请编号</strong>，请截图保存。
+                </div>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+                <div class="step-title">等源主审核</div>
+                <div class="step-desc">
+                    源主在 <code>/admin-review</code> 的「待审申请」Tab 处理。
+                    通过后，源主会通过你填写的联系方式发来<strong>开发者后台入口</strong>。
+                    如果长时间没收到，可以凭<strong>申请编号</strong>在 <code>/dev/apply</code> 的「查询进度」Tab <strong>自行查询</strong>。
+                </div>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+                <div class="step-title">进入开发者后台，应用已自动聚合</div>
+                <div class="step-desc">
+                    打开源主发来的链接（形如 <code>/dev/manage?token=xxx</code>），你的应用此时已经被自动聚合，
+                    客户端 5 分钟内可见。<br>
+                    <strong>后续更新不需要再审核</strong>：改应用 → 导出 fnrc.json → push 到仓库 → 自动生效。
+                </div>
+            </div>
+        </div>
+
+        <div class="callout info" style="margin-top:24px;">
+            <strong>推荐组合</strong>：<code>fnrc.json</code> 放 <strong>Gitee raw</strong>（更新立即生效，URL 不变，无需重审），
+            FPK 放 <strong>GitHub Release</strong>（走加速器）。两者独立。
+        </div>
+
+        <div class="callout warn" style="margin-top:12px;">
+            <strong>fnrc.json 直链可以是 Gitee raw，也可以是 Gitee / GitHub Release 附件</strong>，
+            只要 URL 以 <code>.json</code> 结尾、浏览器点开直接显示 JSON 内容即可。
+            用 Release 附件时注意：每次发新 release 会改变 URL，需要走「申请聚合」提交换 URL 请求。
+        </div>
+    </div>
+
+    <!-- 部署步骤 -->
+    <div class="card" id="deploy">
+        <h2 style="margin-top:0;">部署步骤</h2>
+
+        <h3>1. 环境准备</h3>
+        <ul>
+            <li>Docker 已安装</li>
+            <li>一个公网可访问的地址（域名或 IP）</li>
+            <li>安全组 + 防火墙放行 5660 端口</li>
+        </ul>
+
+        <h3>2. 准备数据目录</h3>
+        <pre><code>mkdir -p /vol1/1000/fn-appstores-server/data/{apps,icons,previews}</code></pre>
+
+        <h3>3. 启动服务端</h3>
+        <pre><code>docker run -d --name fn-appstores-server --restart unless-stopped \
+  --network host \
+  -e TZ=Asia/Shanghai \
+  -e BASE_URL="http://你的域名或IP:5660" \
+  -e ADMIN_PASSWORD="你的管理密码" \
+  -e NOTICE_PASSWORD="公告员密码" \
+  -v /你的数据目录:/app/data \
+  ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.3</code></pre>
+
+        <h3>4. 验证</h3>
+        <pre><code>curl http://127.0.0.1:5660/health</code></pre>
+
+        <div class="callout warn">
+            <strong>注意</strong>：<code>BASE_URL</code> 必须含端口，否则图标、截图、下载地址全都不可达。
+        </div>
+
+        <h3>5. 访问管理后台</h3>
+        <pre><code>http://你的地址:5660/admin</code></pre>
+    </div>
+
+    <!-- 核心功能 -->
+    <div class="card" id="features">
+        <h2 style="margin-top:0;">v2.9.3 核心功能</h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>功能</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>开发者公开申请</strong></td>
+                        <td>开发者从 <code>/dev/apply</code> 自助提交，一次审核自动开号 + 自动聚合</td>
+                    </tr>
+                    <tr>
+                        <td><strong>fnrc.json 生成器</strong></td>
+                        <td>申请页内置模板下载 + 在线生成器，零基础开发者也能自助完成</td>
+                    </tr>
+                    <tr>
+                        <td><strong>申请进度查询</strong></td>
+                        <td>开发者凭申请编号自助查询审核状态，无需源主通知</td>
+                    </tr>
+                    <tr>
+                        <td><strong>开发者后台增强</strong></td>
+                        <td>上架/下架开关 + fnrc.json 预览校验 + 站内通知中心</td>
+                    </tr>
+                    <tr>
+                        <td><strong>外链加速 v4</strong></td>
+                        <td>自动候选切换 + 客户端失败上报，下载更快更稳</td>
+                    </tr>
+                    <tr>
+                        <td><strong>多架构支持</strong></td>
+                        <td>x86 / ARM / 通用，同 ID 多平台共存（文件名带 platform 后缀，互不覆盖）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>系统仪表盘</strong></td>
+                        <td>架构分布 / 下载趋势 / Top 10 / CSV 导出</td>
+                    </tr>
+                    <tr>
+                        <td><strong>访问限速</strong></td>
+                        <td>单 IP 下载防刷，保护服务端带宽</td>
+                    </tr>
+                    <tr>
+                        <td><strong>全托管 / 半托管</strong></td>
+                        <td>FPK 可以放本地，也可以走 Gitee / GitHub / OSS 外链</td>
+                    </tr>
+                    <tr>
+                        <td><strong>JSON 监听 + 自动公告</strong></td>
+                        <td>应用上架 / 更新 / 下架时自动推公告</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ★ 开发者系统 -->
+    <div class="card" id="dev">
+        <h2 style="margin-top:0;">开发者系统（v2.9.3 新流程）</h2>
+
+        <div class="callout success">
+            <strong>v2.9.3 起：开发者注册 + 聚合申请已合并为一次审核。</strong><br>
+            开发者通过公开入口自助提交申请 → 源主一次审核 → 自动创建开发者账号 + 自动写入上游源 + 自动回填应用。
+        </div>
+
+        <h3>申请入口</h3>
+        <p>
+            访问 <code>http://源地址:5660/dev/apply</code>(此处不给FN软仓主源地址是因为你也可以跑服务端)，页面有两个Tab：
+        </p>
+        <ul>
+            <li><strong>提交申请</strong>：填写源名称 / fnrc.json 直链 / 联系方式</li>
+            <li><strong>查询进度</strong>：凭申请编号查询审核状态</li>
+        </ul>
+
+        <h3>fnrc.json 生成器</h3>
+        <p>
+            申请页顶部有一个折叠面板「📄 还没有 fnrc.json？展开查看」，提供两种方式：
+        </p>
+        <table>
+            <thead>
+                <tr><th>方式</th><th>适合</th><th>特点</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>下载空模板</strong></td>
+                    <td>懂 JSON 的人</td>
+                    <td>下载预填好结构的 JSON，改几个字段即可</td>
+                </tr>
+                <tr>
+                    <td><strong>在线生成器</strong></td>
+                    <td>零基础开发者</td>
+                    <td>图形化表单：填字段 → 生成 JSON → 下载/复制</td>
+                </tr>
+            </tbody>
+        </table>
+        <p>
+            生成器表单字段：源名称、应用 ID / 名称 / 版本 / 下载地址 / <strong>图标 URL（必填）</strong>、
+            适用架构、标签（点选式，最多 2 个）。可以点「+ 添加应用」增加多条，支持多架构。
+        </p>
+
+        <div class="callout warn">
+            <strong>生成的 JSON 不会上传到服务端</strong>。生成器是<strong>纯前端</strong>功能，
+            所有数据在浏览器本地拼装成 JSON，只通过「下载」/「复制」交给开发者自己。开发者需要自己 push 到 Gitee 仓库，
+            然后回申请页填 URL。
+        </div>
+
+        <h3>申请提交后</h3>
+        <ol>
+            <li>服务端<strong>实时拉取</strong>你填的 JSON URL，校验能否访问 + 能否识别应用数</li>
+            <li>校验通过 → 写入 <code>dev-apply-requests.json</code>，状态 <code>pending</code></li>
+            <li>返回<strong>申请编号</strong>（形如 <code>apply_1729186041253</code>）</li>
+            <li>源主到 <code>/admin-review</code> 的「待审申请」Tab 处理</li>
+            <li>通过 → 自动生成 token + 自动写 dev-accounts.json + 自动写 upstream.json + 自动回填应用</li>
+            <li>源主弹窗显示<b>通知文案</b> + <b>后台入口链接</b>，复制后发给开发者</li>
+            <li>开发者凭 token 进 <code>/dev/manage</code>，应用已被自动聚合</li>
+        </ol>
+
+        <h3>被拒绝后</h3>
+        <ul>
+            <li>开发者凭<strong>申请编号</strong>到 <code>/dev/apply</code> 的「查询进度」Tab 自行查询，能看到拒绝原因</li>
+            <li>被拒后可以<strong>重新提交</strong>同一 JSON URL，系统会复用原记录，状态改回 pending</li>
+            <li>源主也可主动联系（用开发者填写的联系方式）</li>
+        </ul>
+
+        <h3>开发者后台功能</h3>
+        <ul>
+            <li><strong>拖入 FPK 自动解析</strong>：提取 ID / 名称 / 版本 / 类型 / 架构 / 描述 / 作者 / 反馈入口 / 标签</li>
+            <li><strong>上架 / 下架开关</strong>：每个应用卡片右上角，下架的应用不会出现在导出的 fnrc.json 里</li>
+            <li><strong>预览 fnrc.json</strong>：导出前自查，弹窗显示生成的 JSON + 校验结果（错误 / 警告 / 提示三级）</li>
+            <li><strong>通知中心</strong>：右上角铃铛，显示审核通过 / 拒绝通知，带未读红点 + 数字角标</li>
+            <li><strong>数据看板</strong>：今日 / 本周 / 累计下载量 + 评分</li>
+            <li><strong>申请聚合</strong>：填 fnrc.json 公开 URL，提交审核（仅换 URL 时需要）</li>
+        </ul>
+
+        <h3>源主后台管理</h3>
+        <table>
+            <thead>
+                <tr><th>位置</th><th>作用</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>/admin-review</code>「待审申请」Tab</td>
+                    <td>处理开发者<strong>首次公开申请</strong>（自动开号 + 自动聚合）</td>
+                </tr>
+                <tr>
+                    <td><code>/admin-review</code>「聚合审核」Tab</td>
+                    <td>处理已通过开发者的<strong>URL 变更 / 重新提交</strong></td>
+                </tr>
+                <tr>
+                    <td>后台「开发者管理」Tab</td>
+                    <td>手动创建开发者、复制访问链接、重置 token、删除开发者</td>
+                </tr>
+                <tr>
+                    <td>后台「三方源管理」Tab</td>
+                    <td>禁用 / 删除聚合源</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 升级说明 -->
+    <div class="card" id="upgrade">
+        <h2 style="margin-top:0;">从 2.9.2 升级到 2.9.3</h2>
+
+        <pre><code># 1. 备份数据目录
+cp -a /你的数据目录 /你的数据目录_bak_$(date +%Y%m%d)
+
+# 2. 停旧容器
+docker stop fn-appstores-server
+docker rm fn-appstores-server
+
+# 3. 拉新镜像
+docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.3
+
+# 4. 用原数据目录启动（同上一条 docker run）</code></pre>
+
+        <div class="callout success">
+            <strong>兼容性</strong>：新增数据文件 <code>dev-apply-requests.json</code> 首次启动时自动生成，
+            现有数据全部保留。<br>
+            自建镜像时必须 <code>docker compose build --no-cache</code>，避免 Docker 复用旧镜像层。
+        </div>
+
+        <div class="callout info">
+            <strong>从 2.9.2 升级注意事项</strong>：
+            <ul style="margin-bottom:0;">
+                <li>版本号常量已从 2.9.2 升级到 2.9.3</li>
+                <li>加速器健康检查样本池改为「Owner/Repo/Tag/File 拆分」结构，升级版本只需改 Tag 和 File 字段</li>
+                <li>修复了多架构上传互相覆盖的问题，升级后同 ID 的 x86 / ARM 版本会分别存为带 platform 后缀的文件</li>
+                <li>修复了 fnrc.json 空 apps 数组被误判为离线的问题</li>
+                <li>修复了开发者审核中途失败导致重复创建账号的问题</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 常见问题 -->
+    <div class="card" id="faq">
+        <h2 style="margin-top:0;">常见问题</h2>
+
+        <h3>Q1：客户端看不到新应用？</h3>
+        <p>后台点「刷新应用缓存」+ 客户端「设置 → 清除本地缓存」。</p>
+
+        <h3>Q2：三方源显示「离线」？</h3>
+        <p>检查 URL 是否可访问（末尾别加 <code>/</code>），点「测试」看具体错误。</p>
+
+        <h3>Q3：加速器为什么有时客户端下载很慢？</h3>
+        <p>
+            检查加速站是否真的可用。后台「外链加速」→ 站点级测试，或点「立即检测一次」看健康状态。
+            加速站会有"较慢"档徽章，可区分"能用但慢"和"挂了"。
+        </p>
+
+        <h3>Q4：fnrc.json 更新多久生效？</h3>
+        <p>
+            <strong>Gitee raw</strong>：60~300 秒。<br>
+            <strong>Gitee / GitHub Release 附件</strong>：无 CDN 缓存，但需发新 release 才算更新。<br>
+            <strong>jsDelivr</strong>：最长 12 小时（可访问 <code>purge.jsdelivr.net</code> 强制清）。
+        </p>
+
+        <h3>Q5：审核后还要再审核吗？</h3>
+        <p>不用，<strong>一次性审核</strong>。之后开发者自主更新应用，直接改 fnrc.json + push 即可。</p>
+
+        <h3>Q6：三方源管理里出现两条一样的源？</h3>
+        <p>
+            大概率是<strong>孤立记录</strong>。到「三方源管理」里删掉那条"离线很久"的即可。<br>
+            出现原因：先删 /admin-review 记录，再让开发者重新申请。正确做法是不删审核记录，
+            让开发者走「申请聚合」提交换 URL 请求。
+        </p>
+
+        <h3>Q7：开发者完全不懂 JSON，能上架吗？</h3>
+        <p>
+            <strong>能。</strong>申请页顶部的「在线生成器」就是给零基础开发者用的：
+            填几个字段（源名称、应用 ID、名称、版本、下载地址、图标），点一下按钮就能生成可用的 fnrc.json。
+            生成器是<strong>纯前端</strong>功能，数据不上传服务端。
+        </p>
+
+        <h3>Q8：拒绝了开发者的公开申请，对方怎么知道？</h3>
+        <p>
+            <strong>不会主动通知</strong>（公开申请阶段还没有 token，也没有站内通知渠道）。<br>
+            但开发者可以凭<strong>申请编号</strong>到 <code>/dev/apply</code> 的「查询进度」Tab
+            <strong>自行查询</strong>到拒绝状态和原因。<br>
+            源主也可以主动联系开发者（用他填写的联系方式）。
+        </p>
+
+        <h3>Q9：fnrc.json 直链可以用发行版附件地址吗？</h3>
+        <p>
+            <strong>可以</strong>，只要 URL 以 <code>.json</code> 结尾、浏览器点开直接显示 JSON 内容。
+            <br>支持：
+            <ul style="margin-bottom:6px;">
+                <li>Gitee raw：<code>https://gitee.com/用户名/仓库/raw/master/fnrc.json</code></li>
+                <li>Gitee Release 附件：<code>https://gitee.com/用户名/仓库/releases/download/v1.0.0/fnrc.json</code></li>
+                <li>GitHub Release 附件：<code>https://github.com/用户名/仓库/releases/download/v1.0.0/fnrc.json</code></li>
+            </ul>
+            <strong>不推荐</strong>：
+            <ul style="margin-bottom:0;">
+                <li>Release <strong>页面</strong>地址（返回 HTML 页面而非 JSON）</li>
+                <li><code>raw.githubusercontent.com</code>（国内经常掉线）</li>
+            </ul>
+        </p>
+
+        <h3>Q10：多架构应用上传会互相覆盖吗？</h3>
+        <p>
+            <strong>不会</strong>。v2.9.3 起，上传 x86 / ARM 版本时会分别存为带 platform 后缀的文件名
+            （如 <code>myapp-1.0.0-x86.fpk</code> 和 <code>myapp-1.0.0-arm.fpk</code>），互不影响。
+            升级前的旧版本上传方式会互相覆盖，建议升级到 2.9.3。
+        </p>
+    </div>
+
+    <div class="footer-note">
+        FN软仓 · MIT License · 开发者：晦华先生<br>
+        完整文档请访问 <a href="https://gitee.com/hhxs2025/fn-appstores" target="_blank" rel="noopener">Gitee 仓库</a>
+        · 交流群QQ:2154077576
+    </div>
+
+</div>
+
+<button class="back-to-top" id="backToTop" aria-label="回到顶部" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+    (function() {
+        var btn = document.getElementById('backToTop');
+        if (!btn) return;
+        var ticking = false;
+        function onScroll() {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function() {
+                if (window.scrollY > 400) btn.classList.add('show');
+                else btn.classList.remove('show');
+                ticking = false;
+            });
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    })();
+
+    document.querySelectorAll('.toc-list a[href^="#"]').forEach(function(a) {
+        a.addEventListener('click', function(e) {
+            var id = a.getAttribute('href').slice(1);
+            var el = document.getElementById(id);
+            if (!el) return;
+            e.preventDefault();
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+</script>
+
+</body>
+</html>
