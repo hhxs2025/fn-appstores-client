@@ -371,7 +371,7 @@
 
     <h1>FN软仓服务端 · 使用指南</h1>
     <div class="subtitle">
-        版本 v2.9.3（Go 版） · 自托管部署 · 开发者聚合 · 外链加速
+        版本 v2.10.0（Go 版） · 纯在线托管模式 · 应用级变更审核 · 开发者与建源指南
     </div>
 
     <!-- 目录 -->
@@ -379,7 +379,7 @@
         <div class="toc-title">快速导航</div>
         <div class="toc-list">
             <a href="#intro">项目简介</a>
-            <a href="#ways">两种参与方式</a>
+            <a href="#ways">三种参与方式</a>
             <a href="#deploy">部署步骤</a>
             <a href="#features">核心功能</a>
             <a href="#dev">开发者系统</a>
@@ -394,111 +394,63 @@
         <p>
             FN软仓服务端是 FN软仓的<strong>管理后端</strong>。除提供 FN软仓自己的官方源给软仓客户端外，
             还具有公告管理、三方源管理、应用明细查看、仪表盘统计、应用编辑、应用上传、
-            访问限速、外链加速、<strong>开发者聚合系统</strong>等功能。
+            访问限速、外链加速、以及<strong>开发者聚合系统</strong>等功能。
         </p>
         <div class="callout success">
-            <strong>优势</strong>：任何人拿走服务端，改个 <code>BASE_URL</code> 环境变量就能<strong>另起炉灶</strong>。
-            Go + Docker，镜像约 15MB，内存约 10MB，支持全托管 / 半托管自由组合。
+            <strong>v2.10.0 核心架构升级</strong>：开发者正式入驻后，不再需要维护外部的 Gitee/GitHub 仓库。应用数据直接托管在源主服务器的 <code>data/dev-sources/</code> 目录下。同时新增了基于设备的精准活跃统计。
         </div>
     </div>
 
-    <!-- 两种参与方式 -->
+    <!-- 三种参与方式 -->
     <div class="card" id="ways">
-        <h2 style="margin-top:0;">两种参与方式</h2>
+        <h2 style="margin-top:0;">三种参与方式</h2>
 
-        <h3>方式一 · 自建服务端（做源主）</h3>
+        <h3>方式一 · 纯在线托管（v2.10.0 推荐）</h3>
         <p>
-            你搭一个服务端，自己收录、自己分发。用户主动添加你的源地址，就能看到你的应用。
-            <strong>自己当源主。</strong>
+            开发者<strong>不需要懂 Git，不需要建仓库，不需要写 JSON</strong>。向源主申请开通后，直接在网页后台填写应用信息。
         </p>
         <div class="step">
             <div class="step-num">1</div>
             <div class="step-body">
-                <div class="step-title">部署</div>
-                <div class="step-desc">Docker 一条命令拉起服务端，镜像约 15MB。</div>
+                <div class="step-title">申请入驻</div>
+                <div class="step-desc">在软仓客户端或网页端提交入驻申请。源主审核通过后，发送专属管理后台链接。</div>
             </div>
         </div>
         <div class="step">
             <div class="step-num">2</div>
             <div class="step-body">
-                <div class="step-title">上架</div>
-                <div class="step-desc">后台拖入 FPK，或使用外链托管（FPK 走 Gitee / GitHub / OSS）。</div>
+                <div class="step-title">在线填表</div>
+                <div class="step-desc">在后台点「添加应用」，拖入 FPK 文件自动解析，填入下载直链。</div>
             </div>
         </div>
         <div class="step">
             <div class="step-num">3</div>
             <div class="step-body">
-                <div class="step-title">分享</div>
-                <div class="step-desc">把源地址发给朋友或公开。</div>
+                <div class="step-title">提交审核</div>
+                <div class="step-desc">点击「保存并提交审核」。源主通过后，客户端 30 秒内可见。</div>
             </div>
         </div>
 
-        <h3 style="margin-top:32px;">方式二 · 开发者聚合（把应用交给官方源）</h3>
+        <h3 style="margin-top:32px;">方式二 · 自带 fnrc.json（极客传统模式）</h3>
         <p>
-            你<strong>不用搭服务器</strong>，只要提供一份 <code>fnrc.json</code>，就能把应用聚合到源主的源里，
-            <strong>该源的所有用户都能看到。</strong>
+            如果你有多个应用，或者希望数据完全独立，可以手写一份 <code>fnrc.json</code> 并挂载在 Gitee/GitHub 上，然后将直链交给源主添加为“三方源”。
         </p>
         <p>
-            <strong>v2.9.3 起流程大幅简化</strong>：从"进群 → 等源主开号 → 填应用 → 再申请聚合"，
-            变成"公开填表 → 一次审核 → 拿 token 直接用"。
+            此模式下一次审核后，后续更新只需修改 Gitee 里的 JSON 并 push，<strong>无需再找源主审核</strong>，服务端每 5 分钟会自动检测更新。
         </p>
 
-        <div class="step">
-            <div class="step-num">1</div>
-            <div class="step-body">
-                <div class="step-title">公开申请</div>
-                <div class="step-desc">
-                    打开 <code>/dev/apply</code>，填源名称 + fnrc.json 直链 + 联系方式，提交。
-                    如果<strong>还没有 fnrc.json</strong>，申请页顶部提供两种生成方式：
-                    <ul style="margin-top:6px;">
-                        <li><strong>下载空模板</strong>：改几个字段就能用</li>
-                        <li><strong>在线生成器</strong>：图形化表单，填几个字段就能生成 JSON，零基础也能用</li>
-                    </ul>
-                    生成的文件推到 Gitee 后，回到申请页提交即可。<br>
-                    提交成功后会拿到一个 <strong>申请编号</strong>，请截图保存。
-                </div>
-            </div>
-        </div>
-        <div class="step">
-            <div class="step-num">2</div>
-            <div class="step-body">
-                <div class="step-title">等源主审核</div>
-                <div class="step-desc">
-                    源主在 <code>/admin-review</code> 的「待审申请」Tab 处理。
-                    通过后，源主会通过你填写的联系方式发来<strong>开发者后台入口</strong>。
-                    如果长时间没收到，可以凭<strong>申请编号</strong>在 <code>/dev/apply</code> 的「查询进度」Tab <strong>自行查询</strong>。
-                </div>
-            </div>
-        </div>
-        <div class="step">
-            <div class="step-num">3</div>
-            <div class="step-body">
-                <div class="step-title">进入开发者后台，应用已自动聚合</div>
-                <div class="step-desc">
-                    打开源主发来的链接（形如 <code>/dev/manage?token=xxx</code>），你的应用此时已经被自动聚合，
-                    客户端 5 分钟内可见。<br>
-                    <strong>后续更新不需要再审核</strong>：改应用 → 导出 fnrc.json → push 到仓库 → 自动生效。
-                </div>
-            </div>
-        </div>
-
-        <div class="callout info" style="margin-top:24px;">
-            <strong>推荐组合</strong>：<code>fnrc.json</code> 放 <strong>Gitee raw</strong>（更新立即生效，URL 不变，无需重审），
-            FPK 放 <strong>GitHub Release</strong>（走加速器）。两者独立。
-        </div>
-
-        <div class="callout warn" style="margin-top:12px;">
-            <strong>fnrc.json 直链可以是 Gitee raw，也可以是 Gitee / GitHub Release 附件</strong>，
-            只要 URL 以 <code>.json</code> 结尾、浏览器点开直接显示 JSON 内容即可。
-            用 Release 附件时注意：每次发新 release 会改变 URL，需要走「申请聚合」提交换 URL 请求。
-        </div>
+        <h3 style="margin-top:32px;">方式三 · 自建独立源（成为源主）</h3>
+        <p>
+            通过 Docker 部署 FN软仓服务端，自己当源主，建立自己的生态圈。
+            你可以自己上传应用，也可以将别人的 <code>fnrc.json</code> 或其他的 FN软仓服务端作为上游源聚合进来。
+        </p>
     </div>
 
     <!-- 部署步骤 -->
     <div class="card" id="deploy">
         <h2 style="margin-top:0;">部署步骤</h2>
 
-        <h3>1. 环境准备</h3>
+        <h3>1. 准备环境</h3>
         <ul>
             <li>Docker 已安装</li>
             <li>一个公网可访问的地址（域名或 IP）</li>
@@ -515,8 +467,9 @@
   -e BASE_URL="http://你的域名或IP:5660" \
   -e ADMIN_PASSWORD="你的管理密码" \
   -e NOTICE_PASSWORD="公告员密码" \
+  -e AUTO_CLEAN_DEV_UPSTREAM="false" \
   -v /你的数据目录:/app/data \
-  ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.3</code></pre>
+  ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.10.0</code></pre>
 
         <h3>4. 验证</h3>
         <pre><code>curl http://127.0.0.1:5660/health</code></pre>
@@ -531,7 +484,7 @@
 
     <!-- 核心功能 -->
     <div class="card" id="features">
-        <h2 style="margin-top:0;">v2.9.3 核心功能</h2>
+        <h2 style="margin-top:0;">v2.10.0 核心功能</h2>
 
         <div class="table-wrap">
             <table>
@@ -540,36 +493,28 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>开发者公开申请</strong></td>
-                        <td>开发者从 <code>/dev/apply</code> 自助提交，一次审核自动开号 + 自动聚合</td>
+                        <td><strong>开发者免仓库托管</strong></td>
+                        <td>应用数据存在 <code>data/dev-sources/</code>，开发者不再依赖 Gitee</td>
                     </tr>
                     <tr>
-                        <td><strong>fnrc.json 生成器</strong></td>
-                        <td>申请页内置模板下载 + 在线生成器，零基础开发者也能自助完成</td>
+                        <td><strong>应用变更审核</strong></td>
+                        <td>开发者每次保存应用，均需源主在“应用审核”中通过后才上线</td>
                     </tr>
                     <tr>
-                        <td><strong>申请进度查询</strong></td>
-                        <td>开发者凭申请编号自助查询审核状态，无需源主通知</td>
+                        <td><strong>设备精准统计</strong></td>
+                        <td>仪表盘新增设备总数、24h/7d 活跃数、设备类型分布</td>
                     </tr>
                     <tr>
-                        <td><strong>开发者后台增强</strong></td>
-                        <td>上架/下架开关 + fnrc.json 预览校验 + 站内通知中心</td>
+                        <td><strong>数据平滑升级</strong></td>
+                        <td>启动时自动将旧版 Gitee 仓库数据迁移到本地 dev-sources</td>
+                    </tr>
+                    <tr>
+                        <td><strong>静态目录优化</strong></td>
+                        <td>独立页面移至 <code>pages-standalone/</code> 目录，结构更清晰</td>
                     </tr>
                     <tr>
                         <td><strong>外链加速 v4</strong></td>
                         <td>自动候选切换 + 客户端失败上报，下载更快更稳</td>
-                    </tr>
-                    <tr>
-                        <td><strong>多架构支持</strong></td>
-                        <td>x86 / ARM / 通用，同 ID 多平台共存（文件名带 platform 后缀，互不覆盖）</td>
-                    </tr>
-                    <tr>
-                        <td><strong>系统仪表盘</strong></td>
-                        <td>架构分布 / 下载趋势 / Top 10 / CSV 导出</td>
-                    </tr>
-                    <tr>
-                        <td><strong>访问限速</strong></td>
-                        <td>单 IP 下载防刷，保护服务端带宽</td>
                     </tr>
                     <tr>
                         <td><strong>全托管 / 半托管</strong></td>
@@ -584,140 +529,61 @@
         </div>
     </div>
 
-    <!-- ★ 开发者系统 -->
+    <!-- 开发者系统 -->
     <div class="card" id="dev">
-        <h2 style="margin-top:0;">开发者系统（v2.9.3 新流程）</h2>
+        <h2 style="margin-top:0;">开发者系统（v2.10.0 新流程）</h2>
 
         <div class="callout success">
-            <strong>v2.9.3 起：开发者注册 + 聚合申请已合并为一次审核。</strong><br>
-            开发者通过公开入口自助提交申请 → 源主一次审核 → 自动创建开发者账号 + 自动写入上游源 + 自动回填应用。
+            <strong>纯在线模式，彻底告别 Gitee 依赖。</strong><br>
+            开发者通过客户端或网页提交入驻申请 -> 源主一次审核开号 -> 开发者在线填表保存 -> 源主二次审核应用 -> 上线。整个过程无需接触任何外部代码仓库。
         </div>
 
-        <h3>申请入口</h3>
-        <p>
-            访问 <code>http://源地址:5660/dev/apply</code>(此处不给FN软仓主源地址是因为你也可以跑服务端)，页面有两个Tab：
-        </p>
-        <ul>
-            <li><strong>提交申请</strong>：填写源名称 / fnrc.json 直链 / 联系方式</li>
-            <li><strong>查询进度</strong>：凭申请编号查询审核状态</li>
-        </ul>
+        <h3>入驻流程</h3>
+        <ol>
+            <li>开发者在申请页填写源名称和联系方式提交。</li>
+            <li>源主在 <code>/admin-review</code> 的「入驻申请」Tab 通过审核。</li>
+            <li>系统自动生成 token 和空源，源主复制后台链接发给开发者。</li>
+        </ol>
 
-        <h3>fnrc.json 生成器</h3>
+        <h3>应用审核流程</h3>
         <p>
-            申请页顶部有一个折叠面板「📄 还没有 fnrc.json？展开查看」，提供两种方式：
-        </p>
-        <table>
-            <thead>
-                <tr><th>方式</th><th>适合</th><th>特点</th></tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>下载空模板</strong></td>
-                    <td>懂 JSON 的人</td>
-                    <td>下载预填好结构的 JSON，改几个字段即可</td>
-                </tr>
-                <tr>
-                    <td><strong>在线生成器</strong></td>
-                    <td>零基础开发者</td>
-                    <td>图形化表单：填字段 → 生成 JSON → 下载/复制</td>
-                </tr>
-            </tbody>
-        </table>
-        <p>
-            生成器表单字段：源名称、应用 ID / 名称 / 版本 / 下载地址 / <strong>图标 URL（必填）</strong>、
-            适用架构、标签（点选式，最多 2 个）。可以点「+ 添加应用」增加多条，支持多架构。
+            开发者在后台填完应用信息点击保存后，会进入 <strong>Pending（待审核）</strong> 状态。
+            源主在 <code>/admin-review</code> 的「应用审核」Tab 看到变更记录。通过后，应用立即出现在客户端。
         </p>
 
         <div class="callout warn">
-            <strong>生成的 JSON 不会上传到服务端</strong>。生成器是<strong>纯前端</strong>功能，
-            所有数据在浏览器本地拼装成 JSON，只通过「下载」/「复制」交给开发者自己。开发者需要自己 push 到 Gitee 仓库，
-            然后回申请页填 URL。
+            <strong>严格审核机制</strong>：由于源主负责托管开发者的数据，为了平台安全，开发者<strong>每次</strong>新增应用、修改版本、下架应用，都必须经过源主审核。
         </div>
-
-        <h3>申请提交后</h3>
-        <ol>
-            <li>服务端<strong>实时拉取</strong>你填的 JSON URL，校验能否访问 + 能否识别应用数</li>
-            <li>校验通过 → 写入 <code>dev-apply-requests.json</code>，状态 <code>pending</code></li>
-            <li>返回<strong>申请编号</strong>（形如 <code>apply_1729186041253</code>）</li>
-            <li>源主到 <code>/admin-review</code> 的「待审申请」Tab 处理</li>
-            <li>通过 → 自动生成 token + 自动写 dev-accounts.json + 自动写 upstream.json + 自动回填应用</li>
-            <li>源主弹窗显示<b>通知文案</b> + <b>后台入口链接</b>，复制后发给开发者</li>
-            <li>开发者凭 token 进 <code>/dev/manage</code>，应用已被自动聚合</li>
-        </ol>
 
         <h3>被拒绝后</h3>
         <ul>
-            <li>开发者凭<strong>申请编号</strong>到 <code>/dev/apply</code> 的「查询进度」Tab 自行查询，能看到拒绝原因</li>
-            <li>被拒后可以<strong>重新提交</strong>同一 JSON URL，系统会复用原记录，状态改回 pending</li>
-            <li>源主也可主动联系（用开发者填写的联系方式）</li>
+            <li>开发者在后台对应的应用卡片上会看到红色的「被拒绝」标签及具体原因。</li>
+            <li>修改后重新点击保存即可再次提交审核。</li>
         </ul>
-
-        <h3>开发者后台功能</h3>
-        <ul>
-            <li><strong>拖入 FPK 自动解析</strong>：提取 ID / 名称 / 版本 / 类型 / 架构 / 描述 / 作者 / 反馈入口 / 标签</li>
-            <li><strong>上架 / 下架开关</strong>：每个应用卡片右上角，下架的应用不会出现在导出的 fnrc.json 里</li>
-            <li><strong>预览 fnrc.json</strong>：导出前自查，弹窗显示生成的 JSON + 校验结果（错误 / 警告 / 提示三级）</li>
-            <li><strong>通知中心</strong>：右上角铃铛，显示审核通过 / 拒绝通知，带未读红点 + 数字角标</li>
-            <li><strong>数据看板</strong>：今日 / 本周 / 累计下载量 + 评分</li>
-            <li><strong>申请聚合</strong>：填 fnrc.json 公开 URL，提交审核（仅换 URL 时需要）</li>
-        </ul>
-
-        <h3>源主后台管理</h3>
-        <table>
-            <thead>
-                <tr><th>位置</th><th>作用</th></tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><code>/admin-review</code>「待审申请」Tab</td>
-                    <td>处理开发者<strong>首次公开申请</strong>（自动开号 + 自动聚合）</td>
-                </tr>
-                <tr>
-                    <td><code>/admin-review</code>「聚合审核」Tab</td>
-                    <td>处理已通过开发者的<strong>URL 变更 / 重新提交</strong></td>
-                </tr>
-                <tr>
-                    <td>后台「开发者管理」Tab</td>
-                    <td>手动创建开发者、复制访问链接、重置 token、删除开发者</td>
-                </tr>
-                <tr>
-                    <td>后台「三方源管理」Tab</td>
-                    <td>禁用 / 删除聚合源</td>
-                </tr>
-            </tbody>
-        </table>
     </div>
 
     <!-- 升级说明 -->
     <div class="card" id="upgrade">
-        <h2 style="margin-top:0;">从 2.9.2 升级到 2.9.3</h2>
+        <h2 style="margin-top:0;">从 2.9.x 升级到 2.10.0</h2>
 
         <pre><code># 1. 备份数据目录
 cp -a /你的数据目录 /你的数据目录_bak_$(date +%Y%m%d)
 
-# 2. 停旧容器
+# 2. 停旧容器并删除
 docker stop fn-appstores-server
 docker rm fn-appstores-server
 
 # 3. 拉新镜像
-docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.3
+docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.10.0
 
 # 4. 用原数据目录启动（同上一条 docker run）</code></pre>
 
-        <div class="callout success">
-            <strong>兼容性</strong>：新增数据文件 <code>dev-apply-requests.json</code> 首次启动时自动生成，
-            现有数据全部保留。<br>
-            自建镜像时必须 <code>docker compose build --no-cache</code>，避免 Docker 复用旧镜像层。
-        </div>
-
         <div class="callout info">
-            <strong>从 2.9.2 升级注意事项</strong>：
+            <strong>自动迁移机制</strong>：
             <ul style="margin-bottom:0;">
-                <li>版本号常量已从 2.9.2 升级到 2.9.3</li>
-                <li>加速器健康检查样本池改为「Owner/Repo/Tag/File 拆分」结构，升级版本只需改 Tag 和 File 字段</li>
-                <li>修复了多架构上传互相覆盖的问题，升级后同 ID 的 x86 / ARM 版本会分别存为带 platform 后缀的文件</li>
-                <li>修复了 fnrc.json 空 apps 数组被误判为离线的问题</li>
-                <li>修复了开发者审核中途失败导致重复创建账号的问题</li>
+                <li>服务端首次启动 2.10.0 时，会自动扫描旧的 <code>dev-accounts.json</code> 和 <code>upstream.json</code>。</li>
+                <li>系统会自动拉取开发者曾经在 Gitee 上的 <code>fnrc.json</code>，并将数据持久化保存到本地的 <code>data/dev-sources/</code> 目录下。</li>
+                <li>迁移完成后，旧的 upstream 记录将被清理或禁用，系统全面转向本地托管。</li>
             </ul>
         </div>
     </div>
@@ -727,70 +593,29 @@ docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.9.3
         <h2 style="margin-top:0;">常见问题</h2>
 
         <h3>Q1：客户端看不到新应用？</h3>
-        <p>后台点「刷新应用缓存」+ 客户端「设置 → 清除本地缓存」。</p>
+        <p>如果是新上传的，去后台点「刷新应用缓存」；如果是刚审核通过的，等待 30 秒（客户端有缓存），或让用户在客户端清除本地缓存。</p>
 
         <h3>Q2：三方源显示「离线」？</h3>
-        <p>检查 URL 是否可访问（末尾别加 <code>/</code>），点「测试」看具体错误。</p>
+        <p>检查 URL 是否可访问（末尾别加 <code>/</code>），点「测试」看具体错误。连续失败 3 次的源在拉取时会被自动跳过。</p>
 
-        <h3>Q3：加速器为什么有时客户端下载很慢？</h3>
+        <h3>Q3：设备统计里的「兜底」是什么意思？</h3>
         <p>
-            检查加速站是否真的可用。后台「外链加速」→ 站点级测试，或点「立即检测一次」看健康状态。
-            加速站会有"较慢"档徽章，可区分"能用但慢"和"挂了"。
+            新版客户端请求时会带上专属 ID，显示为绿色的「准确」。老版本客户端没有专属 ID，服务端只能用“IP+浏览器UA”进行哈希计算来近似识别，因此显示为黄色的「兜底」。建议尽快升级客户端。
         </p>
 
-        <h3>Q4：fnrc.json 更新多久生效？</h3>
+        <h3>Q4：如何配置应用的多架构（x86 / ARM）？</h3>
         <p>
-            <strong>Gitee raw</strong>：60~300 秒。<br>
-            <strong>Gitee / GitHub Release 附件</strong>：无 CDN 缓存，但需发新 release 才算更新。<br>
-            <strong>jsDelivr</strong>：最长 12 小时（可访问 <code>purge.jsdelivr.net</code> 强制清）。
+            在开发者后台添加应用时，保持两条记录的「应用 ID」相同，但「适用架构」分别选择 x86 和 arm。客户端会自动根据用户的设备架构展示对应版本。
         </p>
 
-        <h3>Q5：审核后还要再审核吗？</h3>
-        <p>不用，<strong>一次性审核</strong>。之后开发者自主更新应用，直接改 fnrc.json + push 即可。</p>
-
-        <h3>Q6：三方源管理里出现两条一样的源？</h3>
+        <h3>Q5：还需要配置 Gitee 仓库吗？</h3>
         <p>
-            大概率是<strong>孤立记录</strong>。到「三方源管理」里删掉那条"离线很久"的即可。<br>
-            出现原因：先删 /admin-review 记录，再让开发者重新申请。正确做法是不删审核记录，
-            让开发者走「申请聚合」提交换 URL 请求。
+            <strong>不需要。</strong> v2.10.0 彻底取消了对外部 fnrc.json 的强制依赖。开发者只需在后台网页上填写应用直链（直链依然可以是 Gitee Release 或 GitHub Release）。
         </p>
 
-        <h3>Q7：开发者完全不懂 JSON，能上架吗？</h3>
+        <h3>Q6：自建服务端如何对接官方源？</h3>
         <p>
-            <strong>能。</strong>申请页顶部的「在线生成器」就是给零基础开发者用的：
-            填几个字段（源名称、应用 ID、名称、版本、下载地址、图标），点一下按钮就能生成可用的 fnrc.json。
-            生成器是<strong>纯前端</strong>功能，数据不上传服务端。
-        </p>
-
-        <h3>Q8：拒绝了开发者的公开申请，对方怎么知道？</h3>
-        <p>
-            <strong>不会主动通知</strong>（公开申请阶段还没有 token，也没有站内通知渠道）。<br>
-            但开发者可以凭<strong>申请编号</strong>到 <code>/dev/apply</code> 的「查询进度」Tab
-            <strong>自行查询</strong>到拒绝状态和原因。<br>
-            源主也可以主动联系开发者（用他填写的联系方式）。
-        </p>
-
-        <h3>Q9：fnrc.json 直链可以用发行版附件地址吗？</h3>
-        <p>
-            <strong>可以</strong>，只要 URL 以 <code>.json</code> 结尾、浏览器点开直接显示 JSON 内容。
-            <br>支持：
-            <ul style="margin-bottom:6px;">
-                <li>Gitee raw：<code>https://gitee.com/用户名/仓库/raw/master/fnrc.json</code></li>
-                <li>Gitee Release 附件：<code>https://gitee.com/用户名/仓库/releases/download/v1.0.0/fnrc.json</code></li>
-                <li>GitHub Release 附件：<code>https://github.com/用户名/仓库/releases/download/v1.0.0/fnrc.json</code></li>
-            </ul>
-            <strong>不推荐</strong>：
-            <ul style="margin-bottom:0;">
-                <li>Release <strong>页面</strong>地址（返回 HTML 页面而非 JSON）</li>
-                <li><code>raw.githubusercontent.com</code>（国内经常掉线）</li>
-            </ul>
-        </p>
-
-        <h3>Q10：多架构应用上传会互相覆盖吗？</h3>
-        <p>
-            <strong>不会</strong>。v2.9.3 起，上传 x86 / ARM 版本时会分别存为带 platform 后缀的文件名
-            （如 <code>myapp-1.0.0-x86.fpk</code> 和 <code>myapp-1.0.0-arm.fpk</code>），互不影响。
-            升级前的旧版本上传方式会互相覆盖，建议升级到 2.9.3。
+            在后台「三方源管理」中，添加官方源的地址，或者你自己的 Gitee fnrc.json 地址。这样你的客户端就能同时看到你上传的应用和官方源的应用。
         </p>
     </div>
 

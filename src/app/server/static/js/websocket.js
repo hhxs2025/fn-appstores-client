@@ -1,5 +1,5 @@
 // ================================================================
-// FN软仓 - WebSocket 与安装调度
+// FN软仓 - WebSocket 与安装调度 (安装后智能轮询版)
 // ================================================================
 
 var ws = null;
@@ -183,7 +183,30 @@ function handleWsMessage(msg) {
                 if (typeof updateSettingsStats === 'function') updateSettingsStats();
                 writeAppsCache(allAppsData);
             }
-            setTimeout(function () {refreshApps();}, 12000);
+            
+            // ★ 智能静默轮询：确认飞牛系统真正把应用注册进去后再刷新 UI
+            var checkCount = 0;
+            var pollTimer = setInterval(async function() {
+                checkCount++;
+                try {
+                    var resp = await fetch(API_BASE + '/api/installed');
+                    var res = await resp.json();
+                    if (res.success) {
+                        var found = res.apps.find(function(a) { return a.id === appId; });
+                        if (found) {
+                            clearInterval(pollTimer);
+                            refreshApps(); // 系统已注册，立刻刷新显示
+                        }
+                    }
+                } catch(e) {}
+                
+                // 最多等 30 秒，防死循环
+                if (checkCount >= 10) {
+                    clearInterval(pollTimer);
+                    refreshApps(); 
+                }
+            }, 3000);
+
             setTimeout(processInstallQueue, 500);
         } else {
             updateInstallButtonUI(appId, 'idle');

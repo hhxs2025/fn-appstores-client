@@ -1,5 +1,5 @@
 // ================================================================
-// FN软仓 - 应用列表 / 详情 / 轮播
+// FN软仓 - 应用列表 / 详情 / 轮播 (完整状态控制版)
 // ================================================================
 
 // ================================================================
@@ -34,14 +34,9 @@ window.filterBySource = filterBySource;
 
 function changeSort() {
     var select = document.getElementById('sortSelect');
-    if (!select) {
-        console.warn('[sort] sortSelect 不存在');
-        return;
-    }
+    if (!select) return;
     currentSort = select.value || 'default';
     currentPage = 1;
-    console.log('[sort] 切换排序:', currentSort,
-                '| allAppsData.length =', (allAppsData || []).length);
     renderFilteredApps();
 }
 window.changeSort = changeSort;
@@ -81,9 +76,7 @@ function updateSourceFilterOptions() {
 function sortApps(apps) {
     if (!apps || apps.length <= 1) return apps;
     if (currentSort === 'default') return apps;
-
     var sorted = apps.slice();
-
     switch (currentSort) {
         case 'name':
             sorted.sort(function(a, b) {
@@ -93,34 +86,23 @@ function sortApps(apps) {
                 return an < bn ? -1 : 1;
             });
             break;
-
         case 'author':
-            function normAuthor(s) {
-                return String(s == null ? '' : s).trim().replace(/\s+/g, ' ');
-            }
+            function normAuthor(s) { return String(s == null ? '' : s).trim().replace(/\s+/g, ' '); }
             sorted.sort(function(a, b) {
                 var aa = normAuthor(a.author);
                 var bb = normAuthor(b.author);
-                if (!aa && !bb) {
-                    var an = String(a.name || '');
-                    var bn = String(b.name || '');
-                    return an < bn ? -1 : (an > bn ? 1 : 0);
-                }
+                if (!aa && !bb) return 0;
                 if (!aa) return 1;
                 if (!bb) return -1;
                 var la = aa.toLowerCase();
                 var lb = bb.toLowerCase();
                 if (la !== lb) return la < lb ? -1 : 1;
-                var an = String(a.name || '');
-                var bn = String(b.name || '');
-                return an < bn ? -1 : (an > bn ? 1 : 0);
+                return 0;
             });
             break;
-
         case 'downloads':
             sorted.sort(function(a, b) { return (b.downloads || 0) - (a.downloads || 0); });
             break;
-
         case 'updated':
             sorted.sort(function(a, b) {
                 var da = String(a.updated_at || '');
@@ -130,7 +112,6 @@ function sortApps(apps) {
             });
             break;
     }
-
     return sorted;
 }
 
@@ -140,6 +121,7 @@ function prevPage() {}
 function nextPage() {}
 
 function getFilteredApps() {
+    if (!allAppsData) return [];
     var result = allAppsData.filter(function(app) { return app.id !== 'fn-appstores-client'; });
     var keywordEl = document.getElementById('searchInput');
     if (keywordEl) {
@@ -194,7 +176,6 @@ function getFilteredApps() {
 
 function renderFilteredApps() {
     var filtered = getFilteredApps();
-    console.log('[render] 过滤后', filtered.length, '个应用 | 排序:', currentSort);
     renderApps(filtered);
     var countEl = document.getElementById('appCount');
     if (countEl) countEl.textContent = filtered.length;
@@ -365,8 +346,7 @@ function openDetail(appId) {
 
     document.getElementById('detailMetaAuthor').textContent = app.author || '-';
     document.getElementById('detailMetaVersion').textContent = app.version ? 'v' + app.version : '-';
-    document.getElementById('detailMetaSource').textContent =
-        app._source_id === 'official' ? '🎖️官方' : '🎖️三方';
+    document.getElementById('detailMetaSource').textContent = app._source_id === 'official' ? '🎖️官方' : '🎖️三方';
     document.getElementById('detailMetaDownloads').textContent = (app.downloads || 0);
     document.getElementById('detailMetaUpdated').textContent = app.updated_at || '-';
     document.getElementById('detailMetaType').textContent = app.type || '未指定';
@@ -412,7 +392,30 @@ function openDetail(appId) {
     }
 
     syncDetailFavoriteBtn(app.id);
+    
+    // 控制按钮显示与智能状态查询
     showManageButtons(!!app.installed);
+    if (app.installed) {
+        fetch(API_BASE + '/api/app/' + app.id + '/status')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success) {
+                    if (d.running) {
+                        // 如果正在运行，隐藏“启动”，显示“停止”
+                        var startBtn = document.getElementById('detailStartBtn');
+                        var stopBtn = document.getElementById('detailStopBtn');
+                        if (startBtn) startBtn.style.display = 'none';
+                        if (stopBtn) stopBtn.style.display = '';
+                    } else {
+                        // 如果停止了，隐藏“停止”，显示“启动”
+                        var startBtn = document.getElementById('detailStartBtn');
+                        var stopBtn = document.getElementById('detailStopBtn');
+                        if (startBtn) startBtn.style.display = '';
+                        if (stopBtn) stopBtn.style.display = 'none';
+                    }
+                }
+            }).catch(function() {});
+    }
 
     var repoBtn = document.getElementById('detailRepoBtn');
     if (repoBtn) {
@@ -461,14 +464,8 @@ window.syncDetailFavoriteBtn = syncDetailFavoriteBtn;
 
 function toggleDetailFavorite() {
     try {
-        if (!currentDetailApp) {
-            console.warn('[fav] 无 currentDetailApp');
-            return;
-        }
-        if (typeof toggleFavorite !== 'function') {
-            console.warn('[fav] toggleFavorite 未定义');
-            return;
-        }
+        if (!currentDetailApp) return;
+        if (typeof toggleFavorite !== 'function') return;
         var nowFav = toggleFavorite(currentDetailApp.id);
         syncDetailFavoriteBtn(currentDetailApp.id);
 
@@ -484,7 +481,6 @@ function toggleDetailFavorite() {
         if (typeof updateSettingsStats === 'function') updateSettingsStats();
     } catch (e) {
         console.error('[fav] toggleDetailFavorite 异常:', e);
-        showToast('操作失败：' + e.message, 'error');
     }
 }
 window.toggleDetailFavorite = toggleDetailFavorite;
@@ -492,10 +488,7 @@ window.toggleDetailFavorite = toggleDetailFavorite;
 function toggleCardFavorite(appId) {
     try {
         if (!appId) return;
-        if (typeof toggleFavorite !== 'function') {
-            console.warn('[fav] toggleFavorite 未定义');
-            return;
-        }
+        if (typeof toggleFavorite !== 'function') return;
         var nowFav = toggleFavorite(appId);
         var btn = document.querySelector('.card-fav-btn[data-app-id="' + appId + '"]');
         if (btn) {
@@ -512,7 +505,6 @@ function toggleCardFavorite(appId) {
         if (typeof updateSettingsStats === 'function') updateSettingsStats();
     } catch (e) {
         console.error('[fav] toggleCardFavorite 异常:', e);
-        showToast('操作失败：' + e.message, 'error');
     }
 }
 window.toggleCardFavorite = toggleCardFavorite;
@@ -617,7 +609,7 @@ async function loadApps() {
     if (_loadingApps) return;
     _loadingApps = true;
     var cachedData = readAppsCache();
-    if (cachedData) {
+    if (cachedData && cachedData.length > 0) {
         allAppsData = cachedData;
         setTimeout(function () {
             renderFilterButtons();
@@ -640,36 +632,46 @@ async function loadAppsFromServer(silent) {
         var controller = new AbortController();
         setTimeout(function () {controller.abort();}, 30000);
         var resp = await fetch(API_BASE + '/api/apps', {signal: controller.signal});
+        
         if (resp.status === 429) {
             var data = await resp.json();
             if (!silent) showToast(data.message, 'warning');
             startCooldown(data.retry_after || 30);
-            var grid = document.getElementById('appGrid');
-            if (grid) grid.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>请求过于频繁，请 ' + (data.retry_after || 30) + ' 秒后点击刷新</p></div>';
             _loadingApps = false;
             return;
         }
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         var data = await resp.json();
+        
         if (data.success && data.data.length > 0) {
             allAppsData = data.data;
-            await loadInstalledVersions();
+            
+            // 拿到应用数据立刻渲染并写入缓存！
             renderFilterButtons();
             currentPage = 1;
             renderFilteredApps();
+            writeAppsCache(allAppsData);
+            
             if (!silent) {
                 var badge = document.getElementById('statusBadge');
                 if (badge) {badge.textContent = '在线'; badge.className = 'badge connected';}
                 updateLastRefreshTime();
             }
-            writeAppsCache(allAppsData);
             if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
             if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
 
-            var devTab = document.getElementById('tabDevelopers');
-            if (devTab && devTab.classList.contains('active') && typeof renderDevelopers === 'function') {
-                renderDevelopers();
-            }
+            // 分离加载：拿到列表后异步拉取已安装版本，不阻塞主列表展示
+            loadInstalledVersions().then(function() {
+                renderFilteredApps(); // 拿到版本后静默刷新一次，把“已安装/更新”按钮刷出来
+                if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
+                var devTab = document.getElementById('tabDevelopers');
+                if (devTab && devTab.classList.contains('active') && typeof renderDevelopers === 'function') {
+                    renderDevelopers();
+                }
+            }).catch(function(e) {
+                console.warn('获取已安装版本失败:', e);
+            });
+            
         } else if (!silent) {
             var grid = document.getElementById('appGrid');
             if (grid) grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败，请点击右上角「刷新」重试</p></div>';
@@ -677,7 +679,7 @@ async function loadAppsFromServer(silent) {
     } catch (e) {
         if (e.name !== 'AbortError') {
             var fallbackData = readAppsCache();
-            if (fallbackData) {
+            if (fallbackData && fallbackData.length > 0) {
                 allAppsData = fallbackData;
                 renderFilterButtons();
                 renderFilteredApps();
@@ -697,7 +699,7 @@ async function loadAppsFromServer(silent) {
 function restoreAppsView() {
     try {
         var cachedData = readAppsCache();
-        if (cachedData) {
+        if (cachedData && cachedData.length > 0) {
             allAppsData = cachedData;
             renderFilterButtons();
             renderFilteredApps();
@@ -718,7 +720,9 @@ window.restoreAppsView = restoreAppsView;
 
 async function loadInstalledVersions() {
     try {
-        var resp = await fetch(API_BASE + '/api/installed');
+        var controller = new AbortController();
+        setTimeout(function () {controller.abort();}, 15000); // 给版本请求加 15 秒超时
+        var resp = await fetch(API_BASE + '/api/installed', {signal: controller.signal});
         var data = await resp.json();
         if (data.success) {
             installedAppsCache = {};
@@ -738,10 +742,11 @@ async function loadInstalledVersions() {
                 }
             });
             writeAppsCache(allAppsData);
-            if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
             _installedLoaded = true;
         }
-    } catch (e) {}
+    } catch (e) {
+        console.warn('获取已安装版本失败/超时:', e);
+    }
 }
 
 function updateLastRefreshTime() {
@@ -770,21 +775,28 @@ async function refreshApps() {
         }
         if (data.success) {
             allAppsData = data.data;
-            await loadInstalledVersions();
+            
+            // 点刷新时，也是立刻渲染，不等待版本
             renderFilterButtons();
             currentPage = 1;
             renderFilteredApps();
+            writeAppsCache(allAppsData);
+            
             showToast(data.message, 'success');
             updateLastRefreshTime();
             badge.textContent = '在线';
             badge.className = 'badge connected';
-            writeAppsCache(allAppsData);
             if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
 
-            var devTab2 = document.getElementById('tabDevelopers');
-            if (devTab2 && devTab2.classList.contains('active') && typeof renderDevelopers === 'function') {
-                renderDevelopers();
-            }
+            loadInstalledVersions().then(function() {
+                renderFilteredApps();
+                if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
+                var devTab2 = document.getElementById('tabDevelopers');
+                if (devTab2 && devTab2.classList.contains('active') && typeof renderDevelopers === 'function') {
+                    renderDevelopers();
+                }
+            }).catch(function(e) { console.warn(e); });
+            
         } else {
             showToast('刷新失败: ' + data.message, 'error');
             badge.textContent = '失败';
@@ -825,11 +837,11 @@ function startCooldown(seconds) {
 }
 
 // ================================================================
-// ★ 应用管理：停止 / 启动 / 重启 / 卸载
+// ★ 应用管理：停止 / 启动 / 重启 / 卸载 / 诊断 / 强力修复 / 备份恢复
 // ================================================================
 
 function showManageButtons(installed) {
-    var ids = ['detailStopBtn', 'detailStartBtn', 'detailRestartBtn', 'detailUninstallBtn'];
+    var ids = ['detailStopBtn', 'detailStartBtn', 'detailRestartBtn', 'detailUninstallBtn', 'detailDiagnoseBtn', 'detailRepairBtn', 'detailBackupBtn', 'detailRestoreBtn'];
     ids.forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.style.display = installed ? '' : 'none';
@@ -847,14 +859,16 @@ async function manageApp(action, appId) {
         stop: '停止',
         start: '启动',
         restart: '重启',
-        uninstall: '卸载'
+        uninstall: '卸载',
+        repair: '修复'
     }[action] || action;
 
     var btnMap = {
         stop: 'detailStopBtn',
         start: 'detailStartBtn',
         restart: 'detailRestartBtn',
-        uninstall: 'detailUninstallBtn'
+        uninstall: 'detailUninstallBtn',
+        repair: 'detailRepairBtn'
     };
 
     var appName = currentDetailApp ? (currentDetailApp.name || appId) : appId;
@@ -864,9 +878,11 @@ async function manageApp(action, appId) {
         if (!confirm('确定要重启「' + appName + '」吗？')) return;
     } else if (action === 'stop') {
         if (!confirm('确定要停止「' + appName + '」吗？\n\n停止后应用将无法访问，可随时重新启动。')) return;
+    } else if (action === 'repair') {
+        if (!confirm('确定要强力修复「' + appName + '」吗？\n\n这会卸载并重新安装该应用（您的个人配置数据会保留），用于解决桌面图标不显示或无法打开等问题。')) return;
     }
 
-    var allBtns = ['detailStopBtn', 'detailStartBtn', 'detailRestartBtn', 'detailUninstallBtn'];
+    var allBtns = ['detailStopBtn', 'detailStartBtn', 'detailRestartBtn', 'detailUninstallBtn', 'detailDiagnoseBtn', 'detailRepairBtn', 'detailBackupBtn', 'detailRestoreBtn'];
     var origText = {};
     allBtns.forEach(function(id) {
         var b = document.getElementById(id);
@@ -902,10 +918,16 @@ async function manageApp(action, appId) {
                     if (typeof refreshApps === 'function') refreshApps();
                     if (typeof backToAppsList === 'function') backToAppsList();
                 }, 800);
+            } else if (action === 'repair') {
+                setTimeout(function() {
+                    if (currentDetailApp && currentDetailApp.id === appId) {
+                        openDetail(appId); // 重新加载详情
+                    }
+                }, 500);
             } else {
                 setTimeout(function() {
                     if (currentDetailApp && currentDetailApp.id === appId) {
-                        openDetail(appId);
+                        openDetail(appId); // 刷新状态按钮
                     }
                 }, 500);
             }
@@ -914,11 +936,9 @@ async function manageApp(action, appId) {
             if (typeof updateSettingsStats === 'function') updateSettingsStats();
         } else {
             showToast(data.message || (actionText + '失败'), 'error');
-            console.error('[manage] ' + action + ' 失败:', data);
         }
     } catch (e) {
         showToast(actionText + '失败: ' + e.message, 'error');
-        console.error('[manage] ' + action + ' 异常:', e);
     } finally {
         allBtns.forEach(function(id) {
             var b = document.getElementById(id);
@@ -947,8 +967,92 @@ function uninstallApp() {
     if (!currentDetailApp) return;
     manageApp('uninstall', currentDetailApp.id);
 }
+function repairApp() {
+    if (!currentDetailApp) return;
+    manageApp('repair', currentDetailApp.id);
+}
 
 window.stopApp = stopApp;
 window.startApp = startApp;
 window.restartApp = restartApp;
 window.uninstallApp = uninstallApp;
+window.repairApp = repairApp;
+
+// ★ 新增：下载诊断日志
+function downloadDiagnostics() {
+    if (!currentDetailApp) return;
+    var appId = currentDetailApp.id;
+    
+    var url = API_BASE + '/api/diagnostics?app_id=' + encodeURIComponent(appId);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'diagnose_' + appId + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    if (typeof showToast === 'function') {
+        showToast('诊断报告已开始下载', 'success');
+    }
+}
+window.downloadDiagnostics = downloadDiagnostics;
+
+// ★ 新增：配置备份/恢复
+function backupApp() {
+    if (!currentDetailApp) return;
+    var appId = currentDetailApp.id;
+    var url = API_BASE + '/api/app/' + encodeURIComponent(appId) + '/backup';
+    var a = document.createElement('a');
+    a.href = url;
+    // 不再需要指定 download，后端 Content-Disposition 会处理
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (typeof showToast === 'function') showToast('已开始下载配置备份', 'success');
+}
+window.backupApp = backupApp;
+
+function triggerRestoreSelect() {
+    var fileInput = document.getElementById('restoreFileInput');
+    if (fileInput) {
+        fileInput.value = ''; // clear
+        fileInput.click();
+    }
+}
+window.triggerRestoreSelect = triggerRestoreSelect;
+
+async function restoreApp(event) {
+    if (!currentDetailApp) return;
+    var file = event.target.files[0];
+    if (!file) return;
+    if (!file.name.endsWith('.zip')) {
+        showToast('请选择 .zip 格式的备份文件', 'warning');
+        return;
+    }
+    
+    if (!confirm('确定要恢复此配置吗？\n\n当前应用的配置将被覆盖，且应用会重启。')) return;
+
+    var fd = new FormData();
+    fd.append('file', file);
+
+    showToast('正在上传并恢复配置...', 'info');
+
+    try {
+        var resp = await fetch(API_BASE + '/api/app/' + encodeURIComponent(currentDetailApp.id) + '/restore', {
+            method: 'POST',
+            body: fd
+        });
+        var data = await resp.json();
+        if (data.success) {
+            showToast(data.message || '恢复成功', 'success');
+            setTimeout(function() {
+                if (currentDetailApp) openDetail(currentDetailApp.id);
+            }, 1000);
+        } else {
+            showToast(data.message || '恢复失败', 'error');
+        }
+    } catch (e) {
+        showToast('恢复失败: ' + e.message, 'error');
+    }
+}
+window.restoreApp = restoreApp;

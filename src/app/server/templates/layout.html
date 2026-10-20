@@ -20,7 +20,7 @@
             --border: #e5e7eb;
             --blue: #2563ea;
             --sidebar-width: 140px;
-            --max-width: 1500px;
+            --max-width: 100%;
             --nav-item-height: 40px;
         }
 
@@ -39,18 +39,19 @@
             transition: background 0.25s, color 0.25s;
         }
 
+        /* ★ 修改：高度压缩到 38px，彻底去掉上下 padding */
         .header {
             background: var(--card-bg);
-            padding: 6px 16px 4px;
+            padding: 0 20px;
             flex-shrink: 0;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 44px;
+            height: 38px;
             z-index: 100;
         }
-        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-left { display: flex; align-items: center; gap: 12px; line-height: 1; }
         .header-left .hamburger {
             display: none;
             background: none;
@@ -58,17 +59,18 @@
             font-size: 20px;
             cursor: pointer;
             color: var(--text-secondary);
-            padding: 4px;
+            padding: 0;
         }
-        .header-left .app-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
-        .header-left .app-version { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+        
+        .header-left .app-version { font-size: 13px; font-weight: 500; color: var(--text-muted); }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 9px;
-            color: var(--text-muted);
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1;
         }
         .header-right .sep { color: #d5d5dd; }
 
@@ -89,7 +91,7 @@
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
-            padding: 12px 0 8px;
+            padding: 16px 0 8px;
             overflow-y: auto;
             z-index: 50;
         }
@@ -100,10 +102,10 @@
         }
         .sidebar-search input {
             width: 100%;
-            padding: 6px 12px;
+            padding: 8px 12px;
             border: 1px solid var(--border);
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 13px;
             background: var(--card-bg);
             color: var(--text-primary);
             outline: none;
@@ -120,7 +122,7 @@
         .sidebar-nav {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 4px;
             padding: 0 8px;
             flex: 1;
         }
@@ -129,7 +131,7 @@
             flex-direction: row !important;
             align-items: center;
             justify-content: flex-start;
-            gap: 10px;
+            gap: 12px;
             padding: 0 12px;
             height: var(--nav-item-height);
             border: none;
@@ -156,13 +158,13 @@
 
         .sidebar-nav .nav-icon {
             display: block;
-            width: 18px;
-            height: 18px;
-            min-width: 18px;
-            min-height: 18px;
-            max-width: 18px;
-            max-height: 18px;
-            flex: 0 0 18px;
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            min-height: 20px;
+            max-width: 20px;
+            max-height: 20px;
+            flex: 0 0 20px;
             opacity: 0.7;
             transition: opacity 0.2s;
         }
@@ -175,7 +177,7 @@
             padding: 8px 12px 0;
             border-top: 1px solid var(--border);
             margin-top: 8px;
-            font-size: 10px;
+            font-size: 12px;
             color: var(--text-muted);
         }
 
@@ -185,21 +187,22 @@
             flex-direction: column;
             overflow: hidden;
             background: var(--content-bg);
-            padding: 0 20px 0;
+            padding: 0 24px 0;
             min-width: 0;
         }
 
+        /* ★ 修改：去掉顶部的 8px 内边距，紧贴 Header */
         .tab-content {
             display: none;
             flex: 1;
             flex-direction: column;
             min-height: 0;
             overflow: hidden;
-            padding: 4px 0 8px;
+            padding: 0 0 12px;
         }
         .tab-content.active { display: flex; }
 
-        /* ===== 暗色模式：变量合并到 html 和 body 上 ===== */
+        /* ===== 暗色模式 ===== */
         html.dark-mode,
         body.dark-mode {
             --bg: #1a1a2e;
@@ -224,7 +227,7 @@
         html.dark-mode .sidebar-footer,
         body.dark-mode .sidebar-footer { border-top-color: var(--border); }
 
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #d5d5dd; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #b8bac2; }
@@ -232,20 +235,21 @@
 
         .toast {
             position: fixed;
-            bottom: 24px;
+            bottom: 32px;
             left: 50%;
             transform: translateX(-50%) translateY(80px);
             background: rgba(40,40,40,0.92);
             color: #fff;
-            padding: 8px 20px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
             z-index: 9999;
             opacity: 0;
             transition: all 0.3s;
             pointer-events: none;
             max-width: 90%;
             text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         .toast.success { background: rgba(40,70,40,0.92); }
@@ -253,29 +257,23 @@
         .toast.warning { background: rgba(80,70,40,0.92); }
 
         @media (max-width: 1100px) {
-            .sidebar { width: 48px; }
+            .sidebar { width: 56px; }
             .sidebar-footer { display: none; }
             .sidebar-search { display: none; }
-            .sidebar-nav { padding: 0 4px; }
+            .sidebar-nav { padding: 0 8px; }
             .sidebar-nav .nav-item {
                 font-size: 0;
-                padding: 0 8px;
+                padding: 0;
                 justify-content: center;
                 gap: 0;
             }
             .sidebar-nav .nav-item .label { display: none; }
-            .sidebar-nav .nav-icon {
-                width: 20px; height: 20px;
-                min-width: 20px; min-height: 20px;
-                max-width: 20px; max-height: 20px;
-                flex: 0 0 20px;
-            }
-            .main-content { padding: 0 12px; }
+            .main-content { padding: 0 16px; }
         }
 
         @media (max-width: 768px) {
             .header-left .hamburger { display: block; }
-            .header-right { font-size: 8px; gap: 4px; }
+            .header-right { font-size: 11px; gap: 6px; }
             .header-right .sep { display: none; }
             .sidebar {
                 position: fixed; top: 0; left: 0;
@@ -288,10 +286,10 @@
             .sidebar.open { transform: translateX(0); }
             .sidebar .sidebar-search { display: block; }
             .sidebar .sidebar-nav .nav-item {
-                font-size: 14px;
+                font-size: 15px;
                 justify-content: flex-start;
-                padding: 0 12px;
-                gap: 10px;
+                padding: 0 16px;
+                gap: 12px;
             }
             .sidebar .sidebar-nav .nav-item .label { display: inline; flex: 1; }
             .sidebar .sidebar-footer { display: block; }
@@ -303,18 +301,9 @@
                 z-index: 150;
             }
             .sidebar-overlay.active { display: block; }
-            .main-content { padding: 0 8px; }
-            .header { padding: 4px 8px; height: 44px; }
-            .header-left .app-name { font-size: 14px; }
-            .header-left .app-version { font-size: 10px; }
-        }
-
-        @media (max-width: 480px) {
-            .header { height: 40px; padding: 3px 6px; }
-            .header-left .app-name { font-size: 13px; }
-            .header-left .app-version { font-size: 9px; }
-            .header-right { font-size: 7px; }
-            .main-content { padding: 0 4px; }
+            .main-content { padding: 0 12px; }
+            .header { padding: 0 12px; height: 38px; }
+            .header-left .app-version { font-size: 12px; }
         }
     </style>
 
@@ -336,8 +325,7 @@
     <header class="header">
         <div class="header-left">
             <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">☰</button>
-            <span class="app-name">FN软仓</span>
-            <span class="app-version" id="appVersion">{{.Version}}</span>
+            <span class="app-version" id="appVersion">当前版本 {{.Version}}</span>
         </div>
         <div class="header-right">
             <span>飞牛第三方应用市场</span>
@@ -401,17 +389,6 @@
             if (overlay) overlay.classList.remove('active');
         }
 
-        // ============================================================
-        // 主题系统（简化版：只有一个深色模式开关）
-        //
-        //   状态：
-        //     - USER_THEME_KEY 存在 → 用户手动模式（'dark' / 'light'）
-        //     - USER_THEME_KEY 不存在 → 跟随系统（用 SYS_THEME_KEY）
-        //
-        //   用户操作：
-        //     - 拨动"深色模式"开关 → 进入手动模式
-        //     - 点"恢复跟随系统" → 清除 USER_THEME_KEY，回到跟随系统
-        // ============================================================
         var USER_THEME_KEY = 'fnsoft_theme';
         var SYS_THEME_KEY = 'fnsoft_system_theme';
 
@@ -426,7 +403,6 @@
             syncThemeSwitches();
         }
 
-        // 计算当前应该显示的主题（用户手动优先，否则跟系统）
         function getTheme() {
             var u = localStorage.getItem(USER_THEME_KEY);
             if (u === 'light' || u === 'dark') return u;
@@ -435,16 +411,10 @@
             return 'light';
         }
 
-        // 系统主题更新（由轮询调用）
         function setSystemTheme(theme) {
             if (theme !== 'light' && theme !== 'dark') return;
             var old = localStorage.getItem(SYS_THEME_KEY);
             localStorage.setItem(SYS_THEME_KEY, theme);
-            if (old !== theme) {
-                console.log('[theme] 系统主题更新:', old, '→', theme,
-                            '| 用户手动 =', localStorage.getItem(USER_THEME_KEY));
-            }
-            // 只有跟随系统时才应用
             if (!localStorage.getItem(USER_THEME_KEY)) {
                 applyThemeClass(theme);
             }
@@ -474,9 +444,6 @@
             syncThemeSwitches();
         }
 
-        // ============================================================
-        // initSystemTheme：轮询 + $on 加速
-        // ============================================================
         async function initSystemTheme() {
             var sdk = window.trimSdk;
             if (!sdk) {
@@ -487,17 +454,11 @@
                     ]);
                     sdk = new mod.TrimApp();
                     window.trimSdk = sdk;
-                    console.log('[theme] SDK 首次加载完成');
                 } catch (e) {
-                    console.warn('[theme] SDK 加载失败/超时，退回 matchMedia:', e);
                     bindMatchMedia();
                     return;
                 }
-            } else {
-                console.log('[theme] 复用已有 SDK 实例');
             }
-
-            console.log('[theme] sdk.isWeb:', sdk.isWeb, 'isStandaloneWeb:', sdk.isStandaloneWeb);
 
             async function fetchRealTheme() {
                 try {
@@ -508,23 +469,17 @@
                     if (config && config.theme) {
                         return resolveSystemTheme(config.theme);
                     }
-                } catch (e) {
-                    console.warn('[theme] getPlatformConfig 失败:', e);
-                }
+                } catch (e) {}
                 return null;
             }
 
-            // 首次拉取
             var initial = await fetchRealTheme();
             if (initial) {
-                console.log('[theme] 初始系统主题:', initial);
                 setSystemTheme(initial);
             } else {
-                console.warn('[theme] 初始系统主题获取失败，退回 matchMedia');
                 bindMatchMedia();
             }
 
-            // 每 2 秒轮询
             var lastPolled = localStorage.getItem(SYS_THEME_KEY);
             function poll() {
                 if (document.hidden) return;
@@ -537,64 +492,38 @@
             }
             setInterval(poll, 2000);
 
-            // $on 事件 → 立即触发一次轮询
             if (sdk.isWeb === true && sdk.isStandaloneWeb === false) {
                 try {
                     var ret = sdk.$on('os/theme', function (theme) {
-                        console.log('[theme] $on 事件:', theme, '→ 立即触发轮询');
                         setTimeout(poll, 100);
                     });
-                    if (ret && typeof ret.catch === 'function') {
-                        ret.catch(function(e) {
-                            console.warn('[theme] $on 监听失败（不影响轮询）:', e);
-                        });
-                    }
-                } catch (e) {
-                    console.warn('[theme] $on 抛异常（不影响轮询）:', e);
-                }
+                    if (ret && typeof ret.catch === 'function') ret.catch(function(){});
+                } catch (e) {}
             }
-
-            // 页面重新可见时立即轮询
             document.addEventListener('visibilitychange', function() {
                 if (!document.hidden) setTimeout(poll, 200);
             });
         }
 
-        // ============================================================
-        // 开关逻辑（方案 A）
-        // ============================================================
-
-        // 拨动"深色模式"开关 → 进入用户手动模式
         function handleThemeSwitch(checked) {
             var theme = checked ? 'dark' : 'light';
             localStorage.setItem(USER_THEME_KEY, theme);
             applyThemeClass(theme);
             syncThemeSwitches();
-            console.log('[theme] 用户手动切换:', theme);
         }
 
-        // 点"恢复跟随系统" → 回到跟随系统
         function resetToSystemTheme() {
             localStorage.removeItem(USER_THEME_KEY);
             applyThemeClass(getTheme());
             syncThemeSwitches();
-            console.log('[theme] 恢复跟随系统，当前系统主题 =',
-                        localStorage.getItem(SYS_THEME_KEY));
         }
 
-        // 同步 UI 状态
         function syncThemeSwitches() {
             var themeSwitch = document.getElementById('themeSwitch');
             var followHint = document.getElementById('followSystemHint');
-
             var isAuto = !localStorage.getItem(USER_THEME_KEY);
-
-            if (themeSwitch) {
-                themeSwitch.checked = (getTheme() === 'dark');
-            }
-            if (followHint) {
-                followHint.style.display = isAuto ? 'none' : '';
-            }
+            if (themeSwitch) themeSwitch.checked = (getTheme() === 'dark');
+            if (followHint) followHint.style.display = isAuto ? 'none' : '';
         }
 
         function onGlobalSearchInput(val) {
@@ -649,9 +578,7 @@
             if (tab === 'apps' && window._pendingDetailAppId && typeof openDetail === 'function') {
                 var id = window._pendingDetailAppId;
                 window._pendingDetailAppId = null;
-                setTimeout(function () {
-                    openDetail(id);
-                }, 100);
+                setTimeout(function () { openDetail(id); }, 100);
             }
         }
 

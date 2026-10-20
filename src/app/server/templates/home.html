@@ -1,16 +1,19 @@
 {{define "home"}}
 <style>
+    /* ★ 隐藏整体页面的滚动条，但保留滚动能力 */
     .home-container {
         width: 100%;
         max-width: 100%;
         margin: 0 auto;
         padding: 0;
         overflow-y: auto;
+        scrollbar-width: none; /* Firefox */
         height: 100%;
         display: flex;
         flex-direction: column;
         gap: 12px;
     }
+    .home-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
     .home-top-row {
         display: flex;
@@ -97,16 +100,17 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 8px;
     }
     .home-notice-wrapper .notice-label {
-        font-size: 11px;
+        font-size: 14px; 
         font-weight: 600;
         color: var(--blue);
         letter-spacing: 0.5px;
         flex-shrink: 0;
     }
 
+    /* ★ 隐藏公告列表的滚动条 */
     .notice-records {
         flex: 1;
         overflow-y: auto;
@@ -114,13 +118,14 @@
         flex-direction: column;
         gap: 4px;
         padding-right: 2px;
+        scrollbar-width: none;
     }
+    .notice-records::-webkit-scrollbar { display: none; }
 
-    /* ★ 需求2：公告记录条 - 支持未读红点 */
     .notice-record {
         position: relative;
-        padding: 4px 6px 4px 14px;   /* 左侧留出红点空间 */
-        border-radius: 4px;
+        padding: 6px 6px 6px 14px;
+        border-radius: 6px;
         cursor: pointer;
         transition: background 0.15s;
         border-bottom: 1px solid var(--border);
@@ -128,7 +133,6 @@
     .notice-record:last-child { border-bottom: none; }
     .notice-record:hover { background: var(--bg); }
 
-    /* 未读红点：绝对定位在左侧中部 */
     .notice-record .record-unread-dot {
         position: absolute;
         left: 3px;
@@ -150,14 +154,17 @@
         50%      { opacity: 0.55; }
     }
 
-    /* 未读时标题加粗一点，视觉上更明显 */
     .notice-record.unread .record-title {
         font-weight: 600;
     }
 
-    .notice-record .record-date { font-size: 9px; color: var(--text-muted); }
+    .notice-record .record-date { 
+        font-size: 11px; 
+        color: var(--text-muted); 
+        margin-bottom: 2px;
+    }
     .notice-record .record-title {
-        font-size: 12px;
+        font-size: 13px; 
         font-weight: 500;
         color: var(--text-primary);
         overflow: hidden;
@@ -165,7 +172,6 @@
         white-space: nowrap;
     }
 
-    /* ★ 需求2：「全部公告」里的未读红点 */
     .notice-all-item {
         position: relative;
         padding-left: 14px;
@@ -183,10 +189,10 @@
     .notice-all-item.unread .notice-all-unread { display: block; }
 
     .notice-more {
-        font-size: 11px;
+        font-size: 13px; 
         color: var(--blue);
         cursor: pointer;
-        padding: 4px 6px;
+        padding: 6px 6px;
         text-align: right;
         flex-shrink: 0;
     }
@@ -203,7 +209,7 @@
         background: var(--card-bg);
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 12px 14px;
+        padding: 14px 16px;
         display: flex;
         flex-direction: column;
         min-height: 160px;
@@ -212,71 +218,87 @@
         transition: all 0.2s;
     }
     .home-quick-card:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(37,99,235,0.06); }
+    
     .home-quick-card .card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         flex-shrink: 0;
     }
-    .home-quick-card .card-header .title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+    .home-quick-card .card-header .title { 
+        font-size: 15px; 
+        font-weight: 700; 
+        color: var(--text-primary); 
+    }
     .home-quick-card .card-header .badge {
-        font-size: 10px;
+        font-size: 12px;
         color: var(--text-muted);
         background: var(--bg);
-        padding: 0 8px;
+        padding: 1px 8px;
         border-radius: 10px;
         flex-shrink: 0;
     }
+    
+    /* ★ 隐藏快捷卡片内部的滚动条 */
     .home-quick-card .card-list {
         flex: 1;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 3px;
+        gap: 4px;
+        scrollbar-width: none;
     }
+    .home-quick-card .card-list::-webkit-scrollbar { display: none; }
+    
     .home-quick-card .card-list .item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 3px 4px;
-        border-radius: 4px;
-        font-size: 12px;
+        gap: 10px;
+        padding: 6px 4px;
+        border-radius: 6px;
+        font-size: 14px; 
         color: var(--text-secondary);
         cursor: pointer;
         transition: background 0.15s;
     }
     .home-quick-card .card-list .item:hover { background: var(--bg); }
+    
     .home-quick-card .card-list .item .icon-sm {
-        width: 20px;
-        height: 20px;
-        border-radius: 4px;
+        width: 24px; 
+        height: 24px;
+        border-radius: 6px;
         flex-shrink: 0;
         overflow: hidden;
         background: #e8eaed;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
+        font-size: 14px;
     }
     .home-quick-card .card-list .item .icon-sm img { width: 100%; height: 100%; object-fit: cover; }
+    
     .home-quick-card .card-list .item .name {
         flex: 1;
+        min-width: 0; 
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        font-weight: 500;
     }
+    
     .home-quick-card .card-list .item .meta {
-        font-size: 10px;
+        font-size: 12px; 
         color: var(--text-muted);
         flex-shrink: 0;
         margin-left: 4px;
     }
+    
     .home-quick-card .card-list .empty {
-        font-size: 11px;
+        font-size: 13px;
         color: var(--text-muted);
         text-align: center;
-        padding: 12px 0;
+        padding: 20px 0;
     }
 
     @media (max-width: 768px) {
@@ -302,7 +324,7 @@
         }
         .home-quick-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .home-quick-card { min-height: 140px; max-height: 220px; }
-        .home-quick-card .card-list .item { font-size: 11px; }
+        .home-quick-card .card-list .item { font-size: 13px; }
     }
 
     @media (max-width: 550px) {
@@ -312,11 +334,11 @@
         .home-carousel-btn.prev { left: 4px; }
         .home-carousel-btn.next { right: 4px; }
         .home-notice-wrapper { max-height: 180px; min-height: 70px; padding: 10px 14px; }
-        .notice-record .record-title { font-size: 11px; }
+        .notice-record .record-title { font-size: 12px; }
         .home-quick-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
         .home-quick-card { min-height: 120px; max-height: 200px; padding: 10px 12px; }
-        .home-quick-card .card-header .title { font-size: 12px; }
-        .home-quick-card .card-list .item { font-size: 10px; padding: 2px 3px; }
+        .home-quick-card .card-header .title { font-size: 14px; }
+        .home-quick-card .card-list .item { font-size: 12px; padding: 4px 2px; }
     }
 
     @media (max-width: 400px) {
@@ -324,7 +346,7 @@
         .home-carousel-wrapper { height: 120px; min-height: 100px; }
         .home-carousel-btn { width: 22px; height: 22px; font-size: 11px; }
         .home-notice-wrapper { max-height: 140px; min-height: 60px; padding: 8px 12px; }
-        .notice-record .record-title { font-size: 10px; }
+        .notice-record .record-title { font-size: 11px; }
         .home-quick-grid { grid-template-columns: 1fr; gap: 6px; }
         .home-quick-card { min-height: 100px; max-height: 180px; }
     }
@@ -341,7 +363,7 @@
         <div class="home-notice-wrapper" id="homeNoticeWrapper">
             <div class="notice-label">📢公告记录</div>
             <div class="notice-records" id="homeNoticeContent">
-                <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:12px 0;">加载中...</div>
+                <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:12px 0;">加载中...</div>
             </div>
         </div>
     </div>

@@ -3,8 +3,23 @@
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function () {
-    var archEl = document.getElementById('settingsArch');
-    if (archEl) archEl.textContent = navigator.platform || 'x86_64';
+    // ★ 新增：请求后端获取真实硬件架构
+    fetch(API_BASE + '/api/sysinfo')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            var archEl = document.getElementById('settingsArch');
+            if (archEl && data.success) {
+                var archText = data.arch;
+                if (archText === 'amd64') archText = 'x86_64';
+                if (archText === 'arm64') archText = 'ARM64';
+                archEl.textContent = archText;
+            }
+        })
+        .catch(function() {
+            // 失败兜底
+            var archEl = document.getElementById('settingsArch');
+            if (archEl) archEl.textContent = navigator.platform || 'x86_64';
+        });
 
     checkAndShowDownloaded();
     connectWS();
