@@ -1,6 +1,5 @@
 // ================================================================
 // FN软仓 - 核心模块
-// 全局变量 + 工具函数 + 缓存 + 评分 + 搜索 + 收藏
 // ================================================================
 
 // ================================================================
@@ -10,9 +9,6 @@ var GATEWAY_PREFIX = '/app/fn-appstores-client';
 var API_BASE = '';
 if (window.location.pathname.indexOf(GATEWAY_PREFIX) === 0) {
     API_BASE = GATEWAY_PREFIX;
-    console.log('🔗 统一网关模式，API_BASE =', API_BASE);
-} else {
-    console.log('🔗 端口模式，API_BASE = (相对根路径)');
 }
 
 // ================================================================
@@ -26,23 +22,18 @@ var currentSourceFilter = 'all';
 var currentSort = 'default';
 var currentPage = 1;
 var allAppsData = [];
-var installedAppsCache = {};
 var currentDetailApp = null;
 var currentSlide = 0;
 var slideCount = 0;
 var refreshCooldown = false;
 var refreshTimer = null;
 var REFRESH_COOLDOWN = 30;
-var currentWizardSessionId = null;
-var _wizardPendingAppID = null;
-var _wizardPollTimer = null;
 var imageList = [];
 var currentImageIndex = 0;
 var homeSlideIndex = 0;
 var homeSlideCount = 0;
 var homeNoticeData = null;
 var homeLoaded = false;
-
 var homeNoticeCache = null;
 var homeNoticeCacheTime = 0;
 var HOME_CACHE_TTL = 5 * 60 * 1000;
@@ -74,10 +65,7 @@ function wrapImageUrl(url) {
 // ================================================================
 function showToast(msg, type) {
     var toast = document.getElementById('toast');
-    if (!toast) {
-        console.warn('Toast 元素不存在');
-        return;
-    }
+    if (!toast) return;
     toast.textContent = msg;
     toast.className = 'toast show ' + (type || '');
     var durations = { success: 2500, error: 4000, warning: 3000, info: 2000 };
@@ -90,19 +78,22 @@ function showToast(msg, type) {
 // ================================================================
 // 工具函数
 // ================================================================
-function compareVersions(v1, v2) {
-    if (!v1 || !v2) return 0;
-    v1 = String(v1).replace(/^v/, '');
-    v2 = String(v2).replace(/^v/, '');
-    var parts1 = v1.split('.').map(Number);
-    var parts2 = v2.split('.').map(Number);
-    for (var i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-        var a = parts1[i] || 0;
-        var b = parts2[i] || 0;
-        if (a > b) return 1;
-        if (a < b) return -1;
-    }
-    return 0;
+// compareVersions 在 appcenter.js 中已定义，这里做兜底检测
+if (typeof compareVersions === 'undefined') {
+    var compareVersions = function(v1, v2) {
+        if (!v1 || !v2) return 0;
+        v1 = String(v1).replace(/^v/, '');
+        v2 = String(v2).replace(/^v/, '');
+        var parts1 = v1.split('.').map(Number);
+        var parts2 = v2.split('.').map(Number);
+        for (var i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+            var a = parts1[i] || 0;
+            var b = parts2[i] || 0;
+            if (a > b) return 1;
+            if (a < b) return -1;
+        }
+        return 0;
+    };
 }
 
 function getTagsArray(tags) {
@@ -126,9 +117,7 @@ function readAppsCache() {
             localStorage.removeItem(CACHE_KEY);
             return null;
         }
-        if (Date.now() - data.timestamp > 10 * 60 * 1000) {
-            return null;
-        }
+        if (Date.now() - data.timestamp > 10 * 60 * 1000) return null;
         return data.data;
     } catch (e) {
         return null;
@@ -149,7 +138,6 @@ function clearAppsCache() {
     localStorage.removeItem(CACHE_KEY);
     localStorage.removeItem('fnsoft_notice_cache');
     localStorage.removeItem('fnsoft_downloaded_version');
-    // ★ 注意：不清收藏、不清已读公告 —— 这两个是用户主动留下的状态
 }
 
 function exportLogs() {
@@ -166,11 +154,10 @@ function clearCache() {
 window.clearCache = clearCache;
 
 // ================================================================
-// ★ 需求3：应用收藏工具（全部显式挂 window）
+// 应用收藏
 // ================================================================
 var FAVORITES_KEY = 'fnsoft_favorites';
 
-// 结构：{ "app_id": 收藏时间戳, ... }
 function getFavorites() {
     try {
         var raw = localStorage.getItem(FAVORITES_KEY);
@@ -178,7 +165,6 @@ function getFavorites() {
         var obj = JSON.parse(raw);
         return (obj && typeof obj === 'object') ? obj : {};
     } catch (e) {
-        console.warn('[fav] 解析收藏数据失败:', e);
         return {};
     }
 }
@@ -186,12 +172,10 @@ window.getFavorites = getFavorites;
 
 function isFavorite(appId) {
     if (!appId) return false;
-    var map = getFavorites();
-    return !!map[appId];
+    return !!getFavorites()[appId];
 }
 window.isFavorite = isFavorite;
 
-// 切换收藏状态；返回切换后是否为收藏
 function toggleFavorite(appId) {
     if (!appId) return false;
     var map = getFavorites();
@@ -203,17 +187,11 @@ function toggleFavorite(appId) {
         map[appId] = Date.now();
         nowFav = true;
     }
-    try {
-        localStorage.setItem(FAVORITES_KEY, JSON.stringify(map));
-        console.log('[fav] 切换收藏:', appId, '→', nowFav);
-    } catch (e) {
-        console.warn('[fav] 写入失败:', e);
-    }
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(map));
     return nowFav;
 }
 window.toggleFavorite = toggleFavorite;
 
-// 返回按收藏时间倒序的 app_id 数组
 function getFavoriteList() {
     var map = getFavorites();
     var ids = Object.keys(map);
@@ -222,7 +200,6 @@ function getFavoriteList() {
 }
 window.getFavoriteList = getFavoriteList;
 
-// 从当前 allAppsData 里过滤出收藏的应用（保留收藏顺序）
 function getFavoriteApps() {
     var ids = getFavoriteList();
     if (ids.length === 0 || !allAppsData || allAppsData.length === 0) return [];
@@ -236,14 +213,13 @@ function getFavoriteApps() {
 }
 window.getFavoriteApps = getFavoriteApps;
 
-// 显式清空收藏
 function clearFavorites() {
     localStorage.removeItem(FAVORITES_KEY);
 }
 window.clearFavorites = clearFavorites;
 
 // ================================================================
-// 设置 tab 切换（显式挂 window）
+// 设置 tab 切换
 // ================================================================
 function switchSettingTab(tab) {
     var tabs = document.querySelectorAll('.settings-tab');
@@ -258,17 +234,9 @@ function switchSettingTab(tab) {
             el.classList.toggle('active', el.id === 'spanel-' + tab);
         });
     }
-    // ★ 需求3：切到收藏 tab 时渲染
     if (tab === 'favorites' && typeof window.renderFavorites === 'function') {
-        setTimeout(function() {
-            try {
-                window.renderFavorites();
-            } catch (e) {
-                console.error('[fav] renderFavorites 异常:', e);
-            }
-        }, 20);
+        setTimeout(function() { window.renderFavorites(); }, 20);
     }
-    // 切换时同步主题开关
     if (typeof syncThemeSwitches === 'function') {
         setTimeout(syncThemeSwitches, 20);
     }
@@ -276,7 +244,7 @@ function switchSettingTab(tab) {
 window.switchSettingTab = switchSettingTab;
 
 // ================================================================
-// 搜索（带防抖）
+// 搜索
 // ================================================================
 function searchApps() {
     currentPage = 1;
@@ -320,8 +288,7 @@ function getMyRatings() {
     try { return JSON.parse(localStorage.getItem(MY_RATINGS_KEY) || '{}'); } catch (e) { return {}; }
 }
 function getMyRating(appId) {
-    var all = getMyRatings();
-    return all[appId] || 0;
+    return getMyRatings()[appId] || 0;
 }
 function setMyRating(appId, rating) {
     try {

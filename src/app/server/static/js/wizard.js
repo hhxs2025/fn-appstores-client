@@ -3,199 +3,109 @@
 // ================================================================
 
 // ================================================================
-// 向导
+// 官方 API 向导弹窗（异步返回配置）
 // ================================================================
-function showWizardFromSession(sessionId, steps, title, appId) {
-    currentWizardSessionId = sessionId;
-    _wizardPendingAppID = appId || null;
-    var modal = document.getElementById('wizardModal');
-    if (!modal) return;
-    var body = document.getElementById('wizardBody');
-    var status = document.getElementById('wizardStatus');
-    var titleEl = document.getElementById('wizardTitle');
-    if (titleEl) titleEl.textContent = title || '安装向导';
-    if (status) status.textContent = '请填写配置项';
+var _officialWizardResolve = null;
 
+function showOfficialWizard(appName, version, items, resolve) {
+    _officialWizardResolve = resolve;
+    var modal = document.getElementById('wizardModal');
+    if (!modal) { resolve(null); return; }
+    
+    var body = document.getElementById('wizardBody');
+    var titleEl = document.getElementById('wizardTitle');
+    if (titleEl) titleEl.textContent = appName + ' - 安装向导';
+    
     var htmlContent = '';
-    if (steps && steps.length > 0) {
-        var items = steps.flatMap(function (step) {return step.items || [];});
-        if (items.length === 0) {
-            htmlContent = '<p>无配置项，点击确认安装</p>';
-        } else {
-            items.forEach(function (item) {
-                if (item.type === 'tips') {
-                    htmlContent += '<div class="wizard-field"><div class="hint" style="margin-bottom:8px;">' + (item.helpText || item.label || item.initValue || '提示信息') + '</div></div>';
-                    return;
-                }
-                var required = item.rules && item.rules.some(function (r) {return r.required;});
-                htmlContent += '<div class="wizard-field"><label>' + (item.label || item.field) + (required ? ' <span class="required">*</span>' : '') + '</label>';
-                if (item.type === 'text' || item.type === 'password') {
-                    var inputType = item.type === 'password' ? 'password' : 'text';
-                    htmlContent += '<input type="' + inputType + '" id="wizard_' + item.field + '" name="' + item.field + '" value="' + (item.initValue || '') + '"' + (required ? ' required' : '') + '>';
-                } else if (item.type === 'radio' || item.type === 'select') {
-                    htmlContent += '<select id="wizard_' + item.field + '" name="' + item.field + '">';
-                    (item.options || []).forEach(function (opt) {
-                        htmlContent += '<option value="' + opt.value + '"' + (opt.value === item.initValue ? ' selected' : '') + '>' + opt.label + '</option>';
-                    });
-                    htmlContent += '</select>';
-                } else if (item.type === 'switch') {
-                    var checked = item.initValue === 'true' || item.initValue === true;
-                    htmlContent += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;"><input type="checkbox" id="wizard_' + item.field + '" name="' + item.field + '"' + (checked ? ' checked' : '') + '> <span>' + item.label + '</span></div>';
-                } else {
-                    htmlContent += '<input type="text" id="wizard_' + item.field + '" name="' + item.field + '" value="' + (item.initValue || '') + '">';
-                }
-                if (item.helpText && item.type !== 'tips') htmlContent += '<div class="hint">' + item.helpText + '</div>';
-                htmlContent += '</div>';
-            });
-        }
-    } else {
-        htmlContent = '<p>无配置项，点击确认安装</p>';
+    var flatItems = [];
+    
+    if (Array.isArray(items)) {
+        items.forEach(function(item) {
+            if (item.items && Array.isArray(item.items)) {
+                if (item.stepTitle) htmlContent += '<div class="wizard-field"><div class="hint step-title" style="font-weight:bold;margin-bottom:10px;">' + item.stepTitle + '</div></div>';
+                flatItems.push(...item.items);
+            } else {
+                flatItems.push(item);
+            }
+        });
     }
-    if (body) body.innerHTML = htmlContent;
+
+    flatItems.forEach(function (item, index) {
+        if (item.type === 'tips') {
+            htmlContent += '<div class="wizard-field"><div class="hint">' + (item.helpText || item.label || '') + '</div></div>';
+            return;
+        }
+        var key = item.field || item.key || item.name || ('wizard_' + index);
+        var value = item.initValue ?? item.defaultValue ?? item.value ?? '';
+        var required = Boolean(item.required || (item.rules || []).some(function(r) { return r.required; }));
+        
+        htmlContent += '<div class="wizard-field"><label>' + (item.label || key) + (required ? ' <span class="required">*</span>' : '') + '</label>';
+        
+        if (item.type === 'text' || item.type === 'password' || item.type === 'number') {
+            htmlContent += '<input type="' + (item.type === 'password' ? 'password' : item.type === 'number' ? 'number' : 'text') + '" id="wizard_' + key + '" name="' + key + '" value="' + value + '"' + (required ? ' required' : '') + '>';
+        } else if (item.type === 'radio' || item.type === 'select') {
+            htmlContent += '<select id="wizard_' + key + '" name="' + key + '">';
+            (item.options || []).forEach(function(opt) {
+                var ov = typeof opt === 'string' ? opt : opt.value;
+                var ol = typeof opt === 'string' ? opt : opt.label;
+                htmlContent += '<option value="' + ov + '"' + (ov === value ? ' selected' : '') + '>' + ol + '</option>';
+            });
+            htmlContent += '</select>';
+        } else if (item.type === 'switch' || item.type === 'checkbox') {
+            var checked = value === 'true' || value === true ? ' checked' : '';
+            htmlContent += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;"><input type="checkbox" id="wizard_' + key + '" name="' + key + '"' + checked + '> <span>' + (item.helpText || '') + '</span></div>';
+        } else {
+            htmlContent += '<input type="text" id="wizard_' + key + '" name="' + key + '" value="' + value + '"' + (required ? ' required' : '') + '>';
+        }
+        if (item.helpText && item.type !== 'tips' && item.type !== 'switch') {
+            htmlContent += '<div class="hint">' + item.helpText + '</div>';
+        }
+        htmlContent += '</div>';
+    });
+
+    if (body) body.innerHTML = htmlContent || '<p>无配置项，点击确认开始安装</p>';
+    
     var submitBtn = document.getElementById('wizardSubmitBtn');
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '确认安装'; }
+    if (submitBtn) { 
+        submitBtn.disabled = false; 
+        submitBtn.textContent = '确认安装'; 
+        submitBtn.onclick = function() { submitOfficialWizard(); };
+    }
+    
+    var cancelBtn = document.querySelector('#wizardModal .modal-btn:not(.modal-btn-primary)');
+    if (cancelBtn) {
+        cancelBtn.onclick = function() { closeOfficialWizard(); };
+    }
+
     modal.classList.add('active');
 }
 
-function closeWizard() {
-    if (_wizardPollTimer) {
-        clearInterval(_wizardPollTimer);
-        _wizardPollTimer = null;
-    }
-    if (currentWizardSessionId) {
-        fetch(API_BASE + '/api/wizard/cancel', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({session_id: currentWizardSessionId})
-        }).catch(function () { });
-        currentWizardSessionId = null;
-    }
-    _wizardPendingAppID = null;
-    var modal = document.getElementById('wizardModal');
-    if (modal) modal.classList.remove('active');
-}
-
-async function submitWizard() {
-    var btn = document.getElementById('wizardSubmitBtn');
-    if (!btn || btn.disabled) return;
-    btn.disabled = true;
-    btn.textContent = '提交中...';
-    var status = document.getElementById('wizardStatus');
-    if (status) status.textContent = '提交中...';
-
+function submitOfficialWizard() {
+    if (!_officialWizardResolve) return;
     var inputs = {};
-    document.querySelectorAll('#wizardBody input, #wizardBody select, #wizardBody textarea').forEach(function (el) {
-        var name = el.name;
-        if (!name) return;
-        inputs[name] = el.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
+    document.querySelectorAll('#wizardBody input, #wizardBody select, #wizardBody textarea').forEach(function(el) {
+        if (!el.name) return;
+        inputs[el.name] = el.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
     });
 
-    var sessionId = currentWizardSessionId;
-    if (!sessionId) {
-        if (status) status.textContent = '会话已过期';
-        btn.disabled = false;
-        btn.textContent = '确认安装';
-        return;
-    }
+    var modal = document.getElementById('wizardModal');
+    if (modal) modal.classList.remove('active');
+    
+    _officialWizardResolve(inputs);
+    _officialWizardResolve = null;
+}
 
-    try {
-        var resp = await fetch(API_BASE + '/api/wizard/install', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({session_id: sessionId, inputs: inputs})
-        });
-        var result = await resp.json();
-
-        if (result.success && result.async) {
-            if (status) status.textContent = '安装中，请稍候...';
-            btn.textContent = '安装中...';
-
-            var cancelBtn = document.querySelector('#wizardModal .modal-btn:not(.modal-btn-primary)');
-            if (cancelBtn) cancelBtn.disabled = true;
-
-            var checkCount = 0;
-            var maxChecks = 60;
-            if (_wizardPollTimer) clearInterval(_wizardPollTimer);
-            _wizardPollTimer = setInterval(function () {
-                checkCount++;
-                if (status) status.textContent = '安装中，请稍候... (' + (checkCount * 2) + 's)';
-
-                fetch(API_BASE + '/api/wizard/status?session_id=' + encodeURIComponent(sessionId))
-                    .then(function (r) { return r.json(); })
-                    .then(function (d) {
-                        if (!d.success) return;
-
-                        if (d.status === 'success') {
-                            clearInterval(_wizardPollTimer);
-                            _wizardPollTimer = null;
-                            if (status) status.textContent = '安装成功';
-                            showToast('安装成功', 'success');
-                            isInstalling = false;
-                            if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
-                            closeWizard();
-                            setTimeout(function () { refreshApps(); }, 500);
-                            processInstallQueue();
-                        } else if (d.status === 'failed') {
-                            clearInterval(_wizardPollTimer);
-                            _wizardPollTimer = null;
-                            var errMsg = d.message || '未知错误';
-                            if (status) status.textContent = '安装失败: ' + errMsg;
-                            showToast('安装失败: ' + errMsg, 'error');
-                            isInstalling = false;
-                            if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
-                            btn.disabled = false;
-                            btn.textContent = '确认安装';
-                            if (cancelBtn) cancelBtn.disabled = false;
-                            processInstallQueue();
-                        }
-                    })
-                    .catch(function () {});
-
-                if (checkCount >= maxChecks) {
-                    clearInterval(_wizardPollTimer);
-                    _wizardPollTimer = null;
-                    if (status) status.textContent = '安装超时，请刷新页面查看结果';
-                    showToast('安装超时，请刷新页面查看', 'warning');
-                    isInstalling = false;
-                    if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
-                    btn.disabled = false;
-                    btn.textContent = '确认安装';
-                    if (cancelBtn) cancelBtn.disabled = false;
-                    setTimeout(function () { refreshApps(); }, 1000);
-                    processInstallQueue();
-                }
-            }, 2000);
-            return;
-        }
-
-        if (result.success) {
-            if (status) status.textContent = '安装成功';
-            showToast('安装成功', 'success');
-            closeWizard();
-            isInstalling = false;
-            if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
-            processInstallQueue();
-            setTimeout(function () { refreshApps(); }, 2000);
-        } else {
-            if (status) status.textContent = result.message;
-            btn.disabled = false;
-            btn.textContent = '确认安装';
-            isInstalling = false;
-            if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
-            processInstallQueue();
-        }
-    } catch (e) {
-        if (status) status.textContent = e.message;
-        btn.disabled = false;
-        btn.textContent = '确认安装';
-        isInstalling = false;
-        if (installTimeoutTimer) { clearTimeout(installTimeoutTimer); installTimeoutTimer = null; }
-        processInstallQueue();
+function closeOfficialWizard() {
+    var modal = document.getElementById('wizardModal');
+    if (modal) modal.classList.remove('active');
+    if (_officialWizardResolve) {
+        _officialWizardResolve(null);
+        _officialWizardResolve = null;
     }
 }
 
 // ================================================================
-// 手动安装
+// 手动安装（上传本地 FPK）
 // ================================================================
 function showManualInstall() {
     var modal = document.getElementById('manualInstallModal');
@@ -280,17 +190,7 @@ function doManualInstall() {
         var data = {};
         try { data = JSON.parse(xhr.responseText); } catch (e) {}
 
-        // 带向导：关闭手动安装弹窗，打开向导弹窗
-        if (xhr.status === 200 && data.success && data.wizard) {
-            closeManualInstall();
-            if (typeof showWizardFromSession === 'function') {
-                showWizardFromSession(data.session_id, data.steps, data.title, data.app_id);
-            } else if (typeof showToast === 'function') {
-                showToast('此应用需要填写安装向导', 'info');
-            }
-            return;
-        }
-
+        // 注意：此处由于后端 API 修改，目前不再返回 wizard。如果后续需要支持，可再扩展。
         if (xhr.status === 200 && data.success) {
             btn.textContent = '安装成功';
             btn.disabled = true;

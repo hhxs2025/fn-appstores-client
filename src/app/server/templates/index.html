@@ -9,6 +9,7 @@
 
 {{define "extra_js"}}
 <!-- ?v={{.StaticVer}} 由 Go 自动计算（= static/js|css 最新文件修改时间） -->
+<script src="{{.StaticBase}}/static/js/appcenter.js?v={{.StaticVer}}"></script>
 <script src="{{.StaticBase}}/static/js/core.js?v={{.StaticVer}}"></script>
 <script src="{{.StaticBase}}/static/js/websocket.js?v={{.StaticVer}}"></script>
 <script src="{{.StaticBase}}/static/js/apps.js?v={{.StaticVer}}"></script>
