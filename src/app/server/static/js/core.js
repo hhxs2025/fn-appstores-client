@@ -2,18 +2,12 @@
 // FN软仓 - 核心模块
 // ================================================================
 
-// ================================================================
-// 统一网关适配
-// ================================================================
 var GATEWAY_PREFIX = '/app/fn-appstores-client';
 var API_BASE = '';
 if (window.location.pathname.indexOf(GATEWAY_PREFIX) === 0) {
     API_BASE = GATEWAY_PREFIX;
 }
 
-// ================================================================
-// 全局状态
-// ================================================================
 var FIXED_TAGS = ['全部', '影音', '办公', '下载', 'AI', '设计', '社交', '网络', '工具', '生活', '商务', '教育', '效率', '开发', '游戏'];
 
 var currentTag = '全部';
@@ -46,9 +40,6 @@ var _loadingSources = false;
 var _loadingHome = false;
 var _installedLoaded = false;
 
-// ================================================================
-// 图片地址包装
-// ================================================================
 function wrapImageUrl(url) {
     if (!url) return '';
     if (url.startsWith('/')) {
@@ -60,25 +51,39 @@ function wrapImageUrl(url) {
     return url;
 }
 
-// ================================================================
-// Toast
-// ================================================================
-function showToast(msg, type) {
+// ★ 优化后的 Toast：支持指定时长、HTML格式、悬停暂停
+function showToast(msg, type, durationMs, isHtml) {
     var toast = document.getElementById('toast');
     if (!toast) return;
-    toast.textContent = msg;
+    
+    if (isHtml) {
+        toast.innerHTML = msg;
+    } else {
+        toast.textContent = msg;
+    }
+    
     toast.className = 'toast show ' + (type || '');
-    var durations = { success: 2500, error: 4000, warning: 3000, info: 2000 };
+    
+    var defaultDurations = { success: 2500, error: 4000, warning: 3000, info: 3000 };
+    var duration = durationMs || defaultDurations[type] || 3000;
+    
     clearTimeout(toast._timer);
     toast._timer = setTimeout(function() {
         toast.classList.remove('show');
-    }, durations[type] || 3000);
+    }, duration);
+
+    // 鼠标悬停时暂停倒计时，移开后再给2秒消失
+    toast.onmouseenter = function() { 
+        clearTimeout(toast._timer); 
+    };
+    toast.onmouseleave = function() { 
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(function() {
+            toast.classList.remove('show');
+        }, 2000); 
+    };
 }
 
-// ================================================================
-// 工具函数
-// ================================================================
-// compareVersions 在 appcenter.js 中已定义，这里做兜底检测
 if (typeof compareVersions === 'undefined') {
     var compareVersions = function(v1, v2) {
         if (!v1 || !v2) return 0;
@@ -105,9 +110,6 @@ function getTagsArray(tags) {
     return [];
 }
 
-// ================================================================
-// 缓存读写
-// ================================================================
 function readAppsCache() {
     try {
         var cached = localStorage.getItem(CACHE_KEY);
@@ -153,9 +155,6 @@ function clearCache() {
 }
 window.clearCache = clearCache;
 
-// ================================================================
-// 应用收藏
-// ================================================================
 var FAVORITES_KEY = 'fnsoft_favorites';
 
 function getFavorites() {
@@ -218,9 +217,6 @@ function clearFavorites() {
 }
 window.clearFavorites = clearFavorites;
 
-// ================================================================
-// 设置 tab 切换
-// ================================================================
 function switchSettingTab(tab) {
     var tabs = document.querySelectorAll('.settings-tab');
     if (tabs) {
@@ -243,9 +239,6 @@ function switchSettingTab(tab) {
 }
 window.switchSettingTab = switchSettingTab;
 
-// ================================================================
-// 搜索
-// ================================================================
 function searchApps() {
     currentPage = 1;
     renderFilteredApps();
@@ -262,9 +255,6 @@ function searchAppsDebounced() {
 }
 window.searchAppsDebounced = searchAppsDebounced;
 
-// ================================================================
-// 应用统计
-// ================================================================
 function updateSettingsStats() {
     if (!allAppsData || allAppsData.length === 0) return;
     var filteredData = allAppsData.filter(function (app) {return app.id !== 'fn-appstores-client';});
@@ -279,9 +269,6 @@ function updateSettingsStats() {
 }
 window.updateSettingsStats = updateSettingsStats;
 
-// ================================================================
-// 评分系统
-// ================================================================
 var MY_RATINGS_KEY = 'fnsoft_my_ratings';
 
 function getMyRatings() {
@@ -420,3 +407,132 @@ function initRatingWidget() {
     });
 }
 window.initRatingWidget = initRatingWidget;
+
+// ================================================================
+// 系统消息推送处理
+// ================================================================
+
+var _currentForceUpdateData = null;
+
+function getCurrentAppVersion() {
+    var el = document.getElementById('appVersion');
+    if (el) {
+        var txt = el.textContent || '';
+        var match = txt.match(/(\d+\.\d+\.\d+)/);
+        if (match) return match[1];
+        return txt.replace(/[^\d.]/g, '').trim();
+    }
+    return '2.9.5';
+}
+
+async function loadPendingPushes() {
+    try {
+        var cid = getClientId();
+        var version = getCurrentAppVersion();
+        var deviceType = 'x86';
+        if (navigator.userAgent.toLowerCase().includes('arm') || navigator.platform.toLowerCase().includes('arm')) {
+            deviceType = 'ARM';
+        }
+
+        console.log('[Push] 开始拉取离线消息 - 参数:', { ClientID: cid, Version: version, Type: deviceType });
+
+        var resp = await fetch(API_BASE + '/api/push/pending', {
+            headers: {
+                'X-Client-ID': cid,
+                'X-App-Version': version,
+                'X-Device-Type': deviceType
+            }
+        });
+        
+        var text = await resp.text();
+        var data = null;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.warn('[Push] 服务端返回非 JSON 格式 (可能是 404):', text.substring(0, 100));
+            return;
+        }
+
+        console.log('[Push] 服务端响应:', data);
+
+        if (data.success && data.data && data.data.length > 0) {
+            data.data.forEach(function(msg) {
+                handlePushMessage(msg);
+            });
+        } else {
+            console.log('[Push] 当前没有匹配的未读消息');
+        }
+    } catch (e) {
+        console.error('[Push] 拉取离线消息异常:', e);
+    }
+}
+
+function handlePushMessage(data) {
+    if (!data || !data.id) return;
+    
+    var shownPushes = [];
+    try {
+        shownPushes = JSON.parse(localStorage.getItem('fnsoft_shown_pushes') || '[]');
+    } catch (e) {}
+    
+    if (shownPushes.indexOf(data.id) !== -1) {
+        console.log('[Push] 消息已被本地去重拦截 (之前已经弹过):', data.id);
+        return; 
+    }
+    
+    console.log('[Push] 准备弹出消息:', data.title);
+    
+    shownPushes.push(data.id);
+    if (shownPushes.length > 100) shownPushes.shift(); 
+    localStorage.setItem('fnsoft_shown_pushes', JSON.stringify(shownPushes));
+    
+    if (data.msg_type === 'toast') {
+        // ★ 关键修改：推送的提示改为 HTML 渲染，排版更好看；停留时间拉长到 10 秒
+        var htmlMsg = '<div style="font-weight:bold;font-size:15px;margin-bottom:6px;">【' + data.title + '】</div>' + 
+                      '<div style="font-size:14px;line-height:1.6;">' + data.content.replace(/\n/g, '<br>') + '</div>';
+        showToast(htmlMsg, 'info', 10000, true); 
+    } else if (data.msg_type === 'modal') {
+        var titleEl = document.getElementById('sysPushTitle');
+        var contentEl = document.getElementById('sysPushContent');
+        if (titleEl) titleEl.textContent = data.title;
+        if (contentEl) contentEl.innerHTML = data.content.replace(/\n/g, '<br>');
+        var modal = document.getElementById('sysPushModal');
+        if (modal) modal.classList.add('active');
+    } else if (data.msg_type === 'force_update') {
+        _currentForceUpdateData = data;
+        var titleEl = document.getElementById('forceUpdateTitle');
+        var contentEl = document.getElementById('forceUpdateContent');
+        if (titleEl) titleEl.textContent = data.title || '重要更新';
+        if (contentEl) contentEl.innerHTML = (data.content || '请立即更新').replace(/\n/g, '<br>') + '<br><br>最新版本：<b>v' + (data.update_ver || '') + '</b>';
+        
+        var modal = document.getElementById('forceUpdateModal');
+        if (modal) modal.classList.add('active');
+    }
+}
+
+function closeSysPushModal() {
+    var modal = document.getElementById('sysPushModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function triggerForceUpdate() {
+    if (!_currentForceUpdateData) return;
+    var btn = document.getElementById('forceUpdateBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '正在下载...'; }
+    
+    var data = _currentForceUpdateData;
+    var a = document.createElement('a');
+    a.href = data.update_url;
+    a.download = 'fn-appstores-client-' + data.update_ver + '.fpk';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    setTimeout(function() {
+        alert('文件已下载！\n\n请前往飞牛系统「应用中心」->「手动安装」，选择刚才下载的 FPK 文件进行覆盖安装。');
+        if (btn) { btn.textContent = '重新下载'; btn.disabled = false; }
+    }, 800);
+}
+
+window.loadPendingPushes = loadPendingPushes;
+window.handlePushMessage = handlePushMessage;

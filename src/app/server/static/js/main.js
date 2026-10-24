@@ -3,7 +3,6 @@
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function () {
-    // ★ 新增：请求后端获取真实硬件架构
     fetch(API_BASE + '/api/sysinfo')
         .then(function(res) { return res.json(); })
         .then(function(data) {
@@ -16,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         })
         .catch(function() {
-            // 失败兜底
             var archEl = document.getElementById('settingsArch');
             if (archEl) archEl.textContent = navigator.platform || 'x86_64';
         });
@@ -25,6 +23,11 @@ document.addEventListener('DOMContentLoaded', function () {
     connectWS();
     initRatingWidget();
     if (typeof syncThemeSwitches === 'function') syncThemeSwitches();
+
+    // ★ 新增：拉取离线消息推送（延迟 1 秒等待用户身份和版本号加载完）
+    if (typeof loadPendingPushes === 'function') {
+        setTimeout(loadPendingPushes, 1000); 
+    }
 
     if (typeof loadHome === 'function') loadHome();
     if (typeof loadApps === 'function') loadApps();

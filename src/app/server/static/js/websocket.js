@@ -22,7 +22,12 @@ function connectWS() {
         ws.onmessage = function (e) {
             try { 
                 var msg = JSON.parse(e.data);
-                // 预留处理服务端推送事件
+                // 接住服务端 WebSocket 实时推送
+                if (msg.event === 'sys_push' && msg.data) {
+                    if (typeof handlePushMessage === 'function') {
+                        handlePushMessage(msg.data);
+                    }
+                }
             } catch (err) { }
         };
         ws.onclose = function (e) {
@@ -137,7 +142,6 @@ function updateInstallModalProgress(data) {
     var statusEl = document.getElementById('installModalStatus');
     if (statusEl) statusEl.textContent = data.msg || '处理中...';
 
-    // ★ 渲染速度与文件大小
     var detailEl = document.getElementById('installModalDetail');
     if (detailEl) {
         if (data.speed_str && data.downloaded && data.total && data.total > 0) {
@@ -151,7 +155,6 @@ function updateInstallModalProgress(data) {
         }
     }
 
-    // ★ 渲染当前线路
     var lineEl = document.getElementById('installModalLine');
     if (lineEl) {
         if (data.url_host && data.stage === 'download') {
