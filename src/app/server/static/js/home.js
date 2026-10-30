@@ -2,10 +2,17 @@
 // FN软仓 - 首页 + 公告 + 快捷卡片
 // ================================================================
 
-// ★ 需求2：公告已读状态（localStorage）
 var READ_NOTICES_KEY = 'fnsoft_read_notices';
 
-// 生成公告唯一 ID（date + title 组合，与顺序无关）
+// ★ 自动轮播状态
+var _homeCarouselTimer = null;
+var HOME_CAROUSEL_INTERVAL = 5000;      // 5 秒一张
+var _homeCarouselItems = [];            // 解析后的 [{image, link, linkType}]
+
+// ★ 首页刷新 TTL
+var HOME_REFRESH_TTL = 5 * 60 * 1000;
+var homeLoadedTime = 0;
+
 function noticeRecordId(record) {
     if (!record) return '';
     var date = record.date || '';
@@ -35,9 +42,8 @@ function markNoticeRead(record) {
     var id = noticeRecordId(record);
     if (!id) return;
     var map = getReadNotices();
-    if (map[id]) return; // 已读，不重复写
+    if (map[id]) return;
     map[id] = Date.now();
-    // 简单裁剪：最多保留最近 500 条已读记录，防止 localStorage 撑爆
     var keys = Object.keys(map);
     if (keys.length > 500) {
         keys.sort(function(a, b) { return map[a] - map[b]; });
@@ -49,15 +55,18 @@ function markNoticeRead(record) {
     } catch (e) {}
 }
 
-async function loadHome() {
-    if (homeLoaded) return;
+// ★ 加 5 分钟 TTL，切回首页时超时会静默刷新
+async function loadHome(force) {
+    if (!force && homeLoaded && (Date.now() - homeLoadedTime) < HOME_REFRESH_TTL) {
+        return;
+    }
     if (_loadingHome) return;
     _loadingHome = true;
     var now = Date.now();
     var hasCache = homeNoticeCache && (now - homeNoticeCacheTime) < HOME_CACHE_TTL;
     try {
         var data;
-        if (hasCache) {
+        if (hasCache && !force) {
             data = homeNoticeCache;
         } else {
             var resp = await fetch(API_BASE + '/api/notice');
@@ -79,6 +88,7 @@ async function loadHome() {
             checkAndShowDownloaded();
         }
         homeLoaded = true;
+        homeLoadedTime = Date.now();
     } catch (e) {
         if (homeNoticeCache) {
             data = homeNoticeCache;
@@ -91,28 +101,74 @@ async function loadHome() {
             if (content) content.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:12px 0;">加载公告失败</div>';
             homeLoaded = true;
         }
+        homeLoadedTime = Date.now();
     } finally {
         _loadingHome = false;
     }
 }
 
+// ================================================================
+// ★ 轮播图数据解析：兼容三种格式
+// ================================================================
+function parseCarouselItem(item) {
+    if (item && typeof item === 'object') {
+        return {
+            image: item.image || item.url || '',
+            link: item.link || '',
+            linkType: item.link_type || ''
+        };
+    }
+    var s = String(item || '');
+    var i = s.indexOf('|');
+    if (i === -1) return { image: s, link: '', linkType: '' };
+
+    var image = s.slice(0, i).trim();
+    var target = s.slice(i + 1).trim();
+    var linkType = '', link = target;
+    var ci = target.indexOf(':');
+    if (ci > 0) {
+        var t = target.slice(0, ci).toLowerCase();
+        if (t === 'app' || t === 'tag' || t === 'url' || t === 'tab') {
+            linkType = t;
+            link = target.slice(ci + 1);
+        }
+    }
+    return { image: image, link: link, linkType: linkType };
+}
+
+// ★ 解析 `图片|目标` 格式，点击走 onHomeCarouselClick
 function renderCarousel(data) {
     var track = document.getElementById('homeCarouselTrack');
     var dotsContainer = document.getElementById('homeCarouselDots');
     if (!track) return;
+
+    stopHomeCarouselAuto();
+
     if (data.enabled && data.carousel && data.carousel.length > 0) {
-        var images = data.carousel.map(wrapImageUrl);
-        homeSlideCount = images.length;
+        var items = data.carousel
+            .map(parseCarouselItem)
+            .filter(function (x) { return x.image; });
+        _homeCarouselItems = items;
+        homeSlideCount = items.length;
         homeSlideIndex = 0;
-        track.innerHTML = images.map(function (url, index) {
-            return '<div class="home-carousel-slide" style="background-image:url(' + url + ');cursor:zoom-in;" onclick="openHomeCarouselImage(' + index + ')" title="点击查看大图"></div>';
+
+        track.innerHTML = items.map(function (item, index) {
+            var url = wrapImageUrl(item.image);
+            var cursor = item.link ? 'pointer' : 'zoom-in';
+            var title = item.link ? '' : '点击查看大图';
+            return '<div class="home-carousel-slide" style="background-image:url(' + url + ');cursor:' + cursor + ';" ' +
+                'onclick="onHomeCarouselClick(' + index + ')"' + (title ? ' title="' + title + '"' : '') + '></div>';
         }).join('');
+
         if (dotsContainer) {
-            dotsContainer.innerHTML = homeSlideCount > 1 ? images.map(function (_, i) {
+            dotsContainer.innerHTML = homeSlideCount > 1 ? items.map(function (_, i) {
                 return '<button class="dot' + (i === 0 ? ' active' : '') + '" onclick="event.stopPropagation();homeCarouselGoTo(' + i + ')"></button>';
             }).join('') : '';
         }
+
+        startHomeCarouselAuto();
     } else {
+        _homeCarouselItems = [];
         track.innerHTML = '<div class="home-carousel-slide" style="background:var(--card-bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted);">暂无轮播图</div>';
         homeSlideCount = 1;
         homeSlideIndex = 0;
@@ -120,12 +176,96 @@ function renderCarousel(data) {
     }
 }
 
-function openHomeCarouselImage(index) {
-    if (!homeNoticeData || !homeNoticeData.carousel || homeNoticeData.carousel.length === 0) return;
-    openImageModal(homeNoticeData.carousel, index);
+// ★ 点击轮播图，有跳转目标就跳，没有就看大图
+function onHomeCarouselClick(index) {
+    var item = _homeCarouselItems[index];
+    if (!item) return;
+
+    if (!item.link) {
+        openHomeCarouselImage(index);
+        return;
+    }
+
+    switch (item.linkType) {
+        case 'app':
+            if (typeof jumpToAppDetail === 'function') {
+                jumpToAppDetail(item.link);
+            } else if (typeof openDetail === 'function') {
+                openDetail(item.link);
+            }
+            break;
+
+        case 'tag':
+            if (typeof switchTab === 'function') switchTab('apps');
+            setTimeout(function () {
+                if (typeof filterByTag === 'function') filterByTag(item.link);
+            }, 120);
+            break;
+
+        case 'url':
+            if (/^https?:\/\//i.test(item.link)) {
+                var w = window.open(item.link, '_blank', 'noopener');
+                if (!w && typeof showToast === 'function') {
+                    showToast('浏览器阻止了新窗口，请手动复制链接：' + item.link, 'warning');
+                }
+            }
+            break;
+
+        case 'tab':
+            if (typeof switchTab === 'function') switchTab(item.link);
+            break;
+
+        default:
+            openHomeCarouselImage(index);
+            break;
+    }
 }
 
-// ★ 需求2：渲染公告记录，带未读红点
+function openHomeCarouselImage(index) {
+    if (!_homeCarouselItems || _homeCarouselItems.length === 0) return;
+    var images = _homeCarouselItems.map(function (x) { return x.image; });
+    if (typeof openImageModal === 'function') {
+        openImageModal(images, index);
+    }
+}
+
+// ================================================================
+// ★ 自动轮播控制（加固版）
+// ================================================================
+function startHomeCarouselAuto() {
+    stopHomeCarouselAuto();
+    if (homeSlideCount <= 1) {
+        console.log('[carousel] 只有 ' + homeSlideCount + ' 张图，跳过自动轮播');
+        return;
+    }
+    _homeCarouselTimer = setInterval(function () {
+        if (homeSlideCount <= 1) return;
+        homeSlideIndex = (homeSlideIndex + 1) % homeSlideCount;
+        homeCarouselUpdate();
+    }, HOME_CAROUSEL_INTERVAL);
+    console.log('[carousel] 自动轮播已启动，' + HOME_CAROUSEL_INTERVAL + 'ms，共 ' + homeSlideCount + ' 张');
+}
+
+function stopHomeCarouselAuto() {
+    if (_homeCarouselTimer) {
+        clearInterval(_homeCarouselTimer);
+        _homeCarouselTimer = null;
+    }
+}
+
+document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+        stopHomeCarouselAuto();
+    } else {
+        if (_homeCarouselItems && _homeCarouselItems.length > 1) {
+            startHomeCarouselAuto();
+        }
+    }
+});
+
+// ================================================================
+// 公告渲染
+// ================================================================
 function renderNoticeRecords(data) {
     var container = document.getElementById('homeNoticeContent');
     if (!container) return;
@@ -163,9 +303,27 @@ function homeCarouselUpdate() {
     });
 }
 
-function homeCarouselPrev(e) {if (e) e.stopPropagation(); if (homeSlideCount <= 1) return; homeSlideIndex = (homeSlideIndex - 1 + homeSlideCount) % homeSlideCount; homeCarouselUpdate();}
-function homeCarouselNext(e) {if (e) e.stopPropagation(); if (homeSlideCount <= 1) return; homeSlideIndex = (homeSlideIndex + 1) % homeSlideCount; homeCarouselUpdate();}
-function homeCarouselGoTo(index) {if (index < 0 || index >= homeSlideCount) return; homeSlideIndex = index; homeCarouselUpdate();}
+// ★ 手动操作后重置自动轮播计时
+function homeCarouselPrev(e) {
+    if (e) e.stopPropagation();
+    if (homeSlideCount <= 1) return;
+    homeSlideIndex = (homeSlideIndex - 1 + homeSlideCount) % homeSlideCount;
+    homeCarouselUpdate();
+    startHomeCarouselAuto();
+}
+function homeCarouselNext(e) {
+    if (e) e.stopPropagation();
+    if (homeSlideCount <= 1) return;
+    homeSlideIndex = (homeSlideIndex + 1) % homeSlideCount;
+    homeCarouselUpdate();
+    startHomeCarouselAuto();
+}
+function homeCarouselGoTo(index) {
+    if (index < 0 || index >= homeSlideCount) return;
+    homeSlideIndex = index;
+    homeCarouselUpdate();
+    startHomeCarouselAuto();
+}
 
 function updateHomeQuickCards() {
     if (!allAppsData || allAppsData.length === 0) {
@@ -216,15 +374,12 @@ function renderQuickList(containerId, apps, type) {
     container.innerHTML = html;
 }
 
-// ★ 需求2：打开公告详情 → 标记已读
 function openNoticeDetail(index) {
     var data = homeNoticeData;
     if (!data || !data.records || !data.records[index]) return;
     var record = data.records[index];
 
-    // 标记已读
     markNoticeRead(record);
-    // 更新 DOM（去掉 unread）
     var id = noticeRecordId(record);
     var el = document.querySelector('.notice-record[data-notice-id="' + cssEscape(id) + '"]');
     if (el) el.classList.remove('unread');
@@ -237,7 +392,6 @@ function openNoticeDetail(index) {
     if (modal) modal.classList.add('active');
 }
 
-// ★ 需求2：全部公告 → 每条可单独标记已读
 function openAllNotices() {
     var data = homeNoticeData;
     if (!data || !data.records || data.records.length === 0) return;
@@ -266,7 +420,6 @@ function closeNoticeDetail() {
     if (modal) modal.classList.remove('active');
 }
 
-// CSS.escape 兜底
 function cssEscape(s) {
     if (window.CSS && CSS.escape) return CSS.escape(s);
     return String(s).replace(/[^a-zA-Z0-9_\u00A0-\uFFFF-]/g, '\\$&');

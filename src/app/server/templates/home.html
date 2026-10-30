@@ -354,7 +354,10 @@
 
 <div class="home-container" id="homeContainer">
     <div class="home-top-row">
-        <div class="home-carousel-wrapper" id="homeCarouselWrapper">
+        <!-- ★ 唯一改动：加 onmouseenter / onmouseleave，悬停暂停自动轮播 -->
+        <div class="home-carousel-wrapper" id="homeCarouselWrapper"
+             onmouseenter="stopHomeCarouselAuto();"
+             onmouseleave="startHomeCarouselAuto();">
             <div class="home-carousel-track" id="homeCarouselTrack"></div>
             <button class="home-carousel-btn prev" onclick="homeCarouselPrev(event)">‹</button>
             <button class="home-carousel-btn next" onclick="homeCarouselNext(event)">›</button>
