@@ -312,9 +312,13 @@
                         已手动设置，<a onclick="resetToSystemTheme()">恢复跟随系统</a>
                     </span>
                 </div>
-                <div class="row"><span class="label">导出日志</span><button class="action-btn" onclick="exportLogs()">导出</button></div>
-                <div class="row"><span class="label">清除本地缓存</span><button class="action-btn" onclick="clearCache()">清除</button></div>
-                <div class="row"><span class="label">刷新加速器池</span><button class="action-btn" id="refreshAccelPoolBtn" onclick="refreshAccelPool()">刷新</button></div>
+                
+                <!-- ★ 改动点：删除了“清除本地缓存”和“刷新加速器池”，仅保留导出日志 -->
+                <div class="row">
+                    <span class="label">导出日志</span>
+                    <button class="action-btn" onclick="exportLogs()">导出</button>
+                </div>
+                
             </div>
 
             <div class="reward-card" id="rewardCard">

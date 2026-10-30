@@ -608,13 +608,23 @@ function updateLastRefreshTime() {
     if (el) el.textContent = '上次刷新: ' + new Date().toLocaleTimeString();
 }
 
+// ================================================================
+// ★ 核心改动：右上角刷新，自动清空缓存并强刷
+// ================================================================
 async function refreshApps() {
     var btn = document.getElementById('refreshBtn');
     var badge = document.getElementById('statusBadge');
     if (!btn || !badge) return;
     if (refreshCooldown || btn.disabled) {showToast('请稍后再试', 'warning'); return;}
+
+    // 1. 清空本地应用缓存、公告缓存、版本号缓存
+    if (typeof clearAppsCache === 'function') {
+        clearAppsCache();
+    }
+
     btn.disabled = true; btn.textContent = '刷新中...'; badge.textContent = '加载中'; badge.className = 'badge loading';
     try {
+        // 2. 发送 POST 强刷请求
         var resp = await fetch(API_BASE + '/api/refresh', {method: 'POST', headers: {'Content-Type': 'application/json'}});
         var data = await resp.json();
         if (resp.status === 429) {

@@ -804,7 +804,7 @@
                 <option value="updated">按更新时间</option>
             </select>
             <button class="refresh-btn" onclick="showManualInstall()">手动安装</button>
-            <button class="refresh-btn" id="refreshBtn" onclick="refreshApps()">刷新</button>
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshApps()" title="强制拉取最新数据并清空本地缓存">刷新</button>
         </div>
     </div>
 
@@ -865,7 +865,6 @@
                 <button class="btn-manage btn-manage-danger" id="detailUninstallBtn" onclick="uninstallApp()" style="display:none;">卸载</button>
                 <button class="btn-manage" id="detailDiagnoseBtn" onclick="downloadDiagnostics()" style="display:none;">导出日志</button>
                 
-                <!-- 新增的底层修复与配置备份/恢复按钮 -->
                 <button class="btn-manage" id="detailRepairBtn" onclick="repairApp()" style="display:none;" title="如果图标不出现或无法打开，点击修复">修复应用</button>
                 <button class="btn-manage" id="detailBackupBtn" onclick="backupApp()" style="display:none;" title="备份应用配置到电脑">备份配置</button>
                 <button class="btn-manage" id="detailRestoreBtn" onclick="triggerRestoreSelect()" style="display:none;" title="上传备份文件恢复配置">恢复配置</button>
