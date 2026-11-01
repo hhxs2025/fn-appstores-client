@@ -60,7 +60,7 @@
             color: var(--text-secondary);
             padding: 0;
         }
-        
+
         .header-left .app-version { font-size: 13px; font-weight: 500; color: var(--text-muted); }
 
         .header-right {
@@ -582,14 +582,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             initTheme();
             initSystemTheme();
-
-            switchTab('home');
-
-            setTimeout(function() {
-                if (typeof loadHome === 'function') loadHome();
-                if (typeof loadApps === 'function') loadApps();
-                if (typeof loadSources === 'function') loadSources();
-            }, 300);
+            // ★ 数据加载统一由 main.js 负责（依赖 /api/init/status 判定）
+            //   此处只做主题等纯 UI 初始化
 
             document.addEventListener('click', function(e) {
                 if (window.innerWidth > 768) return;

@@ -136,10 +136,15 @@ function writeAppsCache(data) {
     } catch (e) { console.warn('写入缓存失败:', e); }
 }
 
+// ★ 核心修复：深度清理残留的用户维度的脏数据
 function clearAppsCache() {
-    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem('fnsoft_apps_cache');
     localStorage.removeItem('fnsoft_notice_cache');
     localStorage.removeItem('fnsoft_downloaded_version');
+    localStorage.removeItem('fnsoft_read_notices');
+    localStorage.removeItem('fnsoft_shown_pushes');
+    localStorage.removeItem('fnsoft_my_ratings');
+    // 注意：fnsoft_favorites（收藏）和 fnsoft_theme（主题）视作本地偏好，不强制清除
 }
 
 function exportLogs() {

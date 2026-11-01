@@ -480,6 +480,62 @@
         .install-modal-icon { width: 44px; height: 44px; font-size: 20px; }
         .install-modal-info .pct { font-size: 19px; }
     }
+
+    /* ============================================ */
+    /* 首次启动引导弹窗 */
+    /* ============================================ */
+    .init-mode-options {
+        display: flex;
+        gap: 12px;
+        margin: 20px 0 8px;
+    }
+    .init-mode-card {
+        flex: 1;
+        padding: 20px 16px;
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+        user-select: none;
+    }
+    .init-mode-card:hover {
+        border-color: #7da8e0;
+        background: rgba(37, 99, 235, 0.04);
+    }
+    .init-mode-card.selected {
+        border-color: #2563ea;
+        background: rgba(37, 99, 235, 0.08);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .init-mode-card .init-mode-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+        line-height: 1;
+    }
+    .init-mode-card .init-mode-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+    }
+    .init-mode-card .init-mode-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.65;
+    }
+    body.dark-mode .init-mode-card:hover {
+        border-color: #4a6a9e;
+        background: rgba(96, 165, 250, 0.08);
+    }
+    body.dark-mode .init-mode-card.selected {
+        border-color: #60a5fa;
+        background: rgba(96, 165, 250, 0.15);
+    }
+    @media (max-width: 550px) {
+        .init-mode-options { flex-direction: column; }
+        .init-mode-card { padding: 14px 12px; }
+    }
 </style>
 
 <!-- 公告详情弹窗 -->
@@ -628,12 +684,47 @@
 <!-- 强制更新弹窗 (不可关闭) -->
 <div class="modal-overlay" id="forceUpdateModal" style="z-index: 9999;">
     <div class="modal-content" style="max-width: 420px; text-align: center;">
-        <div style="font-size: 40px; margin-bottom: 10px;">🚨</div>
+        <div style="font-size: 40px; margin-bottom: 10px;"></div>
         <div class="modal-title" style="color: #e53935; margin-bottom: 12px;" id="forceUpdateTitle">重要更新</div>
         <div id="forceUpdateContent" style="font-size:14px;color:var(--text-secondary);line-height:1.8;margin-bottom: 24px;">
             当前版本过低，请立即更新以恢复使用。
         </div>
         <button class="modal-btn modal-btn-primary" style="width: 100%;" onclick="triggerForceUpdate()" id="forceUpdateBtn">立即更新</button>
+    </div>
+</div>
+
+<!-- 首次启动引导弹窗 -->
+<div class="modal-overlay" id="initGuideModal" style="z-index: 9998;">
+    <div class="modal-content" style="max-width: 540px;">
+        <div class="modal-title">欢迎使用 FN软仓</div>
+        <div style="font-size:14px;color:var(--text-secondary);line-height:1.8;">
+            首次启动，请选择你的使用模式。<br>
+            <span style="font-size:12px;color:var(--text-muted);">
+                该选择仅在首次启动时出现；之后可随时在「源管理」中调整。
+            </span>
+        </div>
+
+        <div class="init-mode-options">
+            <div class="init-mode-card" data-mode="user" onclick="selectInitMode('user')">
+                <div class="init-mode-title">用户模式</div>
+                <div class="init-mode-desc">
+                    使用内置官方源<br>
+                    开箱即用，无需配置
+                </div>
+            </div>
+            <div class="init-mode-card" data-mode="geek" onclick="selectInitMode('geek')">
+                <div class="init-mode-title">极客模式</div>
+                <div class="init-mode-desc">
+                    禁用内置官方源<br>
+                    自行添加自定义源地址
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 20px;">
+            <button class="modal-btn modal-btn-primary" id="initConfirmBtn"
+                    onclick="confirmInitMode()" disabled>确定</button>
+        </div>
     </div>
 </div>
 {{end}}
