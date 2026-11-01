@@ -518,26 +518,38 @@ async function loadAppsFromServer(silent) {
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         var data = await resp.json();
         
-        if (data.success && data.data.length > 0) {
-            allAppsData = data.data;
-            renderFilterButtons(); currentPage = 1; renderFilteredApps(); writeAppsCache(allAppsData);
-            if (!silent) {
+        if (data.success) {
+            // ★ 防呆保护：如果服务端返回空列表，但本地原本有数据，说明断网或源站挂了
+            if (data.data.length === 0 && allAppsData.length > 0) {
+                if (!silent) showToast('源站网络异常，已保留本地数据', 'warning');
                 var badge = document.getElementById('statusBadge');
-                if (badge) {badge.textContent = '在线'; badge.className = 'badge connected';}
-                updateLastRefreshTime();
+                if (badge) {badge.textContent = '离线缓存'; badge.className = 'badge error';}
+                _loadingApps = false;
+                return;
             }
-            if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
-            if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
 
-            loadInstalledVersions().then(function() {
-                renderFilteredApps();
+            if (data.data.length > 0) {
+                allAppsData = data.data;
+                renderFilterButtons(); currentPage = 1; renderFilteredApps(); writeAppsCache(allAppsData);
+                if (!silent) {
+                    var badge = document.getElementById('statusBadge');
+                    if (badge) {badge.textContent = '在线'; badge.className = 'badge connected';}
+                    updateLastRefreshTime();
+                }
+                if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
                 if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
-                var devTab = document.getElementById('tabDevelopers');
-                if (devTab && devTab.classList.contains('active') && typeof renderDevelopers === 'function') renderDevelopers();
-            });
-        } else if (!silent) {
-            var grid = document.getElementById('appGrid');
-            if (grid) grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败，请点击右上角「刷新」重试</p></div>';
+
+                loadInstalledVersions().then(function() {
+                    renderFilteredApps();
+                    if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();
+                    var devTab = document.getElementById('tabDevelopers');
+                    if (devTab && devTab.classList.contains('active') && typeof renderDevelopers === 'function') renderDevelopers();
+                });
+            } else if (!silent) {
+                // 如果原本就没数据且服务端也返回空
+                var grid = document.getElementById('appGrid');
+                if (grid) grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>暂无应用，请添加有效源或点击刷新</p></div>';
+            }
         }
     } catch (e) {
         if (e.name !== 'AbortError') {
@@ -609,7 +621,7 @@ function updateLastRefreshTime() {
 }
 
 // ================================================================
-// ★ 核心改动：右上角刷新，自动清空缓存并强刷
+// ★ 核心改动：右上角刷新，自动清空缓存并强刷，且防断网清空
 // ================================================================
 async function refreshApps() {
     var btn = document.getElementById('refreshBtn');
@@ -632,11 +644,23 @@ async function refreshApps() {
             badge.textContent = '限流中'; badge.className = 'badge error'; return;
         }
         if (data.success) {
+            // ★ 防呆保护：刷新拿回空数据，但本地有缓存，保留并提示
+            if (data.data.length === 0 && allAppsData.length > 0) {
+                showToast('源站网络异常，已保留本地数据', 'warning');
+                badge.textContent = '离线'; badge.className = 'badge error';
+                btn.disabled = false; btn.textContent = '刷新';
+                return;
+            }
+
             allAppsData = data.data;
             renderFilterButtons(); currentPage = 1; renderFilteredApps(); writeAppsCache(allAppsData);
             showToast(data.message, 'success'); updateLastRefreshTime();
             badge.textContent = '在线'; badge.className = 'badge connected';
             if (typeof updateSourceFilterOptions === 'function') updateSourceFilterOptions();
+            
+            // ★ 顺手把轮播图也强制刷新一下
+            if (typeof loadHome === 'function') loadHome(true);
+
             loadInstalledVersions().then(function() {
                 renderFilteredApps();
                 if (typeof updateHomeQuickCards === 'function') updateHomeQuickCards();

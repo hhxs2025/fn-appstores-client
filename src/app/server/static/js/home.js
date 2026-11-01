@@ -9,8 +9,8 @@ var _homeCarouselTimer = null;
 var HOME_CAROUSEL_INTERVAL = 5000;      // 5 秒一张
 var _homeCarouselItems = [];            // 解析后的 [{image, link, linkType}]
 
-// ★ 首页刷新 TTL
-var HOME_REFRESH_TTL = 5 * 60 * 1000;
+// ★ 首页刷新 TTL（改为 30 分钟）
+var HOME_REFRESH_TTL = 30 * 60 * 1000;
 var homeLoadedTime = 0;
 
 function noticeRecordId(record) {
@@ -55,7 +55,7 @@ function markNoticeRead(record) {
     } catch (e) {}
 }
 
-// ★ 加 5 分钟 TTL，切回首页时超时会静默刷新
+// ★ 加 30 分钟 TTL，切回首页时超时会静默刷新，并增加防断网保护
 async function loadHome(force) {
     if (!force && homeLoaded && (Date.now() - homeLoadedTime) < HOME_REFRESH_TTL) {
         return;
@@ -63,7 +63,8 @@ async function loadHome(force) {
     if (_loadingHome) return;
     _loadingHome = true;
     var now = Date.now();
-    var hasCache = homeNoticeCache && (now - homeNoticeCacheTime) < HOME_CACHE_TTL;
+    // 这里的 HOME_CACHE_TTL 在 core.js 中定义，如果没有修改也没关系，这里我们用 30 分钟强判断
+    var hasCache = homeNoticeCache && (now - homeNoticeCacheTime) < HOME_REFRESH_TTL;
     try {
         var data;
         if (hasCache && !force) {
@@ -75,7 +76,18 @@ async function loadHome(force) {
             homeNoticeCache = data;
             homeNoticeCacheTime = now;
         }
+        
         homeNoticeData = data;
+        
+        // ★ 防断网保护：如果接口返回没开启（被禁/断网），但本地原本有开启的缓存，不清空界面
+        if (data.enabled === false && homeNoticeCache && homeNoticeCache.enabled) {
+            console.warn("[Home] 拉取公告为空或源站异常，已保留本地缓存");
+            homeLoaded = true;
+            homeLoadedTime = Date.now();
+            _loadingHome = false;
+            return;
+        }
+
         renderCarousel(data);
         renderNoticeRecords(data);
         if (allAppsData && allAppsData.length > 0) {
@@ -140,11 +152,13 @@ function parseCarouselItem(item) {
 function renderCarousel(data) {
     var track = document.getElementById('homeCarouselTrack');
     var dotsContainer = document.getElementById('homeCarouselDots');
+    var wrapper = document.getElementById('homeCarouselWrapper');
     if (!track) return;
 
     stopHomeCarouselAuto();
 
     if (data.enabled && data.carousel && data.carousel.length > 0) {
+        if (wrapper) wrapper.classList.remove('no-image'); // 有图：移除加深底色
         var items = data.carousel
             .map(parseCarouselItem)
             .filter(function (x) { return x.image; });
@@ -168,6 +182,7 @@ function renderCarousel(data) {
 
         startHomeCarouselAuto();
     } else {
+        if (wrapper) wrapper.classList.add('no-image'); // 没图：加上类，让背景变深
         _homeCarouselItems = [];
         track.innerHTML = '<div class="home-carousel-slide" style="background:var(--card-bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted);">暂无轮播图</div>';
         homeSlideCount = 1;
@@ -333,13 +348,28 @@ function updateHomeQuickCards() {
         });
         return;
     }
+    
+    // 原有逻辑：过滤掉客户端自身
     var filteredData = allAppsData.filter(function (app) {return app.id !== 'fn-appstores-client';});
+    
+    // ★ 新增：更新顶部浮层的数据
     var installed = filteredData.filter(function (app) {return app.installed;});
+    var updatable = filteredData.filter(function (app) {return app.has_update;});
+    
+    var statTotalEl = document.getElementById('homeStatTotal');
+    if (statTotalEl) statTotalEl.textContent = filteredData.length;
+    
+    var statInstalledEl = document.getElementById('homeStatInstalled');
+    if (statInstalledEl) statInstalledEl.textContent = installed.length;
+    
+    var statUpdatableEl = document.getElementById('homeStatUpdatable');
+    if (statUpdatableEl) statUpdatableEl.textContent = updatable.length;
+
+    // 下面是你原有的渲染快捷卡片逻辑
     var countEl = document.getElementById('quickInstalledCount');
     if (countEl) countEl.textContent = installed.length;
     renderQuickList('quickInstalledList', installed, 'installed');
 
-    var updatable = filteredData.filter(function (app) {return app.has_update;});
     var updatableCount = document.getElementById('quickUpdatableCount');
     if (updatableCount) updatableCount.textContent = updatable.length;
     renderQuickList('quickUpdatableList', updatable, 'updatable');

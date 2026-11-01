@@ -91,6 +91,53 @@
     }
     .home-carousel-dots .dot.active { background: #fff; transform: scale(1.2); }
 
+    /* ★ 新增：顶部左侧毛玻璃数据概览浮层 */
+    .home-banner-overlay {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 16px 20px;
+        color: #fff;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
+        pointer-events: none; /* 防止遮挡底层轮播图的点击 */
+    }
+    .home-banner-overlay .welcome {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .home-banner-overlay .stats {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.8);
+    }
+    .home-banner-overlay .stats strong {
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0 2px;
+    }
+    .home-banner-overlay .stats-divider {
+        width: 1px;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.3);
+    }
+    /* 如果没配轮播图，把浮层底色加深以适配浅色背景 */
+    .home-carousel-wrapper.no-image .home-banner-overlay {
+        background: rgba(30, 41, 59, 0.75);
+    }
+
     .home-notice-wrapper {
         flex: 0 0 30%;
         padding: 16px 18px;
@@ -313,6 +360,14 @@
             height: 200px;
             min-height: 160px;
         }
+        .home-banner-overlay {
+            top: 10px;
+            left: 10px;
+            padding: 10px 14px;
+        }
+        .home-banner-overlay .welcome { font-size: 15px; margin-bottom: 4px; }
+        .home-banner-overlay .stats { font-size: 11px; gap: 8px; }
+        .home-banner-overlay .stats strong { font-size: 13px; }
         .home-notice-wrapper {
             flex: 0 0 auto;
             width: 100%;
@@ -354,10 +409,22 @@
 
 <div class="home-container" id="homeContainer">
     <div class="home-top-row">
-        <!-- ★ 唯一改动：加 onmouseenter / onmouseleave，悬停暂停自动轮播 -->
         <div class="home-carousel-wrapper" id="homeCarouselWrapper"
              onmouseenter="stopHomeCarouselAuto();"
              onmouseleave="startHomeCarouselAuto();">
+            
+            <!-- ★ 新增：顶部数据浮层 -->
+            <div class="home-banner-overlay" id="homeBannerOverlay">
+                <div class="welcome" id="homeWelcomeText">Hi, 欢迎使用 FN软仓</div>
+                <div class="stats">
+                    <span>总应用 <strong id="homeStatTotal">0</strong></span>
+                    <div class="stats-divider"></div>
+                    <span>已安装 <strong id="homeStatInstalled">0</strong></span>
+                    <div class="stats-divider"></div>
+                    <span>可更新 <strong id="homeStatUpdatable">0</strong></span>
+                </div>
+            </div>
+
             <div class="home-carousel-track" id="homeCarouselTrack"></div>
             <button class="home-carousel-btn prev" onclick="homeCarouselPrev(event)">‹</button>
             <button class="home-carousel-btn next" onclick="homeCarouselNext(event)">›</button>

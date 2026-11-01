@@ -1,5 +1,5 @@
 // ================================================================
-// FN软仓 - 设置（客户端自更新 + 应用收藏 + 加速池刷新）
+// FN软仓 - 设置（客户端自更新 + 应用收藏 + 加速池刷新 + 问题反馈）
 // ================================================================
 
 // ================================================================
@@ -221,7 +221,7 @@ function clearAllFavorites() {
 window.clearAllFavorites = clearAllFavorites;
 
 // ================================================================
-// ★ 手动刷新加速池
+// 手动刷新加速池
 // ================================================================
 async function refreshAccelPool() {
     if (!confirm('确定要强制刷新加速器池吗？\n\n将从官方源重新拉取最新的加速器列表（覆盖本地缓存）。')) return;
@@ -245,6 +245,41 @@ async function refreshAccelPool() {
     }
 }
 window.refreshAccelPool = refreshAccelPool;
+
+// ================================================================
+// ★ 新增：问题反馈
+// ================================================================
+function openFeedback(e) {
+    if (e) e.preventDefault();
+    
+    // 抓取页面顶部版本号
+    var versionEl = document.getElementById('appVersion');
+    var versionText = versionEl ? versionEl.textContent : '未知版本';
+    var match = versionText.match(/(\d+\.\d+\.\d+)/);
+    var ver = match ? match[1] : versionText.replace(/[^\d.]/g, '').trim();
+    
+    // 抓取系统架构
+    var archEl = document.getElementById('settingsArch');
+    var arch = archEl ? archEl.textContent : '未知';
+    
+    var title = encodeURIComponent('[反馈] 客户端 v' + ver + ' 问题反馈');
+    var body = encodeURIComponent(
+        '### 问题描述\n' +
+        '（请详细描述你遇到的问题）\n\n' +
+        '### 复现步骤\n' +
+        '1. \n2. \n3. \n\n' +
+        '### 环境信息\n' +
+        '- 客户端版本：v' + ver + '\n' +
+        '- 系统架构：' + arch + '\n' +
+        '- 浏览器 UA：' + navigator.userAgent + '\n\n' +
+        '### 截图/日志\n' +
+        '（如有必要，请在应用详情页点击“导出日志”并附上 txt 文件）'
+    );
+    
+    var url = 'https://gitee.com/hhxs2025/fn-appstores/issues/new?title=' + title + '&body=' + body;
+    window.open(url, '_blank', 'noopener');
+}
+window.openFeedback = openFeedback;
 
 // ================================================================
 // 工具
