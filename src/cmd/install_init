@@ -1,5 +1,14 @@
 #!/bin/bash
 
-### This script is called before the user installs the application.
+# 检查变量，如果 TRIM_OLD_APPVER 为空，说明是全新安装或卸载重装
+if [ -z "$TRIM_OLD_APPVER" ]; then
+    # 此时主进程绝对没启动，文件绝对没被占用，直接强删
+    if [ -n "$TRIM_PKGVAR" ]; then
+        rm -rf "${TRIM_PKGVAR:?}"/*
+    else
+        # 双保险，防止没传变量
+        rm -rf /vol*/@appdata/fn-appstores-client/*
+    fi
+fi
 
 exit 0

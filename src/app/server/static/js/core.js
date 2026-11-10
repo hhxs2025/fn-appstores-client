@@ -40,47 +40,106 @@ var _loadingSources = false;
 var _loadingHome = false;
 var _installedLoaded = false;
 
+// ================================================================
+// ★ 隐患 2 修复：全局拦截 fetch，精准注入身份，避免影响第三方跨域请求
+// ================================================================
+var _originalFetch = window.fetch;
+window.fetch = function(input, init) {
+    var url = typeof input === 'string' ? input : (input.url || '');
+    
+    // 只有在请求咱们自己的网关、或者已知的 API 路径、或者是自己搭的服务端时，才注入身份
+    var isOwnAPI = false;
+    if (url.indexOf(API_BASE) === 0 || url.indexOf('/api/') !== -1) {
+        isOwnAPI = true;
+    }
+    // 可选：如果你知道你的服务端域名，也可以加上
+    if (url.indexOf('nas.hhxs2025.top') !== -1 || url.indexOf('rc.hhxs2026.top') !== -1) {
+        isOwnAPI = true;
+    }
+
+    if (isOwnAPI) {
+        init = init || {};
+        init.headers = init.headers || {};
+        var cid = typeof getClientId === 'function' ? getClientId() : '';
+        var ver = typeof getCurrentAppVersion === 'function' ? getCurrentAppVersion() : '2.11.0';
+        
+        if (cid) {
+            if (init.headers instanceof Headers) {
+                if (!init.headers.has('X-Client-ID')) {
+                    init.headers.append('X-Client-ID', cid);
+                    init.headers.append('X-App-Version', ver);
+                    init.headers.append('X-Device-Type', 'fnos');
+                }
+            } else if (Array.isArray(init.headers)) {
+                var hasID = false;
+                for (var i = 0; i < init.headers.length; i++) {
+                    if (init.headers[i][0].toLowerCase() === 'x-client-id') hasID = true;
+                }
+                if (!hasID) {
+                    init.headers.push(['X-Client-ID', cid]);
+                    init.headers.push(['X-App-Version', ver]);
+                    init.headers.push(['X-Device-Type', 'fnos']);
+                }
+            } else {
+                if (!init.headers['X-Client-ID'] && !init.headers['x-client-id']) {
+                    init.headers['X-Client-ID'] = cid;
+                    init.headers['X-App-Version'] = ver;
+                    init.headers['X-Device-Type'] = 'fnos';
+                }
+            }
+        }
+    }
+    return _originalFetch(input, init);
+};
+
+// ================================================================
+// 图片地址包装（全量强推代理，规避混合内容/局域网/证书问题）
+// ================================================================
 function wrapImageUrl(url) {
     if (!url) return '';
-    if (url.startsWith('/')) {
-        return window.location.origin + url;
-    }
-    if (window.location.protocol === 'https:' && url.startsWith('http://')) {
-        return API_BASE + '/api/proxy-image?url=' + encodeURIComponent(url);
-    }
-    return url;
+    if (url.startsWith('/')) return window.location.origin + url;
+    if (url.startsWith('data:')) return url;
+    if (url.indexOf(window.location.origin + '/') === 0) return url;
+    
+    // 非本机同源，一律走本地代理
+    return API_BASE + '/api/proxy-image?url=' + encodeURIComponent(url);
 }
 
-// ★ 优化后的 Toast：支持指定时长、HTML格式、悬停暂停
+function extractHostJS(url) {
+    if (!url) return '';
+    var m = String(url).match(/^https?:\/\/([^\/:]+)/i);
+    return m ? m[1].toLowerCase() : '';
+}
+
+// ================================================================
+// Toast
+// ================================================================
 function showToast(msg, type, durationMs, isHtml) {
     var toast = document.getElementById('toast');
     if (!toast) return;
-    
+
     if (isHtml) {
         toast.innerHTML = msg;
     } else {
         toast.textContent = msg;
     }
-    
+
     toast.className = 'toast show ' + (type || '');
-    
+
     var defaultDurations = { success: 2500, error: 4000, warning: 3000, info: 3000 };
     var duration = durationMs || defaultDurations[type] || 3000;
-    
+
     clearTimeout(toast._timer);
     toast._timer = setTimeout(function() {
         toast.classList.remove('show');
     }, duration);
 
-    // 鼠标悬停时暂停倒计时，移开后再给2秒消失
-    toast.onmouseenter = function() { 
-        clearTimeout(toast._timer); 
-    };
-    toast.onmouseleave = function() { 
+    toast.onmouseenter = function() { clearTimeout(toast._timer); };
+    toast.onmouseleave = function() {
         clearTimeout(toast._timer);
         toast._timer = setTimeout(function() {
             toast.classList.remove('show');
-        }, 2000); 
+        }, 2000);
     };
 }
 
@@ -110,6 +169,9 @@ function getTagsArray(tags) {
     return [];
 }
 
+// ================================================================
+// 缓存读写
+// ================================================================
 function readAppsCache() {
     try {
         var cached = localStorage.getItem(CACHE_KEY);
@@ -136,7 +198,6 @@ function writeAppsCache(data) {
     } catch (e) { console.warn('写入缓存失败:', e); }
 }
 
-// ★ 核心修复：深度清理残留的用户维度的脏数据
 function clearAppsCache() {
     localStorage.removeItem('fnsoft_apps_cache');
     localStorage.removeItem('fnsoft_notice_cache');
@@ -144,7 +205,6 @@ function clearAppsCache() {
     localStorage.removeItem('fnsoft_read_notices');
     localStorage.removeItem('fnsoft_shown_pushes');
     localStorage.removeItem('fnsoft_my_ratings');
-    // 注意：fnsoft_favorites（收藏）和 fnsoft_theme（主题）视作本地偏好，不强制清除
 }
 
 function exportLogs() {
@@ -160,6 +220,9 @@ function clearCache() {
 }
 window.clearCache = clearCache;
 
+// ================================================================
+// 收藏
+// ================================================================
 var FAVORITES_KEY = 'fnsoft_favorites';
 
 function getFavorites() {
@@ -222,6 +285,9 @@ function clearFavorites() {
 }
 window.clearFavorites = clearFavorites;
 
+// ================================================================
+// 设置 Tab 切换 / 搜索
+// ================================================================
 function switchSettingTab(tab) {
     var tabs = document.querySelectorAll('.settings-tab');
     if (tabs) {
@@ -274,6 +340,9 @@ function updateSettingsStats() {
 }
 window.updateSettingsStats = updateSettingsStats;
 
+// ================================================================
+// 评分与身份标识
+// ================================================================
 var MY_RATINGS_KEY = 'fnsoft_my_ratings';
 
 function getMyRatings() {
@@ -289,6 +358,7 @@ function setMyRating(appId, rating) {
         localStorage.setItem(MY_RATINGS_KEY, JSON.stringify(all));
     } catch (e) {}
 }
+
 function getClientId() {
     var id = localStorage.getItem('fnsoft_client_id');
     if (!id) {
@@ -297,6 +367,17 @@ function getClientId() {
         localStorage.setItem('fnsoft_client_id', id);
     }
     return id;
+}
+
+function getCurrentAppVersion() {
+    var el = document.getElementById('appVersion');
+    if (el) {
+        var txt = el.textContent || '';
+        var match = txt.match(/(\d+\.\d+\.\d+)/);
+        if (match) return match[1];
+        return txt.replace(/[^\d.]/g, '').trim();
+    }
+    return '2.11.0';
 }
 
 async function loadRating(appId) {
@@ -419,17 +500,6 @@ window.initRatingWidget = initRatingWidget;
 
 var _currentForceUpdateData = null;
 
-function getCurrentAppVersion() {
-    var el = document.getElementById('appVersion');
-    if (el) {
-        var txt = el.textContent || '';
-        var match = txt.match(/(\d+\.\d+\.\d+)/);
-        if (match) return match[1];
-        return txt.replace(/[^\d.]/g, '').trim();
-    }
-    return '2.9.5';
-}
-
 async function loadPendingPushes() {
     try {
         var cid = getClientId();
@@ -448,7 +518,7 @@ async function loadPendingPushes() {
                 'X-Device-Type': deviceType
             }
         });
-        
+
         var text = await resp.text();
         var data = null;
         try {
@@ -474,28 +544,27 @@ async function loadPendingPushes() {
 
 function handlePushMessage(data) {
     if (!data || !data.id) return;
-    
+
     var shownPushes = [];
     try {
         shownPushes = JSON.parse(localStorage.getItem('fnsoft_shown_pushes') || '[]');
     } catch (e) {}
-    
+
     if (shownPushes.indexOf(data.id) !== -1) {
         console.log('[Push] 消息已被本地去重拦截 (之前已经弹过):', data.id);
-        return; 
+        return;
     }
-    
+
     console.log('[Push] 准备弹出消息:', data.title);
-    
+
     shownPushes.push(data.id);
-    if (shownPushes.length > 100) shownPushes.shift(); 
+    if (shownPushes.length > 100) shownPushes.shift();
     localStorage.setItem('fnsoft_shown_pushes', JSON.stringify(shownPushes));
-    
+
     if (data.msg_type === 'toast') {
-        // ★ 关键修改：推送的提示改为 HTML 渲染，排版更好看；停留时间拉长到 10 秒
-        var htmlMsg = '<div style="font-weight:bold;font-size:15px;margin-bottom:6px;">【' + data.title + '】</div>' + 
+        var htmlMsg = '<div style="font-weight:bold;font-size:15px;margin-bottom:6px;">【' + data.title + '】</div>' +
                       '<div style="font-size:14px;line-height:1.6;">' + data.content.replace(/\n/g, '<br>') + '</div>';
-        showToast(htmlMsg, 'info', 10000, true); 
+        showToast(htmlMsg, 'info', 10000, true);
     } else if (data.msg_type === 'modal') {
         var titleEl = document.getElementById('sysPushTitle');
         var contentEl = document.getElementById('sysPushContent');
@@ -505,13 +574,13 @@ function handlePushMessage(data) {
         if (modal) modal.classList.add('active');
     } else if (data.msg_type === 'force_update') {
         _currentForceUpdateData = data;
-        var titleEl = document.getElementById('forceUpdateTitle');
-        var contentEl = document.getElementById('forceUpdateContent');
-        if (titleEl) titleEl.textContent = data.title || '重要更新';
-        if (contentEl) contentEl.innerHTML = (data.content || '请立即更新').replace(/\n/g, '<br>') + '<br><br>最新版本：<b>v' + (data.update_ver || '') + '</b>';
-        
-        var modal = document.getElementById('forceUpdateModal');
-        if (modal) modal.classList.add('active');
+        var titleEl2 = document.getElementById('forceUpdateTitle');
+        var contentEl2 = document.getElementById('forceUpdateContent');
+        if (titleEl2) titleEl2.textContent = data.title || '重要更新';
+        if (contentEl2) contentEl2.innerHTML = (data.content || '请立即更新').replace(/\n/g, '<br>') + '<br><br>最新版本：<b>v' + (data.update_ver || '') + '</b>';
+
+        var modal2 = document.getElementById('forceUpdateModal');
+        if (modal2) modal2.classList.add('active');
     }
 }
 
@@ -524,7 +593,7 @@ function triggerForceUpdate() {
     if (!_currentForceUpdateData) return;
     var btn = document.getElementById('forceUpdateBtn');
     if (btn) { btn.disabled = true; btn.textContent = '正在下载...'; }
-    
+
     var data = _currentForceUpdateData;
     var a = document.createElement('a');
     a.href = data.update_url;
@@ -532,7 +601,7 @@ function triggerForceUpdate() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    
+
     setTimeout(function() {
         alert('文件已下载！\n\n请前往飞牛系统「应用中心」->「手动安装」，选择刚才下载的 FPK 文件进行覆盖安装。');
         if (btn) { btn.textContent = '重新下载'; btn.disabled = false; }

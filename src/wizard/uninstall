@@ -17,21 +17,21 @@
     "items": [
       {
         "type": "radio",
-        "field": "wizard_keep_data",
-        "label": "示例项",
+        "field": "wizard_data_action",
+        "label": "数据处理",
         "rules": [],
         "options": [
           {
             "label": "保留配置数据",
-            "value": "yes"
+            "value": "keep"
           },
           {
             "label": "删除配置数据",
-            "value": "no"
+            "value": "delete"
           }
         ],
         "helpText": "选择是否删除FN软仓的配置数据",
-        "initValue": "yes"
+        "initValue": "keep"
       }
     ]
   }

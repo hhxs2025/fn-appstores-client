@@ -1,5 +1,154 @@
 #!/bin/bash
+APP_ID="fn-appstores-client"
+MARKER="/tmp/.${APP_ID}.purge_data"
 
-### This script is called after the user uninstalls the application.
+log() {
+    echo "[uninstall_init] $*"
+    # TRIM_PKGTMP 在卸载阶段一般还在，写一份便于事后排查
+    if [ -n "${TRIM_PKGTMP}" ] && [ -d "${TRIM_PKGTMP}" ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [uninstall_init] $*" >> "${TRIM_PKGTMP}/uninstall.log" 2>/dev/null
+    fi
+}
+
+# ---------------------------------------------------------------
+ACTION="${wizard_data_action:-}"
+KEEP_OLD="${wizard_keep_data:-}"
+
+DO_PURGE=0
+if [ "$ACTION" = "delete" ]; then
+    DO_PURGE=1
+elif [ "$KEEP_OLD" = "no" ]; then
+    DO_PURGE=1
+fi
+
+log "wizard_data_action='${ACTION}' wizard_keep_data='${KEEP_OLD}' => 清除数据=${DO_PURGE}"
+
+# ---------------------------------------------------------------
+# 2. 先停进程，避免删到一半被进程重新写回
+# ---------------------------------------------------------------
+stop_app() {
+    pid=""
+    if [ -f "${TRIM_PKGVAR}/app.pid" ]; then
+        pid=$(head -n 1 "${TRIM_PKGVAR}/app.pid" 2>/dev/null | tr -d '[:space:]')
+    fi
+    case "$pid" in
+        ''|*[!0-9]*) pid="" ;;
+    esac
+
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        log "停止进程 pid=${pid}"
+        kill -TERM "$pid" 2>/dev/null
+        i=0
+        while [ $i -lt 20 ]; do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.3
+            i=$((i + 1))
+        done
+        if kill -0 "$pid" 2>/dev/null; then
+            log "进程未退出，强杀 ${pid}"
+            kill -KILL "$pid" 2>/dev/null
+        fi
+    fi
+
+    # 兜底：按二进制名清理（pid 文件丢失时）
+    pkill -f "fn-appstores-client-amd64" 2>/dev/null
+    pkill -f "fn-appstores-client-arm64" 2>/dev/null
+
+    # 网关 socket 留着会让下次安装的进程 bind 失败
+    [ -n "${TRIM_APPDEST}" ] && rm -f "${TRIM_APPDEST}/app.sock" 2>/dev/null
+    sleep 0.2
+}
+
+# ---------------------------------------------------------------
+safe_purge_dir() {
+    d="$1"
+
+    if [ -z "$d" ]; then
+        log "路径为空，跳过"
+        return 0
+    fi
+
+    # 必须是绝对路径
+    case "$d" in
+        /*) ;;
+        *) log "非绝对路径，拒绝: $d"; return 1 ;;
+    esac
+
+    # 不能是卷根、appdata 根这类危险目标
+    case "$d" in
+        /|/vol|/vol[0-9]|/vol[0-9]/|/vol[0-9]/@appdata|/vol[0-9]/@appdata/|/appdata|/@appdata)
+            log "危险路径，拒绝: $d"
+            return 1
+            ;;
+    esac
+
+    # 路径最后一段必须正好是应用名（防 TRIM_* 被错误赋值）
+    case "$d" in
+        */"$APP_ID") ;;
+        *) log "路径不含应用名 ${APP_ID}，拒绝: $d"; return 1 ;;
+    esac
+
+    if [ ! -d "$d" ]; then
+        log "不存在，跳过: $d"
+        return 0
+    fi
+
+    log "删除目录: $d"
+    rm -rf "$d" 2>/dev/null
+
+    if [ -e "$d" ]; then
+        # 目录被占用/只读时退一步：至少把内容清空
+        log "目录未能整体删除，改为清空内容: $d"
+        rm -rf "$d"/* "$d"/.[!.]* "$d"/..?* 2>/dev/null
+        rmdir "$d" 2>/dev/null
+    fi
+
+    if [ -e "$d" ]; then
+        log "⚠️ 仍未清除干净: $d"
+        return 1
+    fi
+
+    log "✅ 已清除: $d"
+    return 0
+}
+
+purge_data() {
+    # 3.1 客户端真实数据目录（sources.json / accelerators_pool.json / rollback / app.log ...）
+    [ -n "${TRIM_PKGVAR}" ] && safe_purge_dir "${TRIM_PKGVAR}"
+
+    # 3.2 用户数据目录（部分应用把可写数据放这里，存在才删）
+    if [ -n "${TRIM_PKGHOME}" ] && [ "${TRIM_PKGHOME}" != "${TRIM_PKGVAR}" ]; then
+        safe_purge_dir "${TRIM_PKGHOME}"
+    fi
+
+    # 3.3 data-share 生成的共享目录（config/resource 里声明过 fn-appstores-client）
+    #     飞牛把它建在卷下的 appdata 共享里，卸载不会自动删，手动补一刀
+    if [ -n "${TRIM_APPDEST_VOL}" ]; then
+        safe_purge_dir "${TRIM_APPDEST_VOL}/appdata/${APP_ID}"
+        safe_purge_dir "${TRIM_APPDEST_VOL}/@appdata/${APP_ID}"
+    fi
+
+    # 3.4 卷变量缺失时的兜底：逐个卷找同名目录（都有名字校验，安全）
+    for v in /vol1 /vol2 /vol3 /vol4 /vol5; do
+        [ -d "$v" ] || continue
+        [ "$v" = "${TRIM_APPDEST_VOL}" ] && continue
+        safe_purge_dir "${v}/appdata/${APP_ID}"
+    done
+}
+
+# ---------------------------------------------------------------
+# 4. 执行
+# ---------------------------------------------------------------
+if [ "$DO_PURGE" = "1" ]; then
+    stop_app
+    purge_data
+
+    # 给 uninstall_callback 留标记：让它在应用目录被删后再补扫一遍
+    echo "1" > "$MARKER" 2>/dev/null
+    log "已写清除标记: $MARKER"
+else
+    rm -f "$MARKER" 2>/dev/null
+    log "用户选择保留数据，不动 ${TRIM_PKGVAR}"
+fi
 
 exit 0

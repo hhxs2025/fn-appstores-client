@@ -1,5 +1,76 @@
 #!/bin/bash
+# ================================================================
 
-### This script is called after the user uninstalls the application.
+APP_ID="fn-appstores-client"
+MARKER="/tmp/.${APP_ID}.purge_data"
+
+log() {
+    echo "[uninstall_callback] $*"
+    if [ -n "${TRIM_PKGTMP}" ] && [ -d "${TRIM_PKGTMP}" ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [uninstall_callback] $*" >> "${TRIM_PKGTMP}/uninstall.log" 2>/dev/null
+    fi
+}
+
+safe_purge_dir() {
+    d="$1"
+
+    if [ -z "$d" ]; then
+        return 0
+    fi
+    case "$d" in
+        /*) ;;
+        *) log "非绝对路径，拒绝: $d"; return 1 ;;
+    esac
+    case "$d" in
+        /|/vol|/vol[0-9]|/vol[0-9]/|/vol[0-9]/@appdata|/vol[0-9]/@appdata/|/appdata|/@appdata)
+            log "危险路径，拒绝: $d"
+            return 1
+            ;;
+    esac
+    case "$d" in
+        */"$APP_ID") ;;
+        *) log "路径不含应用名 ${APP_ID}，拒绝: $d"; return 1 ;;
+    esac
+
+    if [ ! -d "$d" ]; then
+        return 0
+    fi
+
+    log "补扫删除: $d"
+    rm -rf "$d" 2>/dev/null
+    [ -e "$d" ] && rm -rf "$d"/* "$d"/.[!.]* "$d"/..?* 2>/dev/null && rmdir "$d" 2>/dev/null
+    if [ -e "$d" ]; then
+        log "⚠️ 仍未清除干净: $d"
+        return 1
+    fi
+    log "✅ 已清除: $d"
+    return 0
+}
+
+# 应用目录已经在 uninstall_init 之后被系统删掉，这里只清数据与残留
+if [ -f "$MARKER" ]; then
+    log "检测到清除数据标记，开始补扫残留"
+
+    [ -n "${TRIM_APPDEST}" ] && rm -f "${TRIM_APPDEST}/app.sock" 2>/dev/null
+
+    [ -n "${TRIM_PKGVAR}" ] && safe_purge_dir "${TRIM_PKGVAR}"
+    if [ -n "${TRIM_PKGHOME}" ] && [ "${TRIM_PKGHOME}" != "${TRIM_PKGVAR}" ]; then
+        safe_purge_dir "${TRIM_PKGHOME}"
+    fi
+    if [ -n "${TRIM_APPDEST_VOL}" ]; then
+        safe_purge_dir "${TRIM_APPDEST_VOL}/appdata/${APP_ID}"
+        safe_purge_dir "${TRIM_APPDEST_VOL}/@appdata/${APP_ID}"
+    fi
+    for v in /vol1 /vol2 /vol3 /vol4 /vol5; do
+        [ -d "$v" ] || continue
+        [ "$v" = "${TRIM_APPDEST_VOL}" ] && continue
+        safe_purge_dir "${v}/appdata/${APP_ID}"
+    done
+
+    rm -f "$MARKER" 2>/dev/null
+    log "清理完成"
+else
+    log "保留数据模式（未检测到清除标记），${TRIM_PKGVAR} 原样保留"
+fi
 
 exit 0

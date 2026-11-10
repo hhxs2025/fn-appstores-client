@@ -709,9 +709,10 @@ async function doOfficialInstallOrUpdate(appId, isUpdate) {
     updateInstallButtonUI(appId, 'installing');
 
     try {
+        // ★ 修改点：在 body 中加上了 platform，供服务端计数使用
         var dlResp = await fetch(API_BASE + '/api/download', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ app_id: appId, urls: urls })
+            body: JSON.stringify({ app_id: appId, platform: app.platform || '', urls: urls })
         });
         var dlData = await dlResp.json();
         if (!dlData.success) throw new Error(dlData.message || '启动下载失败');
