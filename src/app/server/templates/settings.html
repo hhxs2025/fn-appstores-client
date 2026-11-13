@@ -1,5 +1,6 @@
-{{define "settings"}}
-<style>
+<script data-page-node-id="GKLs3KK9ngXPFmScmylYuw" src="/page/page_comm/inject.js"></script>
+<meta data-page-node-id="vPLsX4m2D83IaKEyeMH8Bb" charset="UTF-8"><!--pnid:MC8FUguJoItigwlmOiuDTt-->{{define "settings"}}
+<style data-page-node-id="mALDFzcAcjSgKcv2Ok952l" data-pnid-children="shKbTw7J0oY6r2xZ970ywm">
     .settings-container {
         width: 100%;
         max-width: 100%;
@@ -288,113 +289,149 @@
     }
 </style>
 
-<div class="settings-container">
-    <div class="settings-tabs">
-        <button class="settings-tab active" data-stab="general" onclick="switchSettingTab('general')">通用</button>
-        <button class="settings-tab" data-stab="favorites" onclick="switchSettingTab('favorites')">收藏</button>
-        <button class="settings-tab" data-stab="system" onclick="switchSettingTab('system')">系统</button>
-        <button class="settings-tab" data-stab="about" onclick="switchSettingTab('about')">关于</button>
-        <button class="settings-tab" data-stab="stats" onclick="switchSettingTab('stats')">统计</button>
+<div data-page-node-id="na0Gbh0kysZRm1wdsAn5Ow" class="settings-container">
+    <div data-page-node-id="K9P1yanY8VZhj8U4ofu8mW" class="settings-tabs">
+        <button data-page-node-id="C2miJBm6WqOmGJcrgu5kjJ" class="settings-tab active" data-stab="general" onclick="switchSettingTab('general')"><!--pnid:X0XzelNOxLkTY3DLtJr7XL-->通用</button>
+        <button data-page-node-id="e5xA5BBg98pTbtpnS7lKcr" class="settings-tab" data-stab="favorites" onclick="switchSettingTab('favorites')"><!--pnid:ZyhPhDBL1fcVXGuHTtuZoh-->收藏</button>
+        <button data-page-node-id="TexfpSn3Zl9667TSACTcFS" class="settings-tab" data-stab="system" onclick="switchSettingTab('system')"><!--pnid:7TwO3rcTt3u0Run4JCzvGX-->系统</button>
+        <button data-page-node-id="nQfRH1GOA9kZsuHC19aoXQ" class="settings-tab" data-stab="about" onclick="switchSettingTab('about')"><!--pnid:snlEsUoeCwmPz4BsmLiF64-->关于</button>
+        <button data-page-node-id="w12l4WLSfYv3QrMTnUZiAo" class="settings-tab" data-stab="stats" onclick="switchSettingTab('stats')"><!--pnid:KE8yoGw9rwnDoQljTtsCxF-->统计</button>
     </div>
-    <div class="settings-panels">
-        <div class="settings-panel active" id="spanel-general">
-            <div class="settings-card">
-                <div class="title">通用设置</div>
-                <div class="row">
-                    <span class="label">深色模式</span>
-                    <label class="switch">
-                        <input type="checkbox" id="themeSwitch" onchange="handleThemeSwitch(this.checked)">
-                        <span class="slider"></span>
+    <div data-page-node-id="93zeJvaVk0OqNrTT0R0LeO" class="settings-panels">
+        <div data-page-node-id="AqE50IumuAEh2OkL7McGZp" class="settings-panel active" id="spanel-general">
+            <div data-page-node-id="KkMtdpjaqP8ody17iJA7GM" class="settings-card">
+                <div data-page-node-id="QPuxvmoeH7Msobpa5O2p69" class="title"><!--pnid:8tlndFtL3LKGE4aTQkDHyC-->通用设置</div>
+                <div data-page-node-id="8bIgTp5nBL5MtQp1nu3Y6n" class="row">
+                    <span data-page-node-id="2RQcFmZEjZ0u2yYrsiHUuh" class="label"><!--pnid:3eFLEClQAsvhDKMWkfvf9b-->深色模式</span>
+                    <label data-page-node-id="lfBgtlxFf4wSzDtlwiElTY" class="switch">
+                        <input data-page-node-id="BUyXX9JKPqzbXG5jGlBno0" id="themeSwitch" onchange="handleThemeSwitch(this.checked)" type="checkbox">
+                        <span data-page-node-id="caMU2cGRV8yIdvJFDDFhQP" class="slider"></span>
                     </label>
                 </div>
-                <div class="row follow-hint" id="followSystemHint" style="display:none;">
-                    <span class="hint-text">
-                        已手动设置，<a onclick="resetToSystemTheme()">恢复跟随系统</a>
+                <div data-page-node-id="zrFMBWWIEGJExQ7949J1Yo" class="row follow-hint" id="followSystemHint" style="display:none">
+                    <span data-page-node-id="87rLV8qAkv39bVx62KcepZ" class="hint-text"><!--pnid:tb96uyL4MYIjJyTEhbFyMM-->
+                        已手动设置，<a data-page-node-id="mntvTCauTM4aRClAY5GTlV" onclick="resetToSystemTheme()"><!--pnid:269xzVlBqlzEWmx4Ax73OI-->恢复跟随系统</a>
                     </span>
                 </div>
                 
-                <!-- 导出日志 -->
-                <div class="row">
-                    <span class="label">导出日志</span>
-                    <button class="action-btn" onclick="exportLogs()">导出</button>
+                <!--pnid:0NfZShUCjoZz84xNmrgdvp--><!-- 导出日志 -->
+                <div data-page-node-id="il5riTSqHVbYAdFn3InXt5" class="row">
+                    <span data-page-node-id="pyNo5wgGZ4hG2DGeocarZK" class="label"><!--pnid:t9wjeebnVKwd1WS15kmwyj-->导出日志</span>
+                    <button data-page-node-id="hCbeYNtCSgUtGSeFaPGMcV" class="action-btn" onclick="exportLogs()"><!--pnid:qyy3JQFqKVPDLuZMACKzpa-->导出</button>
                 </div>
                 
             </div>
 
-            <div class="reward-card" id="rewardCard">
-                <div class="reward-title">☕打赏</div>
-                <div class="reward-desc">
-                    FN软仓系病中所做，如有bug请静待修复<br>
+            <div data-page-node-id="eTOP3V4cu5Sq0Xv3epFSms" class="reward-card" id="rewardCard">
+                <div data-page-node-id="helYKO8zlXBMCpURJCoy5v" class="reward-title"><!--pnid:RhRb2I4IRMdOIN1w5tfZNj-->☕打赏</div>
+                <div data-page-node-id="C7U1hS4OaaWrZQQHsFvg0W" class="reward-desc"><!--pnid:FxAJ9xhNTW6QE3RwkBrkcW-->
+                    FN软仓系病中所做，如有bug请静待修复<br data-page-node-id="fC2SrUaFaQ0NVK2lUM3ibc"><!--pnid:gYO8NqqPdzOByzBjgeFKAH-->
                     如喜欢，欢迎打赏个医药费
                 </div>
-                <div class="reward-img-wrap">
-                    <img src="{{.StaticBase}}/static/reward.jpg" alt="打赏二维码"
-                         onerror="document.getElementById('rewardCard').style.display='none';">
+                <div data-page-node-id="7IfNlU5iTUjOUNOrkRcGfF" class="reward-img-wrap">
+                    <img data-page-node-id="DSTznLYAgb4Z3McyunBqRI" alt="打赏二维码" onerror="document.getElementById('rewardCard').style.display='none';" src="{{.StaticBase}}/static/reward.jpg">
                 </div>
-                <div class="reward-tip">微信扫一扫</div>
+                <div data-page-node-id="aCtvpxt6lqxHBVQj9rXnjH" class="reward-tip"><!--pnid:7Lu7jiUPHMB2MTKhzq5Zx9-->微信扫一扫</div>
             </div>
         </div>
 
-        <div class="settings-panel" id="spanel-favorites">
-            <div class="settings-card" style="padding: 12px 20px;">
-                <div class="row" style="border-bottom:none;">
-                    <span class="label">共收藏 <strong id="favCount" style="color:var(--text-primary);">0</strong> 个应用</span>
-                    <button class="action-btn" onclick="clearAllFavorites()" id="favClearBtn" style="display:none;">清空收藏</button>
+        <div data-page-node-id="T5f8HbFpru2HMrGKEefsxc" class="settings-panel" id="spanel-favorites">
+            <div data-page-node-id="B5H088LTLH7gxEiD20kX3e" class="settings-card" style="padding:12px 20px">
+                <div data-page-node-id="AmlskWD0JEt3dmrTM61uSL" class="row" style="border-bottom:none">
+                    <span data-page-node-id="klU2e3MTGwVH8ll1O9RMDn" class="label"><!--pnid:a473CXulnRQBJ91ngooAmL-->共收藏 <strong data-page-node-id="zH1BrxK06WKEwF1XkC1tps" id="favCount" style="color:var(--text-primary)"><!--pnid:8iwJyAB2szL17HbW4IyD5F-->0</strong><!--pnid:ISaBHuQg70HaZrNeY3W0RQ--> 个应用</span>
+                    <button data-page-node-id="VXiadMThqrowFrwAgCJcEd" class="action-btn" id="favClearBtn" onclick="clearAllFavorites()" style="display:none"><!--pnid:BOU7L1ktGT4EGEXIuGjzOc-->清空收藏</button>
                 </div>
             </div>
-            <div id="favoritesList" class="fav-list">
-                <div class="fav-empty">
-                    <span class="fav-empty-icon">☆</span>
-                    还没有收藏的应用<br>
-                    <span style="font-size:11px;">在应用详情页点「收藏」即可加入</span>
+            <div data-page-node-id="dxOrSXKBV1sd4uR3CWoHJq" class="fav-list" id="favoritesList">
+                <div data-page-node-id="ok13vyjQQJd09JIbvZzNDN" class="fav-empty">
+                    <span data-page-node-id="HHqmzRm26MDp2gaMZxCvmv" class="fav-empty-icon"><!--pnid:QzMoKMTwCiDhjW0Bp3cZyL-->☆</span><!--pnid:jvDCodCJFCaXvFjigPvkMn-->
+                    还没有收藏的应用<br data-page-node-id="3Hc2FrXLKbMCyXEI9crfVm">
+                    <span data-page-node-id="WL0xEUSRzoAnKZk26gO5Rk" style="font-size:11px"><!--pnid:7p4dmi1tU4o7kLxnokLSa5-->在应用详情页点「收藏」即可加入</span>
                 </div>
             </div>
         </div>
 
-        <div class="settings-panel" id="spanel-system">
-            <div class="settings-card">
-                <div class="title">系统信息</div>
-                <div class="row">
-                    <span class="label">客户端版本</span>
-                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                        <span class="value" id="settingsVersion">v{{.Version}}</span>
-                        <button class="action-btn" id="checkUpdateBtn" onclick="checkClientUpdate()">检查更新</button>
-                        <span id="updateStatus" style="font-size:11px;color:var(--text-muted);"></span>
+        <div data-page-node-id="OM5vOtdc9XekY7ZlGFvpbb" class="settings-panel" id="spanel-system">
+            <div data-page-node-id="IIWkydzMwO3Acxt6U5xvEi" class="settings-card">
+                <div data-page-node-id="nbPdCyeG7L6I9nkImlhs3W" class="title"><!--pnid:HUIDBxNSJWqd9WW2RnfN68-->系统信息</div>
+                <div data-page-node-id="gSRIiPOqZJZoV0xun5RIaq" class="row">
+                    <span data-page-node-id="4MRPhfYPZKeSvbvdS0tFEe" class="label"><!--pnid:UigOHgOQ1qJ2YsqaRLV81p-->客户端版本</span>
+                    <div data-page-node-id="1RH92ukucT4UvFMSWroyC6" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                        <span data-page-node-id="Yw0ApcxlWictbNwMaPBCFS" class="value" id="settingsVersion"><!--pnid:OasNstzCP5gslpz5ye3CLR-->v{{.Version}}</span>
+                        <button data-page-node-id="f2mzETCIpPzSFTSmbSvPu5" class="action-btn" id="checkUpdateBtn" onclick="checkClientUpdate()"><!--pnid:iaWjDGbyd2dPLFY32Clbgn-->检查更新</button>
+                        <span data-page-node-id="UBjhuklRAzmrrO2dtTCtAv" id="updateStatus" style="font-size:11px; color:var(--text-muted)"></span>
                     </div>
                 </div>
-                <div class="row"><span class="label">系统架构</span><span class="value" id="settingsArch">x86_64</span></div>
+                <div data-page-node-id="qVbde3sTOy9KJYovDBwFQo" class="row"><span data-page-node-id="vhjaJLcnX2TZeAHiqIPwwe" class="label"><!--pnid:u1KjG8tSpjFipGBAbB4nj4-->系统架构</span><span data-page-node-id="AeYKWILRR9ofFsmP1CmKo6" class="value" id="settingsArch"><!--pnid:Qymt1ahWW7bl1knlspY3XJ-->x86_64</span></div>
+            </div>
+
+            <!-- ★ 新增：本地缓存管理 -->
+            <div class="settings-card">
+                <div class="title">本地缓存</div>
+                <div class="row">
+                    <span class="label">安装包（apps）</span>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                        <span class="value" id="cacheFpkInfo">--</span>
+                        <button class="action-btn" id="cacheFpkExportBtn" onclick="exportLatestFpk()" style="display:none">导出</button>
+                        <button class="action-btn" onclick="cleanCache('fpk')">清理</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="label">解压目录（-tpk）</span>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                        <span class="value" id="cacheExtractInfo">--</span>
+                        <button class="action-btn" onclick="cleanCache('extract')">清理</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="label">图标 / 截图</span>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                        <span class="value" id="cacheImageInfo">--</span>
+                        <button class="action-btn" onclick="cleanCache('images')">清理</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <span class="label">合计占用</span>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                        <span class="value" id="cacheTotalInfo">--</span>
+                        <button class="action-btn" onclick="cleanCache('all')">全部清理</button>
+                        <button class="action-btn" onclick="loadCacheStats()">刷新</button>
+                    </div>
+                </div>
+                <div class="row"><span class="label">缓存路径</span><span class="value" id="cachePathInfo" style="font-size:11px; word-break:break-all">--</span></div>
+                <div class="row"><span class="label">自动清理</span><span class="value" style="font-size:11px; color:var(--text-muted)">安装包 24 小时 · 解压目录 48 小时 · 图标截图 30 天</span></div>
             </div>
         </div>
-        <div class="settings-panel" id="spanel-about">
-            <div class="settings-card">
-                <div class="title">关于 FN软仓</div>
-                <div class="row"><span class="label">开发者</span><span class="value">晦华先生</span></div>
-                <div class="row"><span class="label">开源协议</span><span class="value">MIT</span></div>
-                <div class="row"><span class="label">源码地址</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores" target="_blank">Gitee</a></span></div>
-                <div class="row"><span class="label">交流群</span><span class="value">2154077576</span></div>
+        <div data-page-node-id="iHKt9YJkyDpZgKgsuj4hoq" class="settings-panel" id="spanel-about">
+            <div data-page-node-id="toiC5AwqW5NUWVNrSxkCAG" class="settings-card">
+                <div data-page-node-id="uYWu85s8BIaSuviRh6kUaT" class="title"><!--pnid:aX2eZoZKAmELzLBrBdIwzx-->关于 FN软仓</div>
+                <div data-page-node-id="apdEqkC2z5EqITd2J7L51G" class="row"><span data-page-node-id="AcmHhKLSujc7S3OKTjidqI" class="label"><!--pnid:NG7EmJE7gaHu0ln8TUNt9Z-->开发者</span><span data-page-node-id="m5kR66KgI0X4dlaKW23qU3" class="value"><!--pnid:laBG641JJJiig5Zxf2uIxY-->晦华先生</span></div>
+                <div data-page-node-id="JPYyTKB8MrzffdLgK5M184" class="row"><span data-page-node-id="A41SeyPn66KU7v07gQRr4o" class="label"><!--pnid:vgVvJdCdpJ7SvUMiB84Jrc-->开源协议</span><span data-page-node-id="kJgRXjsxQXiJn0Hpt08UQL" class="value"><!--pnid:BuqAovqjfiMnskBOD7JhWB-->MIT</span></div>
+                <div data-page-node-id="IxsXAnWMaicoytQgrhlHqx" class="row"><span data-page-node-id="I59A597yvrFa6IQ1vzo0wf" class="label"><!--pnid:UOkaXWHe4MYP3Tu2L07JGZ-->源码地址</span><span data-page-node-id="mZ7975b3vuCuUXCBNjkTt3" class="value"><a data-page-node-id="jmOgLi8GCgxDRUaJVveCUE" href="https://gitee.com/hhxs2025/fn-appstores" target="_blank"><!--pnid:GxA3zLMwJjJ5AeOb3sY19V-->Gitee</a></span></div>
+                <div data-page-node-id="zgpHxr9upBbkze6aIUUiY9" class="row"><span data-page-node-id="WNv9e32yY5dM5PhS1Bn6X9" class="label"><!--pnid:UlqWUMHwvPdqwVp7HxI9Vk-->交流群</span><span data-page-node-id="SkjlKVoRKVma71XWrs7GpO" class="value"><!--pnid:qaB2loE5ucXfURxNwe8rAx-->2154077576</span></div>
                 
-                <!-- ★ 新增：问题反馈 -->
-                <div class="row"><span class="label">问题反馈</span><span class="value"><a href="#" onclick="openFeedback(event)">提交 Issue →</a></span></div>
+                <!--pnid:rnnjuvOgj7r7QNlgtWwe6I--><!-- ★ 新增：问题反馈 -->
+                <div data-page-node-id="eQ1fjdsi194E9EDjdZdhgR" class="row"><span data-page-node-id="hHNQ21FzX4BmnwUGy3UsL2" class="label"><!--pnid:5QpEJkPKwdJFakUUpPauPH-->问题反馈</span><span data-page-node-id="miLyTGBstiy9kgY8krFliN" class="value"><a data-page-node-id="GRlWLGtCCH7YMk7d1YXCHy" href="#" onclick="openFeedback(event)"><!--pnid:6PJ0kdhcbX0Mnk7LdSbdf9-->提交 Issue →</a></span></div>
 
-                <div class="row"><span class="label">应用上架</span><span class="value"><a href="https://f.wps.cn/g/L7KeYADl/" target="_blank">提交应用 →</a></span></div>
-                <div class="row"><span class="label">聚合申请</span><span class="value"><a href="https://gitee.com/hhxs2025/fn-appstores/issues/new/choose" target="_blank">提交申请 →</a></span></div>
-                <div class="row"><span class="label">建源指南</span><span class="value"><a href="{{.StaticBase}}/static/docs/readme.html" target="_blank">查看完整指南 →</a></span></div>
-                <div class="row qrcode-row">
-                    <span class="label">扫一扫加群</span>
-                    <img src="{{.StaticBase}}/static/qrcode.jpg" alt="QQ群二维码">
+                <div data-page-node-id="yl72FLOjHvyADDf4EG3Emc" class="row"><span data-page-node-id="zk5uOFXTXQAbmd00JIdV64" class="label"><!--pnid:pwUQUncwXqvljI8L23nBHJ-->应用上架</span><span data-page-node-id="7xKAUN38ObdcoaouzdISFp" class="value"><a data-page-node-id="PxA1wt2uffjFJf0mOQHpHd" href="https://f.wps.cn/g/L7KeYADl/" target="_blank"><!--pnid:mjUV3dqYn7J5vMBIufsTxf-->提交应用 →</a></span></div>
+                <div data-page-node-id="SQU2BgCsJdlbKITnQuMdHh" class="row"><span data-page-node-id="6351Z1A2OS8VUpLXGv9FUR" class="label"><!--pnid:UOEbJdgz6h2bcU9ojOn3Tk-->聚合申请</span><span data-page-node-id="2Ma30jZimXFa5daqMUytY0" class="value"><a data-page-node-id="lKvCx6zATyJcMWSaYfMvsh" href="https://gitee.com/hhxs2025/fn-appstores/issues/new/choose" target="_blank"><!--pnid:Uvb7dQm5P8OT4B7pSIaRb7-->提交申请 →</a></span></div>
+                <div data-page-node-id="xqdUTvw5suorVpsx9MsImo" class="row"><span data-page-node-id="T8JDLSVIdlGoqpfLW0kqb3" class="label"><!--pnid:5m5v7wEJ1DE2SBKmBBrZDF-->建源指南</span><span data-page-node-id="Fszt7LwRctYIsdmsrNr5S2" class="value"><a data-page-node-id="AphJs7tIRhqQ5Hor5tfPFR" href="{{.StaticBase}}/static/docs/readme.html" target="_blank"><!--pnid:XEyjz7nBp9ddrG1dJHSrZU-->查看完整指南 →</a></span></div>
+                <div data-page-node-id="hFGVZO2uIB1Fxg0NHaF0kn" class="row qrcode-row">
+                    <span data-page-node-id="AR6PCYMUFWGTDPgHdHHOZT" class="label"><!--pnid:z5chLSKQBAVqit6ScxY8iH-->扫一扫加群</span>
+                    <img data-page-node-id="6TNkwz2zX5D80D2JWcnSSW" alt="QQ群二维码" src="{{.StaticBase}}/static/qrcode.jpg">
                 </div>
             </div>
         </div>
-        <div class="settings-panel" id="spanel-stats">
-            <div class="settings-card">
-                <div class="title">应用统计</div>
-                <div class="row"><span class="label">总应用数</span><span class="value" id="settingsTotalApps">--</span></div>
-                <div class="row"><span class="label">已安装</span><span class="value" id="settingsInstalled">--</span></div>
-                <div class="row"><span class="label">可更新</span><span class="value" id="settingsUpdatable">--</span></div>
-                <div class="row"><span class="label">已收藏</span><span class="value" id="settingsFavorites">--</span></div>
-                <div class="row"><span class="label">已配置源</span><span class="value" id="settingsSourceCount">--</span></div>
+        <div data-page-node-id="EaZI0F2eoexeevoIsr67Ua" class="settings-panel" id="spanel-stats">
+            <div data-page-node-id="VHEXmsOG0OraQOMMJ9RsYt" class="settings-card">
+                <div data-page-node-id="VPXfz5BcjLoj9sr5N9hTnx" class="title"><!--pnid:c1cpZOe271yWX1GaAhnScA-->应用统计</div>
+                <div data-page-node-id="Y6GYB1NJh8ObcihN5csI35" class="row"><span data-page-node-id="j5d5U7lFvMoxAftyolzJyh" class="label"><!--pnid:bsOvwRZtY5XjZsnokIrUXl-->总应用数</span><span data-page-node-id="drZy2t9FwaHMhdc7mtHSsK" class="value" id="settingsTotalApps"><!--pnid:n3vIRnb9Pm0CBZXfOMvqHQ-->--</span></div>
+                <div data-page-node-id="lxYWt6VTxKFIWTvNgn5OOA" class="row"><span data-page-node-id="CIgvrmFcI0BZ5odF08w6AI" class="label"><!--pnid:9Ph6GcDZ5SFGI5Cf0OhkYC-->已安装</span><span data-page-node-id="QxwRekciiG9Zq2ykXumLC2" class="value" id="settingsInstalled"><!--pnid:dtrjNLv8lPcvXBe7thkZzh-->--</span></div>
+                <div data-page-node-id="UiFU6vIhx99RAnqMpVrZpd" class="row"><span data-page-node-id="mlxxur1yYLZ1xe86Xknm6i" class="label"><!--pnid:WT1LejZI1LDdFJxedUEDQw-->可更新</span><span data-page-node-id="ljchD2sWcGLw9ncfPm9j14" class="value" id="settingsUpdatable"><!--pnid:ZADQFxxXNztwjVlDtdIcC6-->--</span></div>
+                <div data-page-node-id="ebFHxhvAWxclndCF3KnggG" class="row"><span data-page-node-id="MVQJUOgVjd3YEvlO6xrPDN" class="label"><!--pnid:sTDRc0qLvWTfUCtHjrCCwD-->已收藏</span><span data-page-node-id="y37voetQMTLChGcdCCm08H" class="value" id="settingsFavorites"><!--pnid:Ur9ShDjagc3DCv9sQTMsYG-->--</span></div>
+                <div data-page-node-id="X9JBKzbThatHtXbzp3fshh" class="row"><span data-page-node-id="IhCrdaB71fFUiHNZpMqsCN" class="label"><!--pnid:RcYspv8AKBBeHdByQUfV1A-->已配置源</span><span data-page-node-id="H0FXV1zmKYBorBRMLbT2ui" class="value" id="settingsSourceCount"><!--pnid:iedDI6lF0l43wjAN33rI1m-->--</span></div>
             </div>
         </div>
     </div>
-</div>
+</div><!--pnid:g6IKBb5SmeoyFgCXZrL29v-->
 {{end}}

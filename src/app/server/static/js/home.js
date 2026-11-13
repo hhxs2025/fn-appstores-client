@@ -167,7 +167,7 @@ function renderCarousel(data) {
         homeSlideIndex = 0;
 
         track.innerHTML = items.map(function (item, index) {
-            var url = wrapImageUrl(item.image);
+            var url = wrapImageUrl(item.image, 'preview');
             var cursor = item.link ? 'pointer' : 'zoom-in';
             var title = item.link ? '' : '点击查看大图';
             return '<div class="home-carousel-slide" style="background-image:url(' + url + ');cursor:' + cursor + ';" ' +

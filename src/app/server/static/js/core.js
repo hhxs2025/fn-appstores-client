@@ -94,15 +94,19 @@ window.fetch = function(input, init) {
 
 // ================================================================
 // 图片地址包装（全量强推代理，规避混合内容/局域网/证书问题）
+// ★ 新增 kind 参数：'preview' 表示截图（服务端落到 previews 目录），
+//   默认为图标（落到 icons 目录），配合服务端磁盘缓存 + 浏览器
+//   长缓存，客户端每次打开不再重复拉图。
 // ================================================================
-function wrapImageUrl(url) {
+function wrapImageUrl(url, kind) {
     if (!url) return '';
     if (url.startsWith('/')) return window.location.origin + url;
     if (url.startsWith('data:')) return url;
     if (url.indexOf(window.location.origin + '/') === 0) return url;
-    
+
     // 非本机同源，一律走本地代理
-    return API_BASE + '/api/proxy-image?url=' + encodeURIComponent(url);
+    var suffix = kind === 'preview' ? '&kind=preview' : '';
+    return API_BASE + '/api/proxy-image?url=' + encodeURIComponent(url) + suffix;
 }
 
 function extractHostJS(url) {
@@ -203,7 +207,9 @@ function clearAppsCache() {
     localStorage.removeItem('fnsoft_notice_cache');
     localStorage.removeItem('fnsoft_downloaded_version');
     localStorage.removeItem('fnsoft_read_notices');
-    localStorage.removeItem('fnsoft_shown_pushes');
+    // ★ 修复：不再清除 fnsoft_shown_pushes —— 此前每次点「刷新」都会把
+    //   已弹过的推送记录清空，导致同一条系统消息反复弹出。
+    //   服务端已按设备持久化去重（cache/push_seen.json），这里保留即可。
     localStorage.removeItem('fnsoft_my_ratings');
 }
 
@@ -303,6 +309,9 @@ function switchSettingTab(tab) {
     }
     if (tab === 'favorites' && typeof window.renderFavorites === 'function') {
         setTimeout(function() { window.renderFavorites(); }, 20);
+    }
+    if (tab === 'system' && typeof window.loadCacheStats === 'function') {
+        setTimeout(function() { window.loadCacheStats(); }, 20);
     }
     if (typeof syncThemeSwitches === 'function') {
         setTimeout(syncThemeSwitches, 20);
@@ -439,6 +448,17 @@ async function submitRating(appId, rating) {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ client_id: getClientId(), rating: rating })
         });
+        // ★ 服务端 2.11.0 全局封禁中间件：403 = 设备/IP 被封禁或缺少设备标识
+        if (resp.status === 403) {
+            var banMsg = '您的设备已被封禁，暂时无法评分';
+            try {
+                var banData = await resp.json();
+                if (banData && banData.message && banData.message.indexOf('封禁') !== -1) banMsg = banData.message;
+            } catch (_) {}
+            if (info) { info.className = 'rating-info error'; info.textContent = banMsg; }
+            showToast(banMsg, 'error');
+            return;
+        }
         var data = await resp.json();
         if (data.success && data.data) {
             var avg = data.data.rating_avg || 0;

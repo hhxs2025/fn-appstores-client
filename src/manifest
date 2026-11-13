@@ -1,7 +1,7 @@
 appname=fn-appstores-client
-version=2.11.0
+version=2.11.1
 display_name=FN软仓
-desc="""<p><b>📖 2.11.0更新点：</b><br><br>1. <b>下载极速切换</b>：外链下载遇死链秒切，不再反复卡进度；<br>2. <b>精准下载统计</b>：下载校验通过后才计数，杜绝虚高；<br>3. <b>图标显示修复</b>：解决部分局域网/HTTPS下的图片裂图问题；<br>4. <b>连接假离线修复</b>：底层适配鉴权风控，不再出现源假离线；<br>5. <b>下载引擎重构</b>：安装时自动获取服务端最新最优线路，移除本地失败记录，不再秒报“所有线路不可用”，连续安装无需刷新。</p><p><b>📖应用简介：</b><br>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。<b>它不仅仅是一个软件仓库，更是一个“可无限裂变”的独立应用分发平台。</b>任何人都可以拿着它的服务端镜像另起炉灶，自定义源地址，为你的 NAS 用户打造专属的应用生态。</p><p>📖<strong>核心功能:</strong></p><p><strong>1. 双模式与源管理:</strong> 首创「用户模式」与「极客模式」隔离。极客模式纯净无内置源，支持完全自建源管理。</p><p><strong>2. 极速应用分发:</strong> 详情页、五星评分、README 直达。底层支持断点续传、秒切龟速节点，并配备下载成功校验上报机制，数据精准。</p><p><strong>3. 首页动态看板:</strong> 沉浸式磨砂数据概览 + 智能轮播图 + 公告记录 + 快捷卡片（已安装 / 可更新 / 热度榜 / 新应用）。</p><p><strong>4. 开发者星球:</strong> 3D 星球视图展示所有开发者，支持拖动、缩放、悬停与点击交互。</p><p><strong>5. 设置与反馈中心:</strong> 深色模式、日志导出、版本更新、一键反馈及建源指南。</p><img src="https://gitee.com/hhxs2025/fn-appstores/raw/master/previews/xuanchuantu.webp" width="90%"/>"""
+desc="""<p><b>📖应用简介：</b><br>FN软仓 是一个为飞牛 NAS 系统打造的轻量级第三方应用商店。<b>它不仅仅是一个软件仓库，更是一个“可无限裂变”的独立应用分发平台。</b>任何人都可以拿着它的服务端镜像另起炉灶，自定义源地址，为你的 NAS 用户打造专属的应用生态。</p><p>📖<strong>核心功能:</strong></p><p><strong>1. 双模式与源管理:</strong> 首创「用户模式」与「极客模式」隔离。极客模式纯净无内置源，支持完全自建源管理。</p><p><strong>2. 极速应用分发:</strong> 详情页、五星评分、README 直达。底层支持断点续传、秒切龟速节点，并配备下载成功校验上报机制，数据精准。</p><p><strong>3. 首页动态看板:</strong> 沉浸式磨砂数据概览 + 智能轮播图 + 公告记录 + 快捷卡片（已安装 / 可更新 / 热度榜 / 新应用）。</p><p><strong>4. 开发者星球:</strong> 3D 星球视图展示所有开发者，支持拖动、缩放、悬停与点击交互。</p><p><strong>5. 设置与反馈中心:</strong> 深色模式、日志导出、版本更新、一键反馈及建源指南。</p><img src="https://gitee.com/hhxs2025/fn-appstores/raw/master/previews/xuanchuantu.webp" width="90%"/>"""
 platform=all
 source=thirdparty
 maintainer=晦华先生
@@ -14,6 +14,6 @@ desktop_applaunchname=fn-appstores-client.Application
 service_port=5660
 checkport=false
 disable_authorization_path=false
-changelog=<p><b>📖 2.11.0更新点：</b><br><br>1. <b>下载极速切换</b>：外链下载遇死链秒切，不再反复卡进度；<br>2. <b>精准下载统计</b>：下载校验通过后才计数，杜绝虚高；<br>3. <b>图标显示修复</b>：解决部分局域网/HTTPS下的图片裂图问题；<br>4. <b>连接假离线修复</b>：底层适配鉴权风控，不再出现源假离线；<br>5. <b>下载引擎重构</b>：安装时自动获取服务端最新最优线路，移除本地失败记录，不再秒报“所有线路不可用”，连续安装无需刷新。</p>
+changelog=<p><b>📖 2.11.1更新点：</b><br>1.修复因升级带来的手动安装入口失效问题；<br>2.新增图标、预览图缓存提升弱网加载体验，设置-系统下新增缓存手动清理。</p>
 micro_app=true
 checksum=e60de450ea0cd5cd5c81e10d033fe9f1

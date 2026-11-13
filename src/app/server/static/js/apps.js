@@ -186,7 +186,7 @@ function initCarousel(screenshots) {
     window._currentScreenshots = screenshots;
     if (track) {
         track.innerHTML = screenshots.map(function(url, index) {
-            return '<img src="' + wrapImageUrl(url) + '" alt="应用截图" loading="lazy" onerror="this.style.display=\'none\'" onclick="event.stopPropagation();openImageModal(window._currentScreenshots || [], ' + index + ')">';
+            return '<img src="' + wrapImageUrl(url, 'preview') + '" alt="应用截图" loading="lazy" onerror="this.style.display=\'none\'" onclick="event.stopPropagation();openImageModal(window._currentScreenshots || [], ' + index + ')">';
         }).join('');
     }
     var prevBtn = document.getElementById('carouselPrev');
@@ -220,7 +220,7 @@ function openImageModal(images, index) {
     currentImageIndex = index || 0;
     var img = document.getElementById('modalImage');
     if (!img) return;
-    img.src = wrapImageUrl(imageList[currentImageIndex]);
+    img.src = wrapImageUrl(imageList[currentImageIndex], 'preview');
     var counter = document.getElementById('imageCounter');
     if (counter) counter.textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
     var prevBtn = document.getElementById('imagePrevBtn');
@@ -238,7 +238,7 @@ function imagePrev() {
     if (imageList.length === 0) return;
     currentImageIndex = (currentImageIndex - 1 + imageList.length) % imageList.length;
     var img = document.getElementById('modalImage');
-    if (img) img.src = wrapImageUrl(imageList[currentImageIndex]);
+    if (img) img.src = wrapImageUrl(imageList[currentImageIndex], 'preview');
     var counter = document.getElementById('imageCounter');
     if (counter) counter.textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
 }
@@ -246,7 +246,7 @@ function imageNext() {
     if (imageList.length === 0) return;
     currentImageIndex = (currentImageIndex + 1) % imageList.length;
     var img = document.getElementById('modalImage');
-    if (img) img.src = wrapImageUrl(imageList[currentImageIndex]);
+    if (img) img.src = wrapImageUrl(imageList[currentImageIndex], 'preview');
     var counter = document.getElementById('imageCounter');
     if (counter) counter.textContent = (currentImageIndex + 1) + ' / ' + imageList.length;
 }
@@ -591,12 +591,9 @@ window.restoreAppsView = restoreAppsView;
 
 async function loadInstalledVersions() {
     try {
-        var installedApps = await acGetInstalledApps(true);
-        var installedMap = {};
-        installedApps.forEach(function(app) {
-            var name = app.appName || app.name || app.app_name;
-            if (name) installedMap[name] = app.version || app.installedVersion || "";
-        });
+        // ★ 已装版本以飞牛内部数据库为准（后端 /api/installed → appcenter-cli list），
+        //   app-center 的 app/installed 只作兜底，避免两边不同步导致"永远可更新"。
+        var installedMap = await getInstalledVersionMap(true);
 
         var now = Date.now();
         allAppsData.forEach(function (app) {
@@ -780,6 +777,7 @@ async function doOfficialInstallOrUpdate(appId, isUpdate) {
         await runOfficialInstallFlow(appId, fpkPath, {
             baseProgress: 40,
             maxProgress: 100,
+            expectVersion: app.version,
             onProgress: function(p) {
                 if (typeof updateInstallModalProgress === 'function') {
                     updateInstallModalProgress({ app_id: appId, msg: p.msg, progress: p.progress, stage: p.stage });

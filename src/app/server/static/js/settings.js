@@ -282,6 +282,91 @@ function openFeedback(e) {
 window.openFeedback = openFeedback;
 
 // ================================================================
+// ★ 新增：本地缓存管理
+// ================================================================
+function fmtBytes(n) {
+    n = Number(n) || 0;
+    if (n < 1024) return n + ' B';
+    var units = ['KB', 'MB', 'GB', 'TB'];
+    var f = n, i = -1;
+    while (f >= 1024 && i < units.length - 1) { f /= 1024; i++; }
+    return f.toFixed(1) + ' ' + units[i];
+}
+
+async function loadCacheStats() {
+    var elFpk = document.getElementById('cacheFpkInfo');
+    if (!elFpk) return;
+    try {
+        var resp = await fetch(API_BASE + '/api/cache/stats');
+        var data = await resp.json();
+        if (!data.success) throw new Error(data.message || '读取失败');
+        var d = data.data || {};
+
+        var fpk = d.fpk || {};
+        elFpk.textContent = (fpk.count || 0) + ' 个 · ' + fmtBytes(fpk.size);
+        var exportBtn = document.getElementById('cacheFpkExportBtn');
+        if (exportBtn) {
+            exportBtn.style.display = fpk.latest ? '' : 'none';
+            exportBtn.dataset.name = fpk.latest || '';
+        }
+
+        var ext = d.extract || {};
+        var elExt = document.getElementById('cacheExtractInfo');
+        if (elExt) elExt.textContent = (ext.count || 0) + ' 个目录 · ' + fmtBytes(ext.size);
+
+        var icons = d.icons || {}, previews = d.previews || {};
+        var elImg = document.getElementById('cacheImageInfo');
+        if (elImg) {
+            elImg.textContent = '图标 ' + (icons.count || 0) + ' 个 · ' + fmtBytes(icons.size)
+                + ' ／ 截图 ' + (previews.count || 0) + ' 个 · ' + fmtBytes(previews.size);
+        }
+
+        var total = (fpk.size || 0) + (ext.size || 0) + (icons.size || 0) + (previews.size || 0);
+        var elTotal = document.getElementById('cacheTotalInfo');
+        if (elTotal) elTotal.textContent = fmtBytes(total);
+
+        var elPath = document.getElementById('cachePathInfo');
+        if (elPath) elPath.textContent = (d.apps_dir || '--') + (ext.dir ? (' ｜ ' + ext.dir) : '');
+    } catch (e) {
+        elFpk.textContent = '读取失败';
+    }
+}
+window.loadCacheStats = loadCacheStats;
+
+async function cleanCache(scope) {
+    var names = { fpk: '安装包', extract: '解压目录', images: '图标/截图', all: '全部缓存' };
+    if (scope === 'all' && !confirm('确定清理全部本地缓存？图标和截图会重新下载，安装包将被删除。')) return;
+    try {
+        var resp = await fetch(API_BASE + '/api/cache/clean', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({scope: scope})
+        });
+        var data = await resp.json();
+        if (data.success) {
+            showToast('已清理' + (names[scope] || '缓存') + '，释放 ' + fmtBytes(data.freed || 0), 'success');
+        } else {
+            showToast(data.message || '清理失败', 'error');
+        }
+    } catch (e) {
+        showToast('清理失败: ' + e.message, 'error');
+    }
+    loadCacheStats();
+}
+window.cleanCache = cleanCache;
+
+function exportLatestFpk() {
+    var btn = document.getElementById('cacheFpkExportBtn');
+    var name = btn ? (btn.dataset.name || '') : '';
+    if (!name) {
+        showToast('没有可导出的安装包', 'info');
+        return;
+    }
+    window.open(API_BASE + '/api/cache/download?name=' + encodeURIComponent(name), '_blank');
+}
+window.exportLatestFpk = exportLatestFpk;
+
+// ================================================================
 // 工具
 // ================================================================
 function escapeHtmlSafe(s) {
