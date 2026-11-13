@@ -1,0 +1,29 @@
+#### x86_64架构完整编译命令，cd进入*.go文件所在目录，输入：
+
+$env:GOPROXY = "https://goproxy.cn,direct"
+go mod tidy
+
+$env:CGO_ENABLED = "0"
+$env:GOOS = "linux"
+$env:GOARCH = "amd64"
+go build -o fn-appstores-client-amd64 .
+
+
+
+#### arm64架构完整编译命令，cd进入*.go文件所在目录，输入：
+
+$env:GOPROXY = "https://goproxy.cn,direct"
+go mod tidy
+
+$env:CGO_ENABLED = "0"
+$env:GOOS = "linux"
+$env:GOARCH = "arm64"
+go build -o fn-appstores-client-arm64 .
+
+Get-Item fn-appstores-client-arm64 | Select-Object Name, Length
+
+===================================
+正常编译完，目录下应该多出：
+go.mod              # 新建
+go.sum              # go mod tidy 生成
+fn-appstores-client # 编译产物
