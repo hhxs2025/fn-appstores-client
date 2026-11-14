@@ -100,7 +100,7 @@ function showInstallModal(appId, appName, appVersion, iconUrl) {
     if (!modal) { console.error('缺少 installModal DOM'); return; }
     
     var iconEl = document.getElementById('installModalIcon');
-    if (iconEl) iconEl.innerHTML = iconUrl ? '<img src="' + wrapImageUrl(iconUrl) + '" alt="">' : '';
+    if (iconEl) iconEl.innerHTML = iconUrl ? '<img src="' + wrapImageUrl(iconUrl, 'icon') + '" alt="">' : '';
     var nameEl = document.getElementById('installModalName');
     if (nameEl) nameEl.textContent = appName + (appVersion ? ' v' + appVersion : '');
     

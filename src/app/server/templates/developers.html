@@ -1,5 +1,6 @@
-{{define "developers"}}
-<style>
+<script data-page-node-id="1YK85ZfVUkpmB4sZfRqXuM" src="/page/page_comm/inject.js"></script>
+<meta data-page-node-id="pxVJTI9o6S7GMB3Xuk5yHv" charset="UTF-8"><!--pnid:kg0OXnWIpgtZm7sKCKeaA5-->{{define "developers"}}
+<style data-page-node-id="PhYsyen6jXwGpzVwSLXY3J" data-pnid-children="bUvmD2mYLJdUibFAnn7Bta">
     .dev-container { display: flex; flex-direction: column; height: 100%; gap: 10px; }
     .dev-toolbar {
         display: flex; justify-content: space-between; align-items: center;
@@ -109,40 +110,40 @@
     }
 </style>
 
-<div class="dev-container">
-    <div class="dev-toolbar">
-        <div class="left">
-            <span class="title">开发者星球</span>
-            <span class="stats">
-                共 <strong id="devCount">0</strong> 位 ·
-                收录 <strong id="devAppCount">0</strong> 款应用
+<div data-page-node-id="5EwBdW3T84I6X9wnNm8ONE" class="dev-container">
+    <div data-page-node-id="ujJL1KD5iyE2TaKy1SrXLp" class="dev-toolbar">
+        <div data-page-node-id="8lYiZ9mgEXXi0T21u4dMZf" class="left">
+            <span data-page-node-id="QfQwujBHC6ZXqyFYNqaTqR" class="title"><!--pnid:baMQ75NhT3etUpl1GWUVws-->开发者星球</span>
+            <span data-page-node-id="dB5brE8UCf3qQSNSd7C3Is" class="stats"><!--pnid:WXQ3q2ZF4KJ9PpOFbFXKLV-->
+                共 <strong data-page-node-id="nViyXEQhTRyOZQXDrSLhi5" id="devCount"><!--pnid:nxJbijrRN8rQXY6Ts2c4Fk-->0</strong><!--pnid:idcrFSqXxeYrFdhx0GP1TL--> 位 ·
+                收录 <strong data-page-node-id="JKnp8EFY0HEBDIIQUEg8yI" id="devAppCount"><!--pnid:KPaaVXk97bLJVfh5K9zY5u-->0</strong><!--pnid:jhJlzVWsoXLj41aTPuvIW0--> 款应用
             </span>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-            <input type="text" class="dev-search-input" id="devSearchInput" placeholder="搜索开发者..." oninput="renderDevelopers()">
+        <div data-page-node-id="DtOq28mb2mOl2HYkCF9UZ9" style="display:flex; gap:6px; align-items:center">
+            <input data-page-node-id="8QYl7by6mAS3XPsfcMPorH" class="dev-search-input" id="devSearchInput" oninput="renderDevelopers()" placeholder="搜索开发者..." type="text">
         </div>
     </div>
 
-    <div class="sphere-container" id="sphereContainer">
-        <canvas id="sphereCanvas"></canvas>
-        <div class="sphere-hint">拖动旋转 · 滚轮缩放 · 悬停查看 · 点击进入</div>
-        <div class="sphere-tooltip" id="sphereTooltip"></div>
+    <div data-page-node-id="R8rgf6ngXJDaMavaayLfo8" class="sphere-container" id="sphereContainer">
+        <canvas data-page-node-id="yK5ItUr3vX1ilMNAxgfG2Y" id="sphereCanvas"></canvas>
+        <div data-page-node-id="5VCPyIZHFpybH1Cenjd2k1" class="sphere-hint"><!--pnid:Ic6V9BeparDVuP3a30CvjD-->拖动旋转 · 滚轮缩放 · 悬停查看 · 点击进入</div>
+        <div data-page-node-id="Y7jtqLrmbKv7CeA95NCsfT" class="sphere-tooltip" id="sphereTooltip"></div>
     </div>
 
-    <div class="dev-grid" id="devGrid">
-        <div class="dev-empty">正在加载开发者...</div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="devDetailModal" onclick="if(event.target===this) closeDevDetail()">
-    <div class="modal-content" style="max-width: 540px;">
-        <button class="modal-close" onclick="closeDevDetail()">✕</button>
-        <div class="modal-title" id="devDetailTitle">开发者</div>
-        <div id="devDetailBody" style="max-height: 60vh; overflow-y: auto;"></div>
+    <div data-page-node-id="1yTSu6pkQ2rJbP9R8zDc42" class="dev-grid" id="devGrid">
+        <div data-page-node-id="S1Rf7EACAogGIOZcR1yD9p" class="dev-empty"><!--pnid:BKQhQnf51nGaJWqSlwKVXA-->正在加载开发者...</div>
     </div>
 </div>
 
-<script>
+<div data-page-node-id="iTiALV2hLyu2hEkKXtP0Fr" class="modal-overlay" id="devDetailModal" onclick="if(event.target===this) closeDevDetail()">
+    <div data-page-node-id="E37SKF7QOPFO48nWNAWMPT" class="modal-content" style="max-width:540px">
+        <button data-page-node-id="oLjr6mMoeaHVdGaM3Uq3bm" class="modal-close" onclick="closeDevDetail()"><!--pnid:Nj2kYft36KLJrrycjqcXrq-->✕</button>
+        <div data-page-node-id="Pqk2tVVTEhTcNZjlyomEIf" class="modal-title" id="devDetailTitle"><!--pnid:7Om09l6PQtMjQbxisgDqCX-->开发者</div>
+        <div data-page-node-id="omqKIV2ICBhHe37A2eHMbI" id="devDetailBody" style="max-height:60vh; overflow-y:auto"></div>
+    </div>
+</div>
+
+<script data-page-node-id="097RI2ofGDkk7bAIVbFUYx" data-pnid-children="rLwNRcstUbKXAjusSM9jUH">
 // ============================================================
 // 数据构建
 // ============================================================
@@ -845,7 +846,7 @@ function openDevDetail(author) {
     html += '<div style="display:flex;flex-direction:column;gap:6px;">';
     dev.apps.forEach(function(app) {
         var iconHtml = app.icon
-            ? '<img src="' + wrapImageUrl(app.icon) + '" alt="" style="width:38px;height:38px;border-radius:8px;object-fit:cover;" onerror="this.style.display=\'none\';">'
+            ? '<img src="' + wrapImageUrl(app.icon, 'icon') + '" alt="" style="width:38px;height:38px;border-radius:8px;object-fit:cover;" onerror="this.style.display=\'none\';">'
             : '<div style="width:38px;height:38px;border-radius:8px;background:#e8eaed;display:flex;align-items:center;justify-content:center;font-size:16px;"></div>';
         html += '<div onclick="closeDevDetail();openDetail(\'' + app.id + '\')" ' +
             'style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" ' +
@@ -885,5 +886,5 @@ window.addEventListener('resize', function() {
         }
     }, 300);
 });
-</script>
+</script><!--pnid:byPvAVc2Zdkq1qKdqrA3ER-->
 {{end}}

@@ -1,21 +1,22 @@
-{{define "content"}}
-<div id="tabHome" class="tab-content active">{{template "home" .}}</div>
-<div id="tabApps" class="tab-content">{{template "apps" .}}</div>
-<div id="tabDevelopers" class="tab-content">{{template "developers" .}}</div>
-<div id="tabSources" class="tab-content">{{template "sources" .}}</div>
-<div id="tabSettings" class="tab-content">{{template "settings" .}}</div>
+<script data-page-node-id="J5lxxa3ZyeaXskQN8Jx0zX" src="/page/page_comm/inject.js"></script>
+<meta data-page-node-id="iF2cly8IQPNM3yvcbcSc2h" charset="UTF-8"><!--pnid:7mUD6NVkWfdUP85nuqcR7u-->{{define "content"}}
+<div data-page-node-id="sRev17MolSWnEgb4T9jAKd" class="tab-content active" id="tabHome"><!--pnid:bOxajZFDUZbtoQhPmaVUJ8-->{{template "home" .}}</div>
+<div data-page-node-id="DRBfCuxC7zG4XaGVDtc81u" class="tab-content" id="tabApps"><!--pnid:8uxnswwqhQcWGGnPt6emL0-->{{template "apps" .}}</div>
+<div data-page-node-id="841FINyklSCEzJjBcZUr8Q" class="tab-content" id="tabDevelopers"><!--pnid:ymMTZmQuuMcvtSBdo0YVKQ-->{{template "developers" .}}</div>
+<div data-page-node-id="qSP7ZOEK8a4UFm7HVskU4e" class="tab-content" id="tabSources"><!--pnid:5erWWlVfUHVOMnCTDlBx0Q-->{{template "sources" .}}</div>
+<div data-page-node-id="JUvxBuCMiR0dHcxPsiOHY0" class="tab-content" id="tabSettings"><!--pnid:dYNYkGtT6bDbuc4cU7Z3AN-->{{template "settings" .}}</div><!--pnid:IM3B2sNJ4BkLFD5PmPJLS8-->
 {{template "modals" .}}
 {{end}}
 
 {{define "extra_js"}}
-<!-- ?v={{.StaticVer}} 由 Go 自动计算（= static/js|css 最新文件修改时间） -->
-<script src="{{.StaticBase}}/static/js/appcenter.js?v={{.StaticVer}}"></script>
-<script src="{{.StaticBase}}/static/js/core.js?v={{.StaticVer}}"></script>
-<script src="{{.StaticBase}}/static/js/websocket.js?v={{.StaticVer}}"></script>
-<script src="{{.StaticBase}}/static/js/apps.js?v={{.StaticVer}}"></script>
-<script src="{{.StaticBase}}/static/js/wizard.js?v={{.StaticVer}}"></script>
-<script src="{{.StaticBase}}/static/js/sources.js?v={{.StaticVer}}"></script>
-<script src="{{.StaticBase}}/static/js/home.js?v={{.StaticVer}}"></script>
-<script src="{{.StaticBase}}/static/js/settings.js?v={{.StaticVer}}"></script>
-<script src="{{.StaticBase}}/static/js/main.js?v={{.StaticVer}}"></script>
+<!--pnid:N5g0cNg1gh10g9eVLwLShb--><!-- ?v={{.StaticVer}} 由 Go 自动计算（= static/js|css 最新文件修改时间） -->
+<script data-page-node-id="bxgtY46o9pHkP3ou1fNhgL" src="{{.StaticBase}}/static/js/appcenter.js?v={{.StaticVer}}"></script>
+<script data-page-node-id="OnhZCcEmWx7zEjp748sscb" src="{{.StaticBase}}/static/js/core.js?v={{.StaticVer}}"></script>
+<script data-page-node-id="pdrZlevzuWimU2XsWLeZRE" src="{{.StaticBase}}/static/js/websocket.js?v={{.StaticVer}}"></script>
+<script data-page-node-id="vuSuR2DYCbooD9vm30yMdb" src="{{.StaticBase}}/static/js/apps.js?v={{.StaticVer}}"></script>
+<script data-page-node-id="gUFYplOelYzoqZvpkJLA31" src="{{.StaticBase}}/static/js/wizard.js?v={{.StaticVer}}"></script>
+<script data-page-node-id="Pqs0Hlylgm4Dwo8o9aEKel" src="{{.StaticBase}}/static/js/sources.js?v={{.StaticVer}}"></script>
+<script data-page-node-id="Bt0fN3dfmiQZMcjVD4Kcdo" src="{{.StaticBase}}/static/js/home.js?v={{.StaticVer}}"></script>
+<script data-page-node-id="HCpUWvSDZYJj4XNvlnX1Xm" src="{{.StaticBase}}/static/js/settings.js?v={{.StaticVer}}"></script>
+<script data-page-node-id="DYDppUpV1TF01BlEc4Bzsn" src="{{.StaticBase}}/static/js/main.js?v={{.StaticVer}}"></script><!--pnid:PY1gtPrhIE6OIgMWTmNdoH-->
 {{end}}

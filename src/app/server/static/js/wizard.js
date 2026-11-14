@@ -1,5 +1,7 @@
 // ================================================================
 // FN软仓 - 向导 + 手动安装 + 依赖缺失引导
+// ★ v2.11.1：依赖缺失引导改为跳转"飞牛应用中心"，
+//   不再调用 openAppSetting（那会打开"系统设置"）。
 // ================================================================
 
 // ================================================================
@@ -11,14 +13,14 @@ function showOfficialWizard(appName, version, items, resolve) {
     _officialWizardResolve = resolve;
     var modal = document.getElementById('wizardModal');
     if (!modal) { resolve(null); return; }
-    
+
     var body = document.getElementById('wizardBody');
     var titleEl = document.getElementById('wizardTitle');
     if (titleEl) titleEl.textContent = appName + ' - 安装向导';
-    
+
     var htmlContent = '';
     var flatItems = [];
-    
+
     if (Array.isArray(items)) {
         items.forEach(function(item) {
             if (item.items && Array.isArray(item.items)) {
@@ -38,9 +40,9 @@ function showOfficialWizard(appName, version, items, resolve) {
         var key = item.field || item.key || item.name || ('wizard_' + index);
         var value = item.initValue ?? item.defaultValue ?? item.value ?? '';
         var required = Boolean(item.required || (item.rules || []).some(function(r) { return r.required; }));
-        
+
         htmlContent += '<div class="wizard-field"><label>' + (item.label || key) + (required ? ' <span class="required">*</span>' : '') + '</label>';
-        
+
         if (item.type === 'text' || item.type === 'password' || item.type === 'number') {
             htmlContent += '<input type="' + (item.type === 'password' ? 'password' : item.type === 'number' ? 'number' : 'text') + '" id="wizard_' + key + '" name="' + key + '" value="' + value + '"' + (required ? ' required' : '') + '>';
         } else if (item.type === 'radio' || item.type === 'select') {
@@ -64,14 +66,14 @@ function showOfficialWizard(appName, version, items, resolve) {
     });
 
     if (body) body.innerHTML = htmlContent || '<p>无配置项，点击确认开始安装</p>';
-    
+
     var submitBtn = document.getElementById('wizardSubmitBtn');
-    if (submitBtn) { 
-        submitBtn.disabled = false; 
-        submitBtn.textContent = '确认安装'; 
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '确认安装';
         submitBtn.onclick = function() { submitOfficialWizard(); };
     }
-    
+
     var cancelBtn = document.querySelector('#wizardModal .modal-btn:not(.modal-btn-primary)');
     if (cancelBtn) {
         cancelBtn.onclick = function() { closeOfficialWizard(); };
@@ -90,7 +92,7 @@ function submitOfficialWizard() {
 
     var modal = document.getElementById('wizardModal');
     if (modal) modal.classList.remove('active');
-    
+
     _officialWizardResolve(inputs);
     _officialWizardResolve = null;
 }
@@ -106,6 +108,8 @@ function closeOfficialWizard() {
 
 // ================================================================
 // 手动安装（上传本地 FPK）
+// ★ v2.11.1：后端 /api/install-local 现在会真实执行安装
+//   （路由已注册 + 走 CLI stop→uninstall→install 升级流程）
 // ================================================================
 function showManualInstall() {
     var modal = document.getElementById('manualInstallModal');
@@ -177,7 +181,7 @@ function doManualInstall() {
 
     xhr.upload.onprogress = function (e) {
         if (!e.lengthComputable) return;
-        var pct = Math.round(e.loaded / e.total * 100);
+        var pct = Math.round(e.loaded / e.total * 70); // 上传占总进度 70%，剩下 30% 留给底层安装
         if (bar) bar.style.width = pct + '%';
         if (text) {
             text.textContent = pct + '% · ' +
@@ -186,11 +190,17 @@ function doManualInstall() {
         }
     };
 
+    // 上传完成后进入"底层安装中"阶段（安装可能耗时较长）
+    xhr.upload.onload = function () {
+        if (btn) btn.textContent = '安装中，请耐心等待...';
+        if (text) text.textContent = '上传完成，正在执行底层安装（已安装的应用会先卸载再安装，用户数据保留）...';
+        if (bar) bar.style.width = '85%';
+    };
+
     xhr.onload = function () {
         var data = {};
         try { data = JSON.parse(xhr.responseText); } catch (e) {}
 
-        // 注意：此处由于后端 API 修改，目前不再返回 wizard。如果后续需要支持，可再扩展。
         if (xhr.status === 200 && data.success) {
             btn.textContent = '安装成功';
             btn.disabled = true;
@@ -199,6 +209,7 @@ function doManualInstall() {
                 status.style.color = '#4a8a4a';
             }
             if (text) text.textContent = '上传完成，安装完成';
+            if (bar) bar.style.width = '100%';
             if (sec) sec.textContent = '关闭';
             if (typeof showToast === 'function') showToast('安装成功', 'success');
             setTimeout(function () {
@@ -215,6 +226,7 @@ function doManualInstall() {
             status.textContent = msg;
             status.style.color = '#b54a4a';
         }
+        if (bar) bar.style.width = '0%';
         if (log && data.data) {
             log.style.display = 'block';
             var out = (data.data.stdout || '') + '\n' + (data.data.stderr || '');
@@ -259,27 +271,57 @@ function closeMissingDepModal() {
     if (modal) modal.classList.remove('active');
 }
 
+// ================================================================
+// ★ v2.11.1：跳转"飞牛应用中心"安装依赖
+// 2.11.0 旧实现调用 trimSdk.openAppSetting()，那打开的是"系统设置"，
+// 用户根本找不到装依赖的地方。
+// 现按优先级依次尝试：
+//   1. trimSdk.openApp('app-center')（若 SDK 提供该方法）
+//   2. trimSdk.openAppCenter()（若 SDK 提供该方法）
+//   3. 新标签页打开 /app-center/（应用中心前端路由，与其 API 命名空间一致）
+//   4. 兜底：新标签页打开飞牛桌面首页，提示用户点"应用中心"
+// ================================================================
 async function openMissingDepInAppCenter() {
     var depName = _missingDepName;
     closeMissingDepModal();
     if (!depName) return;
 
-    if (window.trimSdk && typeof window.trimSdk.openAppSetting === 'function') {
+    // 1/2: SDK 能力（未来兼容，方法存在才调用）
+    if (window.trimSdk && typeof window.trimSdk === 'object') {
         try {
-            await window.trimSdk.openAppSetting();
-            setTimeout(function () {
-                if (typeof showToast === 'function') {
-                    showToast('请在应用中心搜索「' + depName + '」并安装', 'info');
-                }
-            }, 300);
-            return;
+            if (typeof window.trimSdk.openApp === 'function') {
+                await window.trimSdk.openApp('app-center');
+                showToast('请在应用中心搜索「' + depName + '」并安装', 'info');
+                return;
+            }
+            if (typeof window.trimSdk.openAppCenter === 'function') {
+                await window.trimSdk.openAppCenter();
+                showToast('请在应用中心搜索「' + depName + '」并安装', 'info');
+                return;
+            }
         } catch (e) {
-            console.warn('打开应用中心失败:', e);
+            console.warn('通过 SDK 打开应用中心失败:', e);
         }
     }
 
+    // 3: 直接尝试应用中心路由
+    try {
+        var win = window.open('/app-center/', '_blank');
+        if (win) {
+            showToast('已打开飞牛应用中心，请搜索「' + depName + '」并安装', 'info', 5000);
+            return;
+        }
+    } catch (e) {
+        console.warn('打开 /app-center/ 失败:', e);
+    }
+
+    // 4: 兜底，打开桌面首页
+    try {
+        window.open('/', '_blank');
+    } catch (e) {}
+
     if (typeof showToast === 'function') {
-        showToast('请手动打开飞牛应用中心，搜索「' + depName + '」并安装', 'warning');
+        showToast('请打开飞牛「应用中心」，搜索「' + depName + '」并安装', 'warning', 6000);
     }
 }
 

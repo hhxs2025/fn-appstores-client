@@ -365,41 +365,69 @@
                 <div data-page-node-id="qVbde3sTOy9KJYovDBwFQo" class="row"><span data-page-node-id="vhjaJLcnX2TZeAHiqIPwwe" class="label"><!--pnid:u1KjG8tSpjFipGBAbB4nj4-->系统架构</span><span data-page-node-id="AeYKWILRR9ofFsmP1CmKo6" class="value" id="settingsArch"><!--pnid:Qymt1ahWW7bl1knlspY3XJ-->x86_64</span></div>
             </div>
 
-            <!-- ★ 新增：本地缓存管理 -->
+            <!-- ★ v2.11.1 新增：缓存管理 -->
             <div class="settings-card">
-                <div class="title">本地缓存</div>
+                <div class="title">缓存管理</div>
                 <div class="row">
-                    <span class="label">安装包（apps）</span>
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
-                        <span class="value" id="cacheFpkInfo">--</span>
-                        <button class="action-btn" id="cacheFpkExportBtn" onclick="exportLatestFpk()" style="display:none">导出</button>
-                        <button class="action-btn" onclick="cleanCache('fpk')">清理</button>
+                    <span class="label">图标缓存</span>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span class="value" id="cacheIconCount">--</span>
+                        <button class="action-btn" id="cacheClearBtn-icons" onclick="clearAppCache('icons')">清空</button>
                     </div>
                 </div>
                 <div class="row">
-                    <span class="label">解压目录（-tpk）</span>
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
-                        <span class="value" id="cacheExtractInfo">--</span>
-                        <button class="action-btn" onclick="cleanCache('extract')">清理</button>
+                    <span class="label">预览图缓存</span>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span class="value" id="cachePreviewCount">--</span>
+                        <button class="action-btn" id="cacheClearBtn-previews" onclick="clearAppCache('previews')">清空</button>
                     </div>
                 </div>
                 <div class="row">
-                    <span class="label">图标 / 截图</span>
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
-                        <span class="value" id="cacheImageInfo">--</span>
-                        <button class="action-btn" onclick="cleanCache('images')">清理</button>
+                    <span class="label">其他缓存</span>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span class="value" id="cacheOtherCount">--</span>
+                        <button class="action-btn" id="cacheClearBtn-cache" onclick="clearAppCache('cache')">清空</button>
                     </div>
                 </div>
                 <div class="row">
-                    <span class="label">合计占用</span>
+                    <span class="label">应用缓存 (FPK/TPK)</span>
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
-                        <span class="value" id="cacheTotalInfo">--</span>
-                        <button class="action-btn" onclick="cleanCache('all')">全部清理</button>
-                        <button class="action-btn" onclick="loadCacheStats()">刷新</button>
+                        <span class="value" id="cacheTpkCount">--</span>
+                        <button class="action-btn" onclick="exportAppCache()">导出</button>
+                        <button class="action-btn" id="cacheClearBtn-tpk" onclick="clearAppCache('tpk')">清空</button>
                     </div>
                 </div>
-                <div class="row"><span class="label">缓存路径</span><span class="value" id="cachePathInfo" style="font-size:11px; word-break:break-all">--</span></div>
-                <div class="row"><span class="label">自动清理</span><span class="value" style="font-size:11px; color:var(--text-muted)">安装包 24 小时 · 解压目录 48 小时 · 图标截图 30 天</span></div>
+                <div class="row">
+                    <span class="label">图片预热</span>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                        <span class="value" id="prefetchStatus" style="font-size:12px">--</span>
+                        <button class="action-btn" id="prefetchBtn" onclick="startPrefetch()">立即预热</button>
+                    </div>
+                </div>
+                <div class="row follow-hint">
+                    <span class="hint-text" id="cacheTtlHint">图标/预览图缓存 30 天后自动清除</span>
+                </div>
+            </div>
+
+            <!-- ★ v2.11.2 新增：加速线路（诊断 + 手动重拉） -->
+            <div class="settings-card">
+                <div class="title">加速线路</div>
+                <div class="row">
+                    <span class="label">当前线路数</span>
+                    <span class="value" id="accelPoolCount">--</span>
+                </div>
+                <div class="row">
+                    <span class="label">来源</span>
+                    <span class="value" id="accelPoolMeta" style="font-size:12px; color:var(--text-muted)">--</span>
+                </div>
+                <div class="row">
+                    <span class="label">尝试顺序（自上而下）</span>
+                    <button class="action-btn" id="refreshAccelPoolBtn" onclick="refreshAccelPool()">重新拉取</button>
+                </div>
+                <div id="accelPoolList" style="font-size:12px; line-height:1.85; color:var(--text-muted); word-break:break-all; padding:2px 0 8px; max-height:220px; overflow:auto"></div>
+                <div class="row follow-hint">
+                    <span class="hint-text">顺序由服务端测速后下发，客户端只去重保序、不本地排序、不随机；启动时与每 6 小时检查一次，24 小时内更新过则跳过。</span>
+                </div>
             </div>
         </div>
         <div data-page-node-id="iHKt9YJkyDpZgKgsuj4hoq" class="settings-panel" id="spanel-about">

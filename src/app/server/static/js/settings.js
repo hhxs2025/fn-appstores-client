@@ -130,7 +130,7 @@ function renderFavorites() {
         var html = '';
         favApps.forEach(function(app) {
             var iconHtml = app.icon
-                ? '<img src="' + wrapImageUrl(app.icon) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+                ? '<img src="' + wrapImageUrl(app.icon, 'icon') + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
                 : '·';
             var sub = [];
             if (app.author) sub.push(app.author);
@@ -221,27 +221,71 @@ function clearAllFavorites() {
 window.clearAllFavorites = clearAllFavorites;
 
 // ================================================================
-// 手动刷新加速池
+// 加速线路（★ v2.11.2：只读展示 + 手动重拉）
+//
+// 顺序是服务端 /api/accelerator/presets 测速排序后下发的，
+// 客户端 doFetchAccelPool() 只做去重 + 保序落盘，不测速、不排序、不随机。
 // ================================================================
+async function loadAccelPool() {
+    var listEl = document.getElementById('accelPoolList');
+    var countEl = document.getElementById('accelPoolCount');
+    var metaEl = document.getElementById('accelPoolMeta');
+    try {
+        var resp = await fetch(API_BASE + '/api/accel-pool', { cache: 'no-store' });
+        var data = await resp.json();
+        if (!data.success || !data.data) return;
+        var d = data.data;
+
+        if (countEl) countEl.textContent = (d.count || 0) + ' 条';
+        if (metaEl) {
+            if (d.source === 'remote') {
+                metaEl.textContent = '服务端下发 · 更新于 ' + (d.updated_at || '未知') +
+                    (d.version ? ' · ' + d.version : '') +
+                    (d.next_refresh_at ? ' · 下次检查 ' + d.next_refresh_at : '');
+            } else {
+                metaEl.textContent = '内置兜底（尚未成功从源站拉取，顺序为固定值）';
+            }
+        }
+        if (listEl) {
+            if (!d.prefixes || !d.prefixes.length) {
+                listEl.textContent = '暂无可用线路';
+            } else {
+                listEl.innerHTML = d.prefixes.map(function (p, i) {
+                    return '<div>' + (i + 1) + '. ' + escapeHtmlSafe(p) + '</div>';
+                }).join('');
+            }
+        }
+    } catch (e) {
+        console.warn('[accel-pool] 加载失败:', e);
+    }
+}
+window.loadAccelPool = loadAccelPool;
+
+// 手动重新拉取（后端是异步 goroutine，这里轮询几次把结果读回来）
 async function refreshAccelPool() {
-    if (!confirm('确定要强制刷新加速器池吗？\n\n将从官方源重新拉取最新的加速器列表（覆盖本地缓存）。')) return;
+    if (!confirm('确定要从官方源重新拉取加速线路吗？\n\n会覆盖本地 accelerators_pool.json，顺序由服务端测速结果决定。')) return;
     var btn = document.getElementById('refreshAccelPoolBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '刷新中...'; }
+    if (btn) { btn.disabled = true; btn.textContent = '拉取中...'; }
     try {
         var resp = await fetch(API_BASE + '/api/accel-pool/refresh', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'}
         });
         var data = await resp.json();
-        if (data.success) {
-            showToast(data.message || '已触发刷新', 'success');
-        } else {
+        if (!data.success) {
             showToast(data.message || '刷新失败', 'error');
+            return;
         }
+        // 服务端 15s 超时，最多等约 12s
+        for (var i = 0; i < 4; i++) {
+            await new Promise(function (r) { setTimeout(r, 3000); });
+            await loadAccelPool();
+        }
+        showToast('已重新拉取，请看下方顺序', 'success');
     } catch (e) {
         showToast('刷新失败: ' + e.message, 'error');
     } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '刷新'; }
+        if (btn) { btn.disabled = false; btn.textContent = '重新拉取'; }
     }
 }
 window.refreshAccelPool = refreshAccelPool;
@@ -282,91 +326,6 @@ function openFeedback(e) {
 window.openFeedback = openFeedback;
 
 // ================================================================
-// ★ 新增：本地缓存管理
-// ================================================================
-function fmtBytes(n) {
-    n = Number(n) || 0;
-    if (n < 1024) return n + ' B';
-    var units = ['KB', 'MB', 'GB', 'TB'];
-    var f = n, i = -1;
-    while (f >= 1024 && i < units.length - 1) { f /= 1024; i++; }
-    return f.toFixed(1) + ' ' + units[i];
-}
-
-async function loadCacheStats() {
-    var elFpk = document.getElementById('cacheFpkInfo');
-    if (!elFpk) return;
-    try {
-        var resp = await fetch(API_BASE + '/api/cache/stats');
-        var data = await resp.json();
-        if (!data.success) throw new Error(data.message || '读取失败');
-        var d = data.data || {};
-
-        var fpk = d.fpk || {};
-        elFpk.textContent = (fpk.count || 0) + ' 个 · ' + fmtBytes(fpk.size);
-        var exportBtn = document.getElementById('cacheFpkExportBtn');
-        if (exportBtn) {
-            exportBtn.style.display = fpk.latest ? '' : 'none';
-            exportBtn.dataset.name = fpk.latest || '';
-        }
-
-        var ext = d.extract || {};
-        var elExt = document.getElementById('cacheExtractInfo');
-        if (elExt) elExt.textContent = (ext.count || 0) + ' 个目录 · ' + fmtBytes(ext.size);
-
-        var icons = d.icons || {}, previews = d.previews || {};
-        var elImg = document.getElementById('cacheImageInfo');
-        if (elImg) {
-            elImg.textContent = '图标 ' + (icons.count || 0) + ' 个 · ' + fmtBytes(icons.size)
-                + ' ／ 截图 ' + (previews.count || 0) + ' 个 · ' + fmtBytes(previews.size);
-        }
-
-        var total = (fpk.size || 0) + (ext.size || 0) + (icons.size || 0) + (previews.size || 0);
-        var elTotal = document.getElementById('cacheTotalInfo');
-        if (elTotal) elTotal.textContent = fmtBytes(total);
-
-        var elPath = document.getElementById('cachePathInfo');
-        if (elPath) elPath.textContent = (d.apps_dir || '--') + (ext.dir ? (' ｜ ' + ext.dir) : '');
-    } catch (e) {
-        elFpk.textContent = '读取失败';
-    }
-}
-window.loadCacheStats = loadCacheStats;
-
-async function cleanCache(scope) {
-    var names = { fpk: '安装包', extract: '解压目录', images: '图标/截图', all: '全部缓存' };
-    if (scope === 'all' && !confirm('确定清理全部本地缓存？图标和截图会重新下载，安装包将被删除。')) return;
-    try {
-        var resp = await fetch(API_BASE + '/api/cache/clean', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({scope: scope})
-        });
-        var data = await resp.json();
-        if (data.success) {
-            showToast('已清理' + (names[scope] || '缓存') + '，释放 ' + fmtBytes(data.freed || 0), 'success');
-        } else {
-            showToast(data.message || '清理失败', 'error');
-        }
-    } catch (e) {
-        showToast('清理失败: ' + e.message, 'error');
-    }
-    loadCacheStats();
-}
-window.cleanCache = cleanCache;
-
-function exportLatestFpk() {
-    var btn = document.getElementById('cacheFpkExportBtn');
-    var name = btn ? (btn.dataset.name || '') : '';
-    if (!name) {
-        showToast('没有可导出的安装包', 'info');
-        return;
-    }
-    window.open(API_BASE + '/api/cache/download?name=' + encodeURIComponent(name), '_blank');
-}
-window.exportLatestFpk = exportLatestFpk;
-
-// ================================================================
 // 工具
 // ================================================================
 function escapeHtmlSafe(s) {
@@ -380,3 +339,136 @@ function escapeAttrSafe(s) {
     return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
         .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+// ================================================================
+// ★ v2.11.1 新增：缓存管理（设置 → 系统）
+// 显示图标缓存数、预览图缓存数、其他缓存数、应用缓存(tpk)；
+// 提供 FPK 应用缓存(tpk) 的导出按钮和清空按钮。
+// 图标/预览图等落盘缓存 30 天后由后端自动清除。
+// ================================================================
+
+function _fmtSize(bytes) {
+    if (!bytes || bytes <= 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+}
+
+async function loadCacheStats() {
+    try {
+        var resp = await fetch(API_BASE + '/api/cache/stats', { cache: 'no-store' });
+        var data = await resp.json();
+        if (!data.success || !data.data) return;
+        var d = data.data;
+
+        var el;
+        el = document.getElementById('cacheIconCount');
+        if (el) el.textContent = (d.icons.count || 0) + ' 个 · ' + _fmtSize(d.icons.size || 0);
+        el = document.getElementById('cachePreviewCount');
+        if (el) el.textContent = (d.previews.count || 0) + ' 个 · ' + _fmtSize(d.previews.size || 0);
+        el = document.getElementById('cacheOtherCount');
+        if (el) el.textContent = (d.cache.count || 0) + ' 个 · ' + _fmtSize(d.cache.size || 0);
+        el = document.getElementById('cacheTpkCount');
+        if (el) el.textContent = (d.tpk.count || 0) + ' 个 · ' + _fmtSize(d.tpk.size || 0);
+        el = document.getElementById('cacheTtlHint');
+        if (el) el.textContent = '图标/预览图缓存 ' + (d.ttl_days || 30) + ' 天后自动清除';
+    } catch (e) {
+        console.warn('[cache] 加载缓存统计失败:', e);
+    }
+}
+window.loadCacheStats = loadCacheStats;
+
+async function clearAppCache(type) {
+    var typeText = { icons: '图标缓存', previews: '预览图缓存', cache: '其他缓存', tpk: '应用缓存(tpk)' }[type] || type;
+    if (!confirm('确定要清空' + typeText + '吗？\n\n清空后界面资源会重新从源站拉取。')) return;
+    var btn = document.getElementById('cacheClearBtn-' + type);
+    if (btn) { btn.disabled = true; btn.textContent = '清空中...'; }
+    try {
+        var resp = await fetch(API_BASE + '/api/cache/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: type })
+        });
+        var data = await resp.json();
+        if (data.success) {
+            showToast(data.message || '已清空', 'success');
+        } else {
+            showToast(data.message || '清空失败', 'error');
+        }
+    } catch (e) {
+        showToast('清空失败: ' + e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '清空'; }
+        loadCacheStats();
+    }
+}
+window.clearAppCache = clearAppCache;
+
+function exportAppCache() {
+    // 无窗口被拦截时走 a.click 触发下载
+    var a = document.createElement('a');
+    a.href = API_BASE + '/api/cache/export';
+    a.download = 'fnsoft_tpk_export.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('应用缓存导出中...', 'info');
+}
+window.exportAppCache = exportAppCache;
+
+// ================================================================
+// ★ v2.11.2 新增：图片缓存预热
+//
+// 列表加载时前端会自动触一次；这里给一个手动入口 + 进度显示。
+// 预热会把当前所有应用的图标、预览图、轮播图批量拉进
+// 本机 appdata/fn-appstores-client/{icons,previews}，之后 30 天不再回源。
+// ================================================================
+async function loadPrefetchStatus() {
+    var el = document.getElementById('prefetchStatus');
+    if (!el) return;
+    try {
+        var resp = await fetch(API_BASE + '/api/cache/prefetch', { cache: 'no-store' });
+        var data = await resp.json();
+        if (!data.success || !data.data) return;
+        var d = data.data;
+        var st = d.last_stat || {};
+        if (d.running) {
+            el.textContent = '预热中… 共 ' + (st.total || 0) + ' 张';
+        } else if (st.total) {
+            el.textContent = '上次：命中 ' + (st.hit || 0) + ' / 新拉 ' + (st.fetched || 0) +
+                ' / 失败 ' + (st.failed || 0) + '（' + (st.finished_at || '') + '）';
+        } else {
+            el.textContent = '尚未预热';
+        }
+    } catch (e) {
+        /* 忽略 */
+    }
+}
+window.loadPrefetchStatus = loadPrefetchStatus;
+
+async function startPrefetch() {
+    var btn = document.getElementById('prefetchBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '预热中...'; }
+    try {
+        var resp = await fetch(API_BASE + '/api/cache/prefetch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scope: 'all' })
+        });
+        var data = await resp.json();
+        showToast(data.message || '已开始预热', data.success ? 'success' : 'error');
+        // 后台跑，每 3 秒刷一次状态，最多盯 1 分钟
+        for (var i = 0; i < 20; i++) {
+            await new Promise(function (r) { setTimeout(r, 3000); });
+            await loadPrefetchStatus();
+            var el = document.getElementById('prefetchStatus');
+            if (el && el.textContent.indexOf('预热中') === -1) break;
+        }
+        if (typeof loadCacheStats === 'function') loadCacheStats();
+    } catch (e) {
+        showToast('预热失败: ' + e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '立即预热'; }
+    }
+}
+window.startPrefetch = startPrefetch;

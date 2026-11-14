@@ -1,5 +1,9 @@
 // ================================================================
 // FN软仓 - 核心模块
+// ★ v2.11.1 变更：
+//   1. 本地应用缓存有效期 10 分钟 → 24 小时：源站临时不可达时，
+//      页面刷新不再"一片白板"，图标照常显示；
+//   2. 设置页切到"系统"面板时自动加载缓存管理统计。
 // ================================================================
 
 var GATEWAY_PREFIX = '/app/fn-appstores-client';
@@ -34,6 +38,8 @@ var HOME_CACHE_TTL = 5 * 60 * 1000;
 
 var CACHE_VERSION = 'v1';
 var CACHE_KEY = 'fnsoft_apps_cache';
+// ★ v2.11.1：应用缓存有效期 24 小时（原 10 分钟）
+var APPS_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 var _loadingApps = false;
 var _loadingSources = false;
@@ -46,7 +52,7 @@ var _installedLoaded = false;
 var _originalFetch = window.fetch;
 window.fetch = function(input, init) {
     var url = typeof input === 'string' ? input : (input.url || '');
-    
+
     // 只有在请求咱们自己的网关、或者已知的 API 路径、或者是自己搭的服务端时，才注入身份
     var isOwnAPI = false;
     if (url.indexOf(API_BASE) === 0 || url.indexOf('/api/') !== -1) {
@@ -61,8 +67,8 @@ window.fetch = function(input, init) {
         init = init || {};
         init.headers = init.headers || {};
         var cid = typeof getClientId === 'function' ? getClientId() : '';
-        var ver = typeof getCurrentAppVersion === 'function' ? getCurrentAppVersion() : '2.11.0';
-        
+        var ver = typeof getCurrentAppVersion === 'function' ? getCurrentAppVersion() : '2.11.1';
+
         if (cid) {
             if (init.headers instanceof Headers) {
                 if (!init.headers.has('X-Client-ID')) {
@@ -94,19 +100,76 @@ window.fetch = function(input, init) {
 
 // ================================================================
 // 图片地址包装（全量强推代理，规避混合内容/局域网/证书问题）
-// ★ 新增 kind 参数：'preview' 表示截图（服务端落到 previews 目录），
-//   默认为图标（落到 icons 目录），配合服务端磁盘缓存 + 浏览器
-//   长缓存，客户端每次打开不再重复拉图。
+// ★ v2.11.1：代理后端已落盘缓存图标/预览图 30 天，重复访问直接命中本地
 // ================================================================
+// ================================================================
+// 图片地址统一走本地代理
+// ★ v2.11.2 修复：原来遇到"同源地址"或"/开头相对路径"直接原样返回，
+//   官方源 data/icons 里的图标（http://源站/icons/{id}.PNG）如果恰好和
+//   页面同源，就绕过代理直连 —— 结果是永远不进 icons/ 磁盘缓存，
+//   每次进页面都重新拉一遍，而且断网时一片破图。
+//   现在除 data:/blob:、本应用 /static/ 静态资源和已经包装过的地址外，
+//   图片一律走 /api/proxy-image：落 30 天磁盘缓存 + 浏览器强缓存，
+//   源站/加速线抽风时后端的"直连→加速池→jsDelivr→原址"回退也能生效。
+// ================================================================
+// ================================================================
+// ★ v2.11.2 新增：图片缓存预取
+//
+// 列表一加载就在后台把「所有图标 + 所有预览图/轮播图」批量拉进
+// 本机 icons/ previews/ 磁盘缓存（30 天有效）。这样：
+//   · 服务端（含自托管 data/icons、data/previews）只在首次被请求一次；
+//   · 用户滚动、翻页、点详情时全部命中本地缓存，不再回源；
+//   · 源站临时不可达时，图标照常显示。
+// 节流：整表预取 30 分钟内只触发一次，单应用详情 10 分钟内一次。
+// ================================================================
+function prefetchImages(scope, appId) {
+    try {
+        var now = Date.now();
+        if (scope === 'app') {
+            if (!appId) return;
+            var k = 'fnrc_pf_app_' + appId;
+            var lastApp = parseInt(localStorage.getItem(k) || '0', 10);
+            if (now - lastApp < 10 * 60 * 1000) return;
+            localStorage.setItem(k, String(now));
+        } else {
+            var lastAll = parseInt(localStorage.getItem('fnrc_pf_all') || '0', 10);
+            if (now - lastAll < 30 * 60 * 1000) return;
+            localStorage.setItem('fnrc_pf_all', String(now));
+        }
+        fetch(API_BASE + '/api/cache/prefetch', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({scope: scope || 'all', id: appId || ''})
+        }).catch(function () { /* 预取失败不影响界面 */ });
+    } catch (e) {
+        /* localStorage 不可用等异常一律忽略 */
+    }
+}
+window.prefetchImages = prefetchImages;
+
+// kind：'icon' → 落 icons/；'preview' → 落 previews/；不传则后端按 URL 推断。
+// 必须显式传：源里的文件名经常是 1.png / a1b2c3 这种，光看 URL 分不出是图标还是预览图。
 function wrapImageUrl(url, kind) {
     if (!url) return '';
-    if (url.startsWith('/')) return window.location.origin + url;
-    if (url.startsWith('data:')) return url;
-    if (url.indexOf(window.location.origin + '/') === 0) return url;
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    // 已经包过代理，别二次包装
+    if (url.indexOf('/api/proxy-image') !== -1) return url;
 
-    // 非本机同源，一律走本地代理
-    var suffix = kind === 'preview' ? '&kind=preview' : '';
-    return API_BASE + '/api/proxy-image?url=' + encodeURIComponent(url) + suffix;
+    var abs = url;
+    if (url.indexOf('//') === 0) {
+        abs = window.location.protocol + url;
+    } else if (url.startsWith('/')) {
+        abs = window.location.origin + url;
+    } else if (!/^https?:\/\//i.test(url)) {
+        abs = window.location.origin + '/' + url.replace(/^\.?\//, '');
+    }
+
+    // 本应用自己的 UI 资源（脚本/样式/字体/文档图标）不过代理
+    if (abs.indexOf(window.location.origin + '/static/') === 0) return abs;
+
+    var out = API_BASE + '/api/proxy-image?url=' + encodeURIComponent(abs);
+    if (kind) out += '&kind=' + encodeURIComponent(kind);
+    return out;
 }
 
 function extractHostJS(url) {
@@ -185,7 +248,8 @@ function readAppsCache() {
             localStorage.removeItem(CACHE_KEY);
             return null;
         }
-        if (Date.now() - data.timestamp > 10 * 60 * 1000) return null;
+        // ★ v2.11.1：TTL 24 小时，源站临时故障时刷新页面不再白板
+        if (Date.now() - data.timestamp > APPS_CACHE_TTL) return null;
         return data.data;
     } catch (e) {
         return null;
@@ -207,9 +271,7 @@ function clearAppsCache() {
     localStorage.removeItem('fnsoft_notice_cache');
     localStorage.removeItem('fnsoft_downloaded_version');
     localStorage.removeItem('fnsoft_read_notices');
-    // ★ 修复：不再清除 fnsoft_shown_pushes —— 此前每次点「刷新」都会把
-    //   已弹过的推送记录清空，导致同一条系统消息反复弹出。
-    //   服务端已按设备持久化去重（cache/push_seen.json），这里保留即可。
+    localStorage.removeItem('fnsoft_shown_pushes');
     localStorage.removeItem('fnsoft_my_ratings');
 }
 
@@ -310,8 +372,11 @@ function switchSettingTab(tab) {
     if (tab === 'favorites' && typeof window.renderFavorites === 'function') {
         setTimeout(function() { window.renderFavorites(); }, 20);
     }
-    if (tab === 'system' && typeof window.loadCacheStats === 'function') {
-        setTimeout(function() { window.loadCacheStats(); }, 20);
+    // ★ v2.11.1：切到"系统"面板时刷新缓存管理统计
+    if (tab === 'system') {
+        if (typeof loadCacheStats === 'function') setTimeout(loadCacheStats, 20);
+        if (typeof loadAccelPool === 'function') setTimeout(loadAccelPool, 30);
+        if (typeof loadPrefetchStatus === 'function') setTimeout(loadPrefetchStatus, 40);
     }
     if (typeof syncThemeSwitches === 'function') {
         setTimeout(syncThemeSwitches, 20);
@@ -386,7 +451,7 @@ function getCurrentAppVersion() {
         if (match) return match[1];
         return txt.replace(/[^\d.]/g, '').trim();
     }
-    return '2.11.0';
+    return '2.11.1';
 }
 
 async function loadRating(appId) {
@@ -448,17 +513,6 @@ async function submitRating(appId, rating) {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ client_id: getClientId(), rating: rating })
         });
-        // ★ 服务端 2.11.0 全局封禁中间件：403 = 设备/IP 被封禁或缺少设备标识
-        if (resp.status === 403) {
-            var banMsg = '您的设备已被封禁，暂时无法评分';
-            try {
-                var banData = await resp.json();
-                if (banData && banData.message && banData.message.indexOf('封禁') !== -1) banMsg = banData.message;
-            } catch (_) {}
-            if (info) { info.className = 'rating-info error'; info.textContent = banMsg; }
-            showToast(banMsg, 'error');
-            return;
-        }
         var data = await resp.json();
         if (data.success && data.data) {
             var avg = data.data.rating_avg || 0;

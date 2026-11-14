@@ -172,6 +172,9 @@ function renderFilteredApps() {
     var countEl = document.getElementById('appCount');
     if (countEl) countEl.textContent = filtered.length;
     if (typeof updateSettingsStats === 'function') updateSettingsStats();
+    // ★ v2.11.2：列表一出来就在后台把全部图标 + 预览图预热进本地缓存
+    // （内部 30 分钟节流，重复渲染不会重复请求）
+    if (typeof prefetchImages === 'function') prefetchImages('all');
 }
 
 function initCarousel(screenshots) {
@@ -273,6 +276,8 @@ function openDetail(appId) {
         showToast('应用数据不存在，请刷新重试', 'error');
         return;
     }
+    // ★ v2.11.2：打开详情时把该应用的图标 + 预览图补进本地缓存（10 分钟节流）
+    if (typeof prefetchImages === 'function') prefetchImages('app', appId);
 
     var appsTab = document.getElementById('tabApps');
     if (!appsTab || !appsTab.classList.contains('active')) {
@@ -288,7 +293,7 @@ function openDetail(appId) {
     if (detailView) { detailView.classList.add('active'); detailView.scrollTop = 0; }
 
     var iconEl = document.getElementById('detailIcon');
-    if (iconEl) iconEl.innerHTML = app.icon ? '<img src="' + wrapImageUrl(app.icon) + '" alt="">' : '·';
+    if (iconEl) iconEl.innerHTML = app.icon ? '<img src="' + wrapImageUrl(app.icon, 'icon') + '" alt="">' : '·';
     var titleEl = document.getElementById('detailTitle');
     if (titleEl) titleEl.textContent = app.name;
 
@@ -471,7 +476,7 @@ function renderApps(apps) {
 
         return '<div class="app-card" id="card-' + app.id + '" onclick="openDetail(\'' + app.id + '\')">' +
             '<button class="card-fav-btn' + favActive + '" data-app-id="' + app.id + '" onclick="event.stopPropagation();toggleCardFavorite(\'' + app.id + '\');">' + (favActive ? '★' : '☆') + '</button>' +
-            '<div class="card-icon">' + (app.icon ? '<img src="' + wrapImageUrl(app.icon) + '" loading="lazy" alt="">' : '·') + '</div>' +
+            '<div class="card-icon">' + (app.icon ? '<img src="' + wrapImageUrl(app.icon, 'icon') + '" loading="lazy" alt="">' : '·') + '</div>' +
             '<div class="card-info">' +
                 '<div class="card-name">' + app.name + ratingHtml + updateDot + '</div>' +
                 (subtitle ? '<div class="card-subtitle">' + subtitle + '</div>' : '') +
@@ -591,9 +596,12 @@ window.restoreAppsView = restoreAppsView;
 
 async function loadInstalledVersions() {
     try {
-        // ★ 已装版本以飞牛内部数据库为准（后端 /api/installed → appcenter-cli list），
-        //   app-center 的 app/installed 只作兜底，避免两边不同步导致"永远可更新"。
-        var installedMap = await getInstalledVersionMap(true);
+        var installedApps = await acGetInstalledApps(true);
+        var installedMap = {};
+        installedApps.forEach(function(app) {
+            var name = app.appName || app.name || app.app_name;
+            if (name) installedMap[name] = app.version || app.installedVersion || "";
+        });
 
         var now = Date.now();
         allAppsData.forEach(function (app) {
@@ -618,7 +626,10 @@ function updateLastRefreshTime() {
 }
 
 // ================================================================
-// ★ 核心改动：右上角刷新，自动清空缓存并强刷，且防断网清空
+// ★ 核心改动：右上角刷新，强刷并防断网清空
+// ★ v2.11.1：不再在请求前清空本地缓存！2.11.0 先 clearAppsCache() 再请求，
+// 一旦刷新失败/源站临时不可达，localStorage 缓存已被清空，页面一刷新就
+// "一片白板"。现在改为拿到新数据成功后才清旧缓存再写入。
 // ================================================================
 async function refreshApps() {
     var btn = document.getElementById('refreshBtn');
@@ -626,14 +637,9 @@ async function refreshApps() {
     if (!btn || !badge) return;
     if (refreshCooldown || btn.disabled) {showToast('请稍后再试', 'warning'); return;}
 
-    // 1. 清空本地应用缓存、公告缓存、版本号缓存
-    if (typeof clearAppsCache === 'function') {
-        clearAppsCache();
-    }
-
     btn.disabled = true; btn.textContent = '刷新中...'; badge.textContent = '加载中'; badge.className = 'badge loading';
     try {
-        // 2. 发送 POST 强刷请求
+        // 发送 POST 强刷请求
         var resp = await fetch(API_BASE + '/api/refresh', {method: 'POST', headers: {'Content-Type': 'application/json'}});
         var data = await resp.json();
         if (resp.status === 429) {
@@ -650,6 +656,10 @@ async function refreshApps() {
             }
 
             allAppsData = data.data;
+            // ★ v2.11.1：拿到新数据后才清旧缓存（公告/推送等一并清），随后写入新缓存
+            if (typeof clearAppsCache === 'function') {
+                clearAppsCache();
+            }
             renderFilterButtons(); currentPage = 1; renderFilteredApps(); writeAppsCache(allAppsData);
             showToast(data.message, 'success'); updateLastRefreshTime();
             badge.textContent = '在线'; badge.className = 'badge connected';
@@ -777,7 +787,6 @@ async function doOfficialInstallOrUpdate(appId, isUpdate) {
         await runOfficialInstallFlow(appId, fpkPath, {
             baseProgress: 40,
             maxProgress: 100,
-            expectVersion: app.version,
             onProgress: function(p) {
                 if (typeof updateInstallModalProgress === 'function') {
                     updateInstallModalProgress({ app_id: appId, msg: p.msg, progress: p.progress, stage: p.stage });

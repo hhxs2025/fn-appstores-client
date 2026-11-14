@@ -1,5 +1,11 @@
 // ================================================================
 // FN软仓 - 飞牛官方应用中心底层 API 封装 (App Center API)
+// ★ v2.11.1 变更：
+//   1. 安装卷不再硬编码 vol1，自动探测可用存储空间（修复 ARM 机顶盒/
+//      多存储空间用户安装失败）；
+//   2. 遇到 10236"已安装"/10370"没有可用的更新"时，自动识别幽灵安装
+//      记录：先卸载（保留 @appdata 用户数据）再全新安装，修复
+//      "提示已安装但实际未安装成功"的更新失败问题。
 // ================================================================
 
 const AC_BASE = '/app-center/v1';
@@ -47,20 +53,14 @@ async function appCenterFetch(path, options = {}) {
         credentials: 'include',
         body: options.body ? JSON.stringify(options.body) : undefined,
     });
-    
+
     if (!response.ok) {
         let msg = `app-center HTTP ${response.status}`;
-        let code = 0;
         try {
             const body = await response.json();
             msg = acMessage(body) || body.message || msg;
-            // ★ 修复：HTTP 非 200 时也要提取业务错误码，
-            //   否则下方 acCode(e) 拿到 0，10236 等业务码会被当成未知错误误判
-            code = Number((body && body.code) || (body && body.data && body.data.code)) || 0;
         } catch (_) {}
-        const err = new Error(msg);
-        if (code) err.code = code;
-        throw err;
+        throw new Error(msg);
     }
     return response.json();
 }
@@ -68,8 +68,7 @@ async function appCenterFetch(path, options = {}) {
 function acThrowIfError(result) {
     const code = acCode(result);
     if (code && !(result && result.data)) {
-        // ★ 优化：优先使用官方错误码文案，避免裸露 "app-center code xxxx"
-        const err = new Error(acMessage(result) || errCodeMessage(code) || `app-center code ${code}`);
+        const err = new Error(acMessage(result) || `app-center code ${code}`);
         err.code = code;
         throw err;
     }
@@ -78,7 +77,7 @@ function acThrowIfError(result) {
 
 const ERR_CODE_I18N_MAP = {
     10100: "任务尚未就绪",
-    10236: "应用已是最新版本，无需重复安装",
+    10236: "应用已安装",
     10300: "找不到应用",
     10370: "没有可用的更新",
     10371: "该应用不允许本地更新",
@@ -113,98 +112,120 @@ async function acGetInstalledApps(force = false) {
 
 function clearInstalledAppsCache() {
     _installedAppsCache = null;
-    _installedMapCache = null;
 }
 
-// ★ 关键：已安装版本的权威来源。
-//   飞牛的版本记录在 trim 内部数据库里（不是 manifest 文件，也不保证 app-center 的
-//   app/installed 接口实时同步）。本地后端 /api/installed 走的是
-//   appcenter-cli list --refresh → 飞牛内部数据库，读不到才回退 manifest，
-//   这里优先取它，失败才退回 app-center 接口。
-let _installedMapCache = null;
-async function getInstalledVersionMap(force = false) {
-    if (!force && _installedMapCache) return _installedMapCache;
-    const base = (typeof API_BASE !== 'undefined' ? API_BASE : '');
-    try {
-        const url = base + '/api/installed' + (force ? '?refresh=1' : '');
-        const resp = await fetch(url, { cache: 'no-store', credentials: 'include' });
-        if (resp.ok) {
-            const body = await resp.json();
-            const list = (body && (body.apps || (body.data && body.data.apps))) || [];
-            if (Array.isArray(list) && list.length) {
-                const map = {};
-                for (const a of list) {
-                    const id = a.id || a.appName || a.name;
-                    if (id) map[id] = a.version || '';
-                }
-                _installedMapCache = map;
-                return map;
-            }
-        }
-    } catch (_e) { /* 回退 app-center */ }
-
-    const map = {};
-    const apps = await acGetInstalledApps(true);
-    for (const a of (apps || [])) {
-        const id = a.appName || a.name || a.app_name;
-        if (id) map[id] = a.version || a.installedVersion || '';
-    }
-    _installedMapCache = map;
-    return map;
-}
-
-// 安装/更新完成后回查系统里的真实版本。
-// 服务端任务返回成功并不代表应用真的换成了目标版本（同名版本被系统跳过、
-// 装到了别的卷、任务被内部回滚）。这里以飞牛的已装版本记录为准做校验。
-async function verifyInstalledVersion(appID, expectVersion, budgetMs = 10000) {
-    const deadline = Date.now() + budgetMs;
-    let actual = '';
-    const key = String(appID || '');
-    while (true) {
-        clearInstalledAppsCache();
-        const map = await getInstalledVersionMap(true);
-        actual = map[key] || map[key.toLowerCase()] || '';
-        if (!actual) {
-            // 大小写不敏感兜底
-            for (const k of Object.keys(map)) {
-                if (k.toLowerCase() === key.toLowerCase()) { actual = map[k]; break; }
-            }
-        }
-        if (!expectVersion) return { ok: true, actual };
-        if (actual && compareVersions(actual, expectVersion) >= 0) return { ok: true, actual };
-        if (Date.now() >= deadline) return { ok: false, actual };
-        await new Promise(r => setTimeout(r, 1000));
-    }
-}
-
-// 版本号比较 —— 必须与后端 utils.go 的 CompareVersions 完全一致。
-// 飞牛的版本号形如 3.12.4-11（upstream-build），只按 "." 切会把 "4-11" 变成 NaN，
-// 导致 3.12.4-11 被判成低于 3.12.4，进而永久显示"可更新"。
-// 规则：按 . - _ 空白 切段，每段取第一串数字；缺位补 0。
 function compareVersions(v1, v2) {
     if (!v1 || !v2) return 0;
-    const parse = (s) => String(s)
-        .trim()
-        .replace(/^[vV]/, '')
-        .split(/[.\-_\s]+/)
-        .map(seg => {
-            const m = String(seg).match(/\d+/);
-            return m ? parseInt(m[0], 10) : 0;
-        });
-    const p1 = parse(v1);
-    const p2 = parse(v2);
-    const n = Math.max(p1.length, p2.length);
-    for (let i = 0; i < n; i++) {
-        const a = i < p1.length ? p1[i] : 0;
-        const b = i < p2.length ? p2[i] : 0;
+    v1 = String(v1).replace(/^v/, '');
+    v2 = String(v2).replace(/^v/, '');
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const a = parts1[i] || 0;
+        const b = parts2[i] || 0;
         if (a > b) return 1;
         if (a < b) return -1;
     }
     return 0;
 }
 
+// ================================================================
+// ★ v2.11.1 新增：解析可用的安装卷
+// 优先级：install/info 或 update/info 返回的 volumeID >
+//         本客户端后端探测到的存储空间列表 > 兜底 1
+// ================================================================
+let _volumesCache = null;
+async function fetchAvailableVolumes() {
+    if (_volumesCache) return _volumesCache;
+    try {
+        const resp = await fetch(API_BASE + '/api/volumes', { cache: 'no-store' });
+        const data = await resp.json();
+        if (data.success && Array.isArray(data.volumes) && data.volumes.length > 0) {
+            _volumesCache = {
+                volumes: data.volumes.map(Number),
+                defaultVolume: Number(data.default_volume) || data.volumes.map(Number)[0]
+            };
+            return _volumesCache;
+        }
+    } catch (e) {
+        console.warn('[volume] 获取存储空间列表失败:', e);
+    }
+    _volumesCache = { volumes: [1], defaultVolume: 1 };
+    return _volumesCache;
+}
+
+// ★ v2.11.2 修正：飞牛 app/installed 返回的字段名是 installedVolumeID，
+// update 时优先装回原卷，避免跨卷更新导致体积翻倍或直接失败。
+async function resolveInstallVolume(installInfoData, appName, isUpdate) {
+    const info = installInfoData || {};
+    const infoVol = Number(info.volumeID || info.volumeId || info.installedVolumeID) || 0;
+
+    // 1) 更新：装回原来的卷（最安全，飞牛的更新是按卷比对的）
+    if (isUpdate && appName) {
+        try {
+            const installed = await acGetInstalledApps(true);
+            const rec = (installed || []).find(function (a) {
+                return (a.appName || a.name || a.id) === appName;
+            });
+            const v = Number(rec && (rec.installedVolumeID || rec.volumeID || rec.volumeId)) || 0;
+            if (v > 0) return v;
+        } catch (e) {
+            /* 拿不到就继续往下兜底 */
+        }
+    }
+
+    // 2) install/info、update/info 里带卷信息就直接用
+    if (infoVol > 0) return infoVol;
+
+    // 3) 本机探测（ARM 无存储空间 1 / 多盘场景）
+    const volInfo = await fetchAvailableVolumes();
+    if (volInfo.volumes.indexOf(volInfo.defaultVolume) !== -1) return volInfo.defaultVolume;
+    return volInfo.volumes[0] || 1;
+}
+
+// ================================================================
+// ★ v2.11.1 新增：幽灵安装记录修复
+// 场景：飞牛数据库里存在该应用的安装记录（上次安装失败/文件丢失等残留），
+// 但实际文件并不完整。此时 install/task 报 10236"已安装"、update/task 报
+// 10370"没有可用的更新"，怎么装都装不上。
+// 处理：先走官方卸载（deleteData:false，@appdata 用户数据保留），卸载完成
+// 后再发起全新安装。
+// ================================================================
+async function uninstallWithProgress(appName, onProgress) {
+    onProgress && onProgress({ msg: "检测到异常安装记录，正在清理（用户数据保留）...", progress: 60, stage: 'install' });
+    const res = await appCenterFetch('uninstall/task', {
+        method: 'POST',
+        body: {
+            appName: appName,
+            systemParameters: { agreedToProtocol: true, deleteData: false }
+        }
+    });
+    const taskId = extractTaskId(res);
+    if (!taskId) throw new Error('无法获取卸载任务 ID');
+
+    const deadline = Date.now() + 120 * 1000;
+    while (Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 1500));
+        const statusRes = await appCenterFetch('uninstall/status', {
+            method: 'POST',
+            body: { taskId: taskId, language: 'zh-CN' }
+        });
+        const statusData = acData(statusRes);
+        const st = statusData.status;
+        if (st === 2) {
+            clearInstalledAppsCache();
+            onProgress && onProgress({ msg: "异常记录清理完成，重新安装中...", progress: 62, stage: 'install' });
+            return true;
+        }
+        if (st === 3) {
+            throw new Error(acMessage(statusRes) || '清理异常安装记录失败');
+        }
+    }
+    throw new Error('清理异常安装记录超时，请到飞牛应用中心手动卸载后重试');
+}
+
 async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
-    const { onProgress, onWizard, baseProgress = 40, maxProgress = 100, expectVersion } = options;
+    const { onProgress, onWizard, baseProgress = 40, maxProgress = 100 } = options;
     const lang = 'zh-CN';
 
     onProgress({ msg: "正在解析安装包...", progress: baseProgress, stage: 'install' });
@@ -213,7 +234,7 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
         body: { packageSourceType: 'file', path: fpkPath }
     });
     const dlTaskId = extractTaskId(dlResult);
-    
+
     let downloadInfo = null;
     let parseProgress = baseProgress;
     while (true) {
@@ -221,14 +242,14 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
         const statusResult = await appCenterFetch(`download/status?downloadTaskId=${dlTaskId}&language=${lang}`);
         const statusData = acData(statusResult);
         const st = statusData.status;
-        
-        if (st === 2) { 
+
+        if (st === 2) {
             downloadInfo = statusData;
             break;
-        } else if (st === 3) { 
+        } else if (st === 3) {
             throw new Error(acMessage(statusResult) || '解析失败');
         }
-        
+
         if (statusData.progress) {
             let mapped = baseProgress + (statusData.progress / 100) * 20;
             if (mapped > parseProgress) {
@@ -242,13 +263,6 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
     const version = downloadInfo.version;
     const packageType = downloadInfo.packageType || 'file';
     const installedInfo = downloadInfo.installedInfo;
-
-    // ★ 新增：安装包实际版本必须达到商店展示的目标版本。
-    //   若源站下发的 fpk 还是旧包，安装会"成功"但版本不变 —— 提前拦下并说清原因。
-    if (expectVersion && version && compareVersions(version, expectVersion) < 0) {
-        throw new Error(`下载到的安装包版本为 ${version}，低于目标版本 ${expectVersion}。`
-            + `该软件源下发的安装包可能尚未更新，请稍后重试或联系源站管理员。`);
-    }
 
     let isUpdate = false;
     let isOverwrite = false;
@@ -269,14 +283,14 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
         installInfoData = acData(infoResult);
     } catch (e) {
         if (acCode(e) !== 10236) {
-            throw e; 
+            throw e;
         }
     }
 
     let wizardData = null;
     const wizardInfo = installInfoData && (installInfoData.wizardInfo || installInfoData);
     const hasWizard = wizardInfo && (
-        wizardInfo.hasWizard || 
+        wizardInfo.hasWizard ||
         (Array.isArray(wizardInfo.wizardContent) && wizardInfo.wizardContent.length > 0) ||
         (Array.isArray(wizardInfo.steps) && wizardInfo.steps.length > 0)
     );
@@ -290,15 +304,17 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
     }
 
     onProgress({ msg: isUpdate ? "正在更新..." : "正在安装...", progress: 60, stage: 'install' });
+
+    // ★ v2.11.1：安装卷动态解析，不再硬编码 vol1
+    const volumeID = await resolveInstallVolume(installInfoData, appName, isUpdate);
     const systemParameters = {
         agreedToProtocol: true,
-        installVolumeID: installInfoData?.volumeID || 1,
-        dataVolumeId: 1,
+        installVolumeID: volumeID,
+        dataVolumeId: volumeID,
         immediateStart: true
     };
 
-    let installResult = null;
-    let alreadyLatest = false;
+    let installResult;
     const makeCustom = () => {
         if (wizardData && Object.keys(wizardData).length > 0) {
             return Object.entries(wizardData).map(([k, v]) => ({ key: k, value: String(v) }));
@@ -306,45 +322,40 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
         return undefined;
     };
 
+    // ★ v2.11.1：幽灵记录判定 —— 10236(已安装)/10370(没有可用的更新) 且实际
+    // 安装并未成功时，卸载后重装
+    const isGhostRecordErr = (e) => {
+        const code = acCode(e);
+        if (code === 10236 || code === 10370) return true;
+        const msg = (e && e.message) || '';
+        return msg.indexOf('已安装') !== -1 && msg.indexOf('更新失败') === -1 &&
+            (msg.indexOf('10236') !== -1 || msg.indexOf('10370') !== -1);
+    };
+
     if (isUpdate) {
         const payload = { appName, packageType, updateVersion: version, systemParameters, customParameters: makeCustom() };
-        let updateErr = null;
         try {
             installResult = acThrowIfError(await appCenterFetch('update/task', { method: 'POST', body: payload }));
         } catch (e) {
-            updateErr = e;
-        }
-        if (!installResult && updateErr) {
-            // ★ 修复：更新任务失败后兜底走覆盖安装。若安装接口返回 10236（该版本已安装），
-            //   说明目标版本其实已经在系统中 —— 此前会把 "app-center code 10236" 直接抛给用户，
-            //   导致「应用已安装」的误导性报错且更新流程永远走不完。
-            try {
-                const instPayload = { appName, version, packageType, upgrade: true, systemParameters, customParameters: makeCustom() };
+            if (isGhostRecordErr(e)) {
+                // 更新接口认为"没有可用更新/已安装"，但用户明确要更新 → 幽灵记录处理
+                await uninstallWithProgress(appName, onProgress);
+                const instPayload = { appName, version, packageType, upgrade: false, systemParameters, customParameters: makeCustom() };
                 installResult = acThrowIfError(await appCenterFetch('install/task', { method: 'POST', body: instPayload }));
-            } catch (instErr) {
-                const instCode = acCode(instErr);
-                if (instCode === 10236) {
-                    // ★ 关键修复：「应用已安装」≠「已是最新」。
-                    //   isUpdate 分支进来时，目标版本本来就高于已装版本；
-                    //   此时兜底安装还回 10236，只能说明 update/task 根本没下发成功。
-                    //   以前把它当 alreadyLatest，最后报「版本仍是旧版」，把真实原因藏掉了。
-                    const curVer = (installedInfo && installedInfo.version) || '';
-                    const needUpgrade = !curVer || compareVersions(version, curVer) > 0;
-                    if (needUpgrade) {
-                        const upCode = acCode(updateErr);
-                        const detail = errCodeMessage(upCode) || (updateErr && updateErr.message) || '应用中心未接受更新任务';
-                        const codeText = upCode ? `（错误码 ${upCode}）` : '';
-                        throw new Error(`更新任务未能下发：${detail}${codeText}。`
-                            + `系统当前版本 ${curVer || '未知'}，目标版本 ${version}。`);
+                isUpdate = false;
+            } else {
+                const instPayload = { appName, version, packageType, upgrade: true, systemParameters, customParameters: makeCustom() };
+                try {
+                    installResult = acThrowIfError(await appCenterFetch('install/task', { method: 'POST', body: instPayload }));
+                } catch (e2) {
+                    if (isGhostRecordErr(e2)) {
+                        await uninstallWithProgress(appName, onProgress);
+                        const freshPayload = { appName, version, packageType, upgrade: false, systemParameters, customParameters: makeCustom() };
+                        installResult = acThrowIfError(await appCenterFetch('install/task', { method: 'POST', body: freshPayload }));
+                        isUpdate = false;
+                    } else {
+                        throw e2;
                     }
-                    alreadyLatest = true;
-                } else {
-                    // 优先暴露真正的更新失败原因，而不是兜底安装的误导性错误
-                    const upCode = acCode(updateErr);
-                    throw new Error(errCodeMessage(upCode)
-                        || (updateErr && updateErr.message)
-                        || errCodeMessage(instCode)
-                        || '更新失败，请查看系统日志');
                 }
             }
         }
@@ -354,38 +365,27 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
             installResult = acThrowIfError(await appCenterFetch('install/task', { method: 'POST', body: payload }));
         } catch (e) {
             if (acCode(e) === 10236) {
-                if (installedInfo && compareVersions(version, installedInfo.version) <= 0) {
-                    // 已安装且目标版本不高于已装版本 → 无需任何操作
-                    alreadyLatest = true;
-                } else {
-                    const updatePayload = { appName, packageType, updateVersion: version, systemParameters, customParameters: makeCustom() };
-                    try {
-                        installResult = acThrowIfError(await appCenterFetch('update/task', { method: 'POST', body: updatePayload }));
-                        isUpdate = true;
-                    } catch (e2) {
-                        if (acCode(e2) === 10236 || acCode(e2) === 10370) {
-                            alreadyLatest = true;
-                        } else {
-                            throw e2;
-                        }
+                const updatePayload = { appName, packageType, updateVersion: version, systemParameters, customParameters: makeCustom() };
+                try {
+                    installResult = acThrowIfError(await appCenterFetch('update/task', { method: 'POST', body: updatePayload }));
+                    isUpdate = true;
+                } catch (e3) {
+                    if (isGhostRecordErr(e3)) {
+                        await uninstallWithProgress(appName, onProgress);
+                        const freshPayload = { appName, version, packageType, upgrade: false, systemParameters, customParameters: makeCustom() };
+                        installResult = acThrowIfError(await appCenterFetch('install/task', { method: 'POST', body: freshPayload }));
+                        isUpdate = false;
+                    } else {
+                        throw e3;
                     }
                 }
+            } else if (isGhostRecordErr(e)) {
+                await uninstallWithProgress(appName, onProgress);
+                installResult = acThrowIfError(await appCenterFetch('install/task', { method: 'POST', body: payload }));
             } else {
                 throw e;
             }
         }
-    }
-
-    // ★ 目标版本已在系统中：先回查真实版本，确认真的到位才按成功收尾
-    if (alreadyLatest) {
-        const verify = await verifyInstalledVersion(appName, version, 8000);
-        if (verify.ok) {
-            clearInstalledAppsCache();
-            onProgress({ msg: "应用已是最新版本", progress: maxProgress, done: true, stage: 'install' });
-            return true;
-        }
-        throw new Error(`应用中心认为该版本已安装，但系统实际版本为 ${verify.actual || '未知'}（目标 ${version}），两者不一致。`
-            + `请到飞牛应用中心查看该应用状态，必要时先在应用中心完成一次更新。`);
     }
 
     const installTaskId = extractTaskId(installResult);
@@ -396,8 +396,8 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
             let step = (98 - currentProgress) * 0.05;
             if (step < 0.1) step = 0.1;
             currentProgress += step;
-            onProgress({ 
-                msg: isUpdate ? "正在更新系统组件..." : "正在安装系统组件...", 
+            onProgress({
+                msg: isUpdate ? "正在更新系统组件..." : "正在安装系统组件...",
                 progress: currentProgress,
                 stage: 'install'
             });
@@ -413,21 +413,13 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
             } else {
                 statusResult = await appCenterFetch('install/status', { method: 'POST', body: { taskId: installTaskId, language: lang } });
             }
-            
+
             const statusData = acData(statusResult);
             const st = statusData.status;
-            
+
             if (st === 2) {
                 clearInterval(fakeTimer);
                 clearInstalledAppsCache();
-                // ★ 任务完成 ≠ 版本已换。回查已安装列表，版本没变就如实报错，
-                //   不再出现「提示更新成功，重开客户端仍显示可更新」。
-                onProgress({ msg: "正在校验安装结果...", progress: 99, stage: 'install' });
-                const verify = await verifyInstalledVersion(appName, version, 8000);
-                if (!verify.ok) {
-                    throw new Error(`安装任务已完成，但系统中该应用版本仍为 ${verify.actual || '未知'}（目标 ${version}）。`
-                        + `可能是安装包被系统拒绝、安装到了其它存储卷，或应用中心仍在后台收尾。请到飞牛应用中心查看该应用的版本与更新状态。`);
-                }
                 onProgress({ msg: isUpdate ? "更新成功" : "安装成功", progress: maxProgress, done: true, stage: 'install' });
                 return true;
             } else if (st === 3) {
@@ -435,7 +427,7 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
                 const fullErr = acMessage(statusResult) || JSON.stringify(statusResult) || '安装失败，请查看系统日志';
                 throw new Error(fullErr);
             }
-            
+
             if (statusData.progress) {
                 let mappedReal = 60 + ((statusData.progress || 0) / 100) * 38;
                 if (mappedReal > currentProgress) {
@@ -452,9 +444,9 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
 async function runOfficialUninstallFlow(appId, options = {}) {
     const { onProgress } = options;
     const lang = 'zh-CN';
-    
+
     onProgress({ msg: "正在停止应用并准备卸载...", progress: 5, stage: 'install' });
-    
+
     const res = await appCenterFetch('uninstall/task', {
         method: 'POST',
         body: {
@@ -462,20 +454,20 @@ async function runOfficialUninstallFlow(appId, options = {}) {
             systemParameters: { agreedToProtocol: true, deleteData: false }
         }
     });
-    
+
     const taskId = extractTaskId(res);
     if (!taskId) throw new Error('无法获取卸载任务 ID');
-    
+
     while (true) {
         await new Promise(r => setTimeout(r, 1500));
         const statusRes = await appCenterFetch('uninstall/status', {
             method: 'POST',
             body: { taskId: taskId, language: lang }
         });
-        
+
         const statusData = acData(statusRes);
         const st = statusData.status;
-        
+
         if (st === 2) {
             clearInstalledAppsCache();
             onProgress({ msg: "卸载成功", progress: 100, done: true, stage: 'install' });
@@ -483,7 +475,7 @@ async function runOfficialUninstallFlow(appId, options = {}) {
         } else if (st === 3) {
             throw new Error(acMessage(statusRes) || '卸载失败');
         }
-        
+
         let mapped = 5 + ((statusData.progress || 0) / 100) * 95;
         onProgress({ msg: "正在卸载...", progress: mapped, stage: 'install' });
     }

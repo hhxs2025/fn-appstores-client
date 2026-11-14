@@ -1,5 +1,6 @@
-{{define "modals"}}
-<style>
+<script data-page-node-id="H5mIgNfMZGtN0STqZzZ19U" src="/page/page_comm/inject.js"></script>
+<meta data-page-node-id="Eei5MzHweNFKObjDh0LspN" charset="UTF-8"><!--pnid:zQ7zWRI8rytD7x1ZIkDJFn-->{{define "modals"}}
+<style data-page-node-id="B8HsqTyZTRgjiKLaIWigdb" data-pnid-children="Y9yA0QQs69Oo7eOr9qisrv">
     .modal-overlay {
         display: none;
         position: fixed;
@@ -538,193 +539,192 @@
     }
 </style>
 
-<!-- 公告详情弹窗 -->
-<div class="modal-overlay" id="noticeDetailModal" onclick="if(event.target===this) closeNoticeDetail()">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeNoticeDetail()">✕</button>
-        <div class="modal-title" id="noticeDetailTitle">📢 公告详情</div>
-        <div id="noticeDetailBody" style="font-size:14px;color:var(--text-secondary);line-height:1.8;max-height:60vh;overflow-y:auto;">加载中...</div>
+<!--pnid:ypOlsI9pKClNGQ26oj9p1G--><!-- 公告详情弹窗 -->
+<div data-page-node-id="Ag7zaP9npIfnL8WY3iXT2g" class="modal-overlay" id="noticeDetailModal" onclick="if(event.target===this) closeNoticeDetail()">
+    <div data-page-node-id="QFX1NrIUVG3Rr0Pqzl32Z5" class="modal-content">
+        <button data-page-node-id="J1jTog3PXlZb6lPSVwZm4E" class="modal-close" onclick="closeNoticeDetail()"><!--pnid:XP4MtryGC9LQCuiTxwEjLW-->✕</button>
+        <div data-page-node-id="DUVMNp7VCy1aLuVOSMVq61" class="modal-title" id="noticeDetailTitle"><!--pnid:UKX6dkV14mL8Lf2pp6bTkZ-->📢 公告详情</div>
+        <div data-page-node-id="6V6DcNUlT0ibHTv3MWFFsm" id="noticeDetailBody" style="font-size:14px; color:var(--text-secondary); line-height:1.8; max-height:60vh; overflow-y:auto"><!--pnid:GZh6leBvvzzdgjSjvh6rVS-->加载中...</div>
     </div>
 </div>
 
-<!-- 大图预览弹窗 -->
-<div class="modal-overlay-image" id="imageModal" onclick="if(event.target===this) closeImageModal()">
-    <div class="modal-content-image">
-        <button class="modal-close-image" onclick="closeImageModal()">✕</button>
-        <div class="image-container">
-            <button class="image-nav-btn prev" id="imagePrevBtn" onclick="imagePrev()">‹</button>
-            <img id="modalImage" src="" alt="应用截图">
-            <button class="image-nav-btn next" id="imageNextBtn" onclick="imageNext()">›</button>
+<!--pnid:SNE4XUSk3h0zOK401zyg9b--><!-- 大图预览弹窗 -->
+<div data-page-node-id="8ouONMWtUlY8h7gg6kVUpu" class="modal-overlay-image" id="imageModal" onclick="if(event.target===this) closeImageModal()">
+    <div data-page-node-id="kpyK8yDrl9ePnimj8GqSi3" class="modal-content-image">
+        <button data-page-node-id="nLDvNXMbLGZQ3U7PZ0iUWB" class="modal-close-image" onclick="closeImageModal()"><!--pnid:Cj9iDL54PnoRKw8Pd85NB4-->✕</button>
+        <div data-page-node-id="J3ersTySfFQK8chJ9bqqKU" class="image-container">
+            <button data-page-node-id="wGGev58KhEcb0spzzlEtzf" class="image-nav-btn prev" id="imagePrevBtn" onclick="imagePrev()"><!--pnid:aMyj00kMN2LNgvQ3rx3XG3-->‹</button>
+            <img data-page-node-id="sQglki1mNExLO9msZ9TC6Y" alt="应用截图" id="modalImage" src>
+            <button data-page-node-id="SWMny8CTGKoz8B2agptAwY" class="image-nav-btn next" id="imageNextBtn" onclick="imageNext()"><!--pnid:M3haRSRcPU8hjnahvrpyng-->›</button>
         </div>
-        <div class="image-counter" id="imageCounter">1 / 1</div>
+        <div data-page-node-id="99pjARDZzRJbIBKdVLIlP6" class="image-counter" id="imageCounter"><!--pnid:YU10TUok0YJ2y09KYVXLyZ-->1 / 1</div>
     </div>
 </div>
 
-<!-- 安装进度弹窗 -->
-<div class="modal-overlay" id="installModal">
-    <div class="install-modal-content" onclick="event.stopPropagation()">
-        <div class="install-modal-head">
-            <div class="install-modal-icon" id="installModalIcon"></div>
-            <div class="install-modal-title">
-                <div class="name" id="installModalName">应用名</div>
-                <div class="stage" id="installModalStage">准备中</div>
+<!--pnid:o9itLlwyrtxweGA5UoqPUS--><!-- 安装进度弹窗 -->
+<div data-page-node-id="bLRL1hhXaF261xT42KH0OY" class="modal-overlay" id="installModal">
+    <div data-page-node-id="mqIQudLXFnozetgosX2Muh" class="install-modal-content" onclick="event.stopPropagation()">
+        <div data-page-node-id="Ndb06cZBP8CtxvLjVijmjU" class="install-modal-head">
+            <div data-page-node-id="tQnz8RtbXCmvY9eDKhgSVa" class="install-modal-icon" id="installModalIcon"></div>
+            <div data-page-node-id="heYjHqoPE81g9v3KzFObL9" class="install-modal-title">
+                <div data-page-node-id="cLNxxarJABZFqN50jT0WPw" class="name" id="installModalName"><!--pnid:xWpMZjShx5jd4czQ3BlmBQ-->应用名</div>
+                <div data-page-node-id="zQUq982r3wwaEmnl9gHsrN" class="stage" id="installModalStage"><!--pnid:vQHXdGuorhtEQNzfWxXaoC-->准备中</div>
             </div>
-            <button class="install-modal-close" id="installModalClose" onclick="closeInstallModal()" style="display:none;">✕</button>
+            <button data-page-node-id="hdVeGxWUY2dR98nR4OIisl" class="install-modal-close" id="installModalClose" onclick="closeInstallModal()" style="display:none"><!--pnid:rogkgR8vuuXhboWHzf5GDV-->✕</button>
         </div>
 
-        <div class="install-modal-bar-wrap">
-            <div class="install-modal-bar-bg">
-                <div class="install-modal-bar-fill" id="installModalBar"></div>
+        <div data-page-node-id="kilFHNJYM2yoaaGoQHMGzy" class="install-modal-bar-wrap">
+            <div data-page-node-id="aKwadJMi1bNxxglKVp8ynU" class="install-modal-bar-bg">
+                <div data-page-node-id="z2x3G270SP4hcMF9uWbG9T" class="install-modal-bar-fill" id="installModalBar"></div>
             </div>
         </div>
 
-        <div class="install-modal-info">
-            <span id="installModalStatus">准备中...</span>
-            <span class="pct" id="installModalPct">0%</span>
+        <div data-page-node-id="UOhCwNEIJ4YWXlXHxxME1K" class="install-modal-info">
+            <span data-page-node-id="BgoymUGRVF5lQpuYssQQlh" id="installModalStatus"><!--pnid:cEzVOzrJnzrEyGA9K5RuPt-->准备中...</span>
+            <span data-page-node-id="4ZYhLL65MMDuV2h8ShdrOD" class="pct" id="installModalPct"><!--pnid:EeHy9Y8pgjHrt1Tas4aTPX-->0%</span>
         </div>
 
-        <div class="install-modal-detail" id="installModalDetail"></div>
-        <div class="install-modal-line" id="installModalLine"></div>
+        <div data-page-node-id="ivluiUTzHLzYvcX4smbzJX" class="install-modal-detail" id="installModalDetail"></div>
+        <div data-page-node-id="80OWl7fKbOECvhXGQabWJz" class="install-modal-line" id="installModalLine"></div>
 
-        <div class="install-modal-actions" id="installModalActions" style="display:none;">
-            <button class="btn" onclick="closeInstallModal()">关闭</button>
+        <div data-page-node-id="EdSHXgMRZqIAHTqmbuXhYY" class="install-modal-actions" id="installModalActions" style="display:none">
+            <button data-page-node-id="gKuLJV89uP5xMmrAvTfMzt" class="btn" onclick="closeInstallModal()"><!--pnid:XgdrYse8SQVpUefyCVlKHA-->关闭</button>
         </div>
     </div>
 </div>
 
-<!-- 向导安装弹窗 -->
-<div class="modal-overlay" id="wizardModal" onclick="if(event.target===this) closeWizard()">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeWizard()">✕</button>
-        <div class="modal-title" id="wizardTitle">安装向导</div>
-        <div id="wizardBody"></div>
-        <div class="modal-actions">
-            <button class="modal-btn" onclick="closeWizard()">取消</button>
-            <button class="modal-btn modal-btn-primary" id="wizardSubmitBtn" onclick="submitWizard()">确认安装</button>
+<!--pnid:lVswZ6BVZQYcHC8qKdeycs--><!-- 向导安装弹窗 -->
+<div data-page-node-id="NWv1oiL7CZsJ3djm4uQlYV" class="modal-overlay" id="wizardModal" onclick="if(event.target===this) closeWizard()">
+    <div data-page-node-id="bm0VbNUarDobvOxOGAQHlX" class="modal-content">
+        <button data-page-node-id="RzhBk2DC3Jm0L5Y1hyGmdR" class="modal-close" onclick="closeWizard()"><!--pnid:aTaLrB0jMmihRu9ovVJDfd-->✕</button>
+        <div data-page-node-id="oLTamXZznyw5bUyVhdqETW" class="modal-title" id="wizardTitle"><!--pnid:OQ55vBr6ANxzjUmGqZ9S1o-->安装向导</div>
+        <div data-page-node-id="fxHuLRQx3U59YkjgSMNzYd" id="wizardBody"></div>
+        <div data-page-node-id="rbxjkeraw52acU6Fi0SHQW" class="modal-actions">
+            <button data-page-node-id="q1VQpEzvReK7RMeK4LUugD" class="modal-btn" onclick="closeWizard()"><!--pnid:fHBI9pyFbXk8UPi9loij3k-->取消</button>
+            <button data-page-node-id="95dikxHtwFOPYGCcVkYsuY" class="modal-btn modal-btn-primary" id="wizardSubmitBtn" onclick="submitWizard()"><!--pnid:HLNfQnOjxlsjrhwfuyDcnJ-->确认安装</button>
         </div>
-        <div id="wizardStatus" style="margin-top:10px;font-size:12px;color:var(--text-muted);"></div>
+        <div data-page-node-id="AlxVgX4ENWfOpHcjxsByRk" id="wizardStatus" style="margin-top:10px; font-size:12px; color:var(--text-muted)"></div>
     </div>
 </div>
 
-<!-- 手动上传安装弹窗 -->
-<div class="modal-overlay" id="manualInstallModal" onclick="if(event.target===this) closeManualInstall()">
-    <div class="modal-content" style="max-width: 600px;">
-        <button class="modal-close" onclick="closeManualInstall()">✕</button>
-        <div class="modal-title">手动安装 FPK</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-bottom:18px;line-height:1.7;">
+<!--pnid:VpetnCqtOoqvQ9jErWTNfj--><!-- 手动上传安装弹窗 -->
+<div data-page-node-id="LNMdJwWGkZD79ZQwrzG4sY" class="modal-overlay" id="manualInstallModal" onclick="if(event.target===this) closeManualInstall()">
+    <div data-page-node-id="XvAewnNAtr0T5QPGPjApJk" class="modal-content" style="max-width:600px">
+        <button data-page-node-id="3TYDuDHBcH92BKYqBlm3SU" class="modal-close" onclick="closeManualInstall()"><!--pnid:i4CpGLoMnEXZ6vEQCBpEuS-->✕</button>
+        <div data-page-node-id="qQiQEuL703zYcsxkdGx9YT" class="modal-title"><!--pnid:6HA1Rl1mOp2Nf1gPJOVN64-->手动安装 FPK</div>
+        <div data-page-node-id="bIjto24FXv3NfP6K1GkONt" style="font-size:13px; color:var(--text-muted); margin-bottom:18px; line-height:1.7"><!--pnid:HqOenC4ByWvFjbmIOaoE0M-->
             选择本地 FPK 文件直接安装。用于调试、排查故障，避免反复从外链下载。
         </div>
 
-        <input type="file" id="manualFpkFile" accept=".fpk" class="manual-file-input">
+        <input data-page-node-id="DtyOWGsqKvVWlh5G9hwN0Q" accept=".fpk" class="manual-file-input" id="manualFpkFile" type="file">
 
-        <div class="manual-install-actions">
-            <button class="modal-btn modal-btn-primary" id="manualInstallBtn" onclick="doManualInstall()">
+        <div data-page-node-id="X8v06N9paiNzEoEisc7sM2" class="manual-install-actions">
+            <button data-page-node-id="wYsERvfjTzOOQ6j3tFsI23" class="modal-btn modal-btn-primary" id="manualInstallBtn" onclick="doManualInstall()"><!--pnid:npo9czacBFiehIP1mr5PqK-->
                 开始安装
             </button>
-            <button class="modal-btn" id="manualSecondaryBtn" onclick="manualSecondaryAction()">
+            <button data-page-node-id="OYmS2zsdidpTnOaGXCN54V" class="modal-btn" id="manualSecondaryBtn" onclick="manualSecondaryAction()"><!--pnid:Tzc76Icnk2vOFUCxcsG74Q-->
                 关闭
             </button>
         </div>
 
-        <div class="manual-progress-wrap" id="manualInstallProgressWrap">
-            <div class="manual-progress-bg">
-                <div class="manual-progress-bar" id="manualInstallProgressBar"></div>
+        <div data-page-node-id="Rhmp0sWQJy7K0E1bhnkYA6" class="manual-progress-wrap" id="manualInstallProgressWrap">
+            <div data-page-node-id="i7LTA2qtY3oc26XDQtKQSo" class="manual-progress-bg">
+                <div data-page-node-id="YXGC6j41ADojMhsI1FZZx6" class="manual-progress-bar" id="manualInstallProgressBar"></div>
             </div>
-            <div class="manual-progress-text" id="manualInstallProgressText"></div>
+            <div data-page-node-id="6JE0WSdcUrTkrUwzGIvTUB" class="manual-progress-text" id="manualInstallProgressText"></div>
         </div>
 
-        <div id="manualInstallStatus" style="margin-top:14px;font-size:13px;"></div>
-        <pre class="manual-log" id="manualInstallLog"></pre>
+        <div data-page-node-id="vpMVmTQeeXp9jifKbldDwt" id="manualInstallStatus" style="margin-top:14px; font-size:13px"></div>
+        <pre data-page-node-id="xa1QYnTPYpNI80DUTfMd4W" class="manual-log" id="manualInstallLog"></pre>
     </div>
 </div>
 
-<!-- 依赖缺失引导弹窗 -->
-<div class="modal-overlay" id="missingDepModal" onclick="if(event.target===this) closeMissingDepModal()">
-    <div class="modal-content" style="max-width: 460px;">
-        <button class="modal-close" onclick="closeMissingDepModal()">✕</button>
-        <div class="modal-title">缺少依赖应用</div>
+<!--pnid:U01XDpEDlNRj8EKyK7mdRo--><!-- 依赖缺失引导弹窗 -->
+<div data-page-node-id="JaAArJJnY3lS8kOIVhoPzG" class="modal-overlay" id="missingDepModal" onclick="if(event.target===this) closeMissingDepModal()">
+    <div data-page-node-id="GwiHluWyQdJtFRy5ajwTQF" class="modal-content" style="max-width:460px">
+        <button data-page-node-id="y6qPL6uXRxaZXBvVrIKIiP" class="modal-close" onclick="closeMissingDepModal()"><!--pnid:h53GhBUemwXx1gvBqSbZg6-->✕</button>
+        <div data-page-node-id="u1xoLRTHIdr9oTP5cg7I64" class="modal-title"><!--pnid:mF0Jxsbe6Zto1Qlb0AYehq-->缺少依赖应用</div>
 
-        <div style="display:flex;align-items:flex-start;gap:14px;padding:8px 0 16px;">
-            <div class="dep-modal-icon">!</div>
-            <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;color:var(--text-primary);line-height:1.7;">
+        <div data-page-node-id="hWYoEjaMk9Ei47AVAxz82g" style="display:flex; align-items:flex-start; gap:14px; padding:8px 0 16px">
+            <div data-page-node-id="Td8k72w1yAL9BYHW6LPXWl" class="dep-modal-icon"><!--pnid:RLNCZrQ11JKqPxpqizVoA3-->!</div>
+            <div data-page-node-id="H9lBV68q28QzR3oYZHzoLA" style="flex:1; min-width:0">
+                <div data-page-node-id="U5RwfHecFvlM79Lajo3L4B" style="font-size:14px; color:var(--text-primary); line-height:1.7"><!--pnid:nrDbJ5iUAWgWklYiDQznLb-->
                     安装此应用前，需要先在飞牛应用中心安装以下依赖：
                 </div>
-                <div class="dep-modal-name-box">
-                    <span class="dep-modal-name" id="missingDepName">--</span>
-                    <button class="dep-modal-copy-btn" onclick="copyMissingDepName()">复制</button>
+                <div data-page-node-id="0ymKHBcfHsiAJQkIQttV1Q" class="dep-modal-name-box">
+                    <span data-page-node-id="BWqUlb9yJr7oRBiiTct4Mb" class="dep-modal-name" id="missingDepName"><!--pnid:7WM0g7ATWGnsTaVfNNV03E-->--</span>
+                    <button data-page-node-id="rLhvqOjjQ9eiVUB886o232" class="dep-modal-copy-btn" onclick="copyMissingDepName()"><!--pnid:R1n0yPinJ60qAwV3KY2BM0-->复制</button>
                 </div>
-                <div style="margin-top:12px;font-size:13px;color:var(--text-muted);line-height:1.6;">
+                <div data-page-node-id="3TnHXLd9zPs67nv8af75t6" style="margin-top:12px; font-size:13px; color:var(--text-muted); line-height:1.6"><!--pnid:dSfZqScxQC1d3AH3HYJhTH-->
                     安装完成后返回软仓重试即可。
                 </div>
             </div>
         </div>
 
-        <div class="dep-modal-actions">
-            <button class="dep-btn dep-btn-secondary" onclick="closeMissingDepModal()">稍后再说</button>
-            <button class="dep-btn dep-btn-primary" onclick="openMissingDepInAppCenter()">去安装依赖</button>
+        <div data-page-node-id="nQT5q6MbRMXFEZnmTFZ29v" class="dep-modal-actions">
+            <button data-page-node-id="0BZpG73oVMtq5ldiT7MgiH" class="dep-btn dep-btn-secondary" onclick="closeMissingDepModal()"><!--pnid:dWbhdWlLUecacDfYMAhnQm-->稍后再说</button>
+            <button data-page-node-id="8nYGWU2ub036otGSPImm1A" class="dep-btn dep-btn-primary" onclick="openMissingDepInAppCenter()"><!--pnid:ZmFDMUrzKrzpGxNPqr7Uf2-->去安装依赖</button>
         </div>
     </div>
 </div>
 
-<!-- 系统消息推送弹窗 -->
-<div class="modal-overlay" id="sysPushModal" onclick="if(event.target===this) closeSysPushModal()">
-    <div class="modal-content" style="max-width: 460px;">
-        <button class="modal-close" onclick="closeSysPushModal()">✕</button>
-        <div class="modal-title" id="sysPushTitle">系统通知</div>
-        <div id="sysPushContent" style="font-size:14px;color:var(--text-secondary);line-height:1.8;max-height:60vh;overflow-y:auto;padding:12px 0;">
+<!--pnid:tOX2D4p64DJyH8BT5iQdcd--><!-- 系统消息推送弹窗 -->
+<div data-page-node-id="2LOakkAwqbvrQFYIEWDWIN" class="modal-overlay" id="sysPushModal" onclick="if(event.target===this) closeSysPushModal()">
+    <div data-page-node-id="O6kijJvV6rbDnOjoQaYtFG" class="modal-content" style="max-width:460px">
+        <button data-page-node-id="2A9CJ9U4JxZLd1QIMCOdMN" class="modal-close" onclick="closeSysPushModal()"><!--pnid:WmuQO8hngN92UrK510lbgV-->✕</button>
+        <div data-page-node-id="RxW5BYdLevDRtL6iXjVIJK" class="modal-title" id="sysPushTitle"><!--pnid:ZpKXHna9xxf4aWKrVlXp02-->系统通知</div>
+        <div data-page-node-id="n8960RW8JsleGAEOZUtjHU" id="sysPushContent" style="font-size:14px; color:var(--text-secondary); line-height:1.8; max-height:60vh; overflow-y:auto; padding:12px 0"><!--pnid:r0kLFjVOQljIqS7r9un64p-->
             消息内容
         </div>
-        <div class="modal-actions">
-            <button class="modal-btn modal-btn-primary" onclick="closeSysPushModal()">我知道了</button>
+        <div data-page-node-id="QAGWgFMiFNqsQHaTqUXGBq" class="modal-actions">
+            <button data-page-node-id="SYh62SdMCYA2d43TFTsLZt" class="modal-btn modal-btn-primary" onclick="closeSysPushModal()"><!--pnid:NY00utXr7ytFZR71G9i4Sl-->我知道了</button>
         </div>
     </div>
 </div>
 
-<!-- 强制更新弹窗 (不可关闭) -->
-<div class="modal-overlay" id="forceUpdateModal" style="z-index: 9999;">
-    <div class="modal-content" style="max-width: 420px; text-align: center;">
-        <div style="font-size: 40px; margin-bottom: 10px;"></div>
-        <div class="modal-title" style="color: #e53935; margin-bottom: 12px;" id="forceUpdateTitle">重要更新</div>
-        <div id="forceUpdateContent" style="font-size:14px;color:var(--text-secondary);line-height:1.8;margin-bottom: 24px;">
+<!--pnid:jUw5B0JBGZDkQpWtQfGmEg--><!-- 强制更新弹窗 (不可关闭) -->
+<div data-page-node-id="3t0rRd8wwnIrJDISznTx0Z" class="modal-overlay" id="forceUpdateModal" style="z-index:9999">
+    <div data-page-node-id="BXobRb5hOoKyBNxVMkEua6" class="modal-content" style="max-width:420px; text-align:center">
+        <div data-page-node-id="sLLWPe88UCf8mzbmQ78OBN" style="font-size:40px; margin-bottom:10px"></div>
+        <div data-page-node-id="JI87WKXnMySFdcYFRuOzmM" class="modal-title" id="forceUpdateTitle" style="color:#e53935; margin-bottom:12px"><!--pnid:nMnLRsqstcaJdumW4KMciF-->重要更新</div>
+        <div data-page-node-id="rjAzv04kjGX60m1VJ6e5Ow" id="forceUpdateContent" style="font-size:14px; color:var(--text-secondary); line-height:1.8; margin-bottom:24px"><!--pnid:C7KKXZyumwIYwzFk8uF1A9-->
             当前版本过低，请立即更新以恢复使用。
         </div>
-        <button class="modal-btn modal-btn-primary" style="width: 100%;" onclick="triggerForceUpdate()" id="forceUpdateBtn">立即更新</button>
+        <button data-page-node-id="2zecfVEZpwh9JWTf5U6kYE" class="modal-btn modal-btn-primary" id="forceUpdateBtn" onclick="triggerForceUpdate()" style="width:100%"><!--pnid:meuVZIU3SUDlpFDMVoZRtw-->立即更新</button>
     </div>
 </div>
 
-<!-- 首次启动引导弹窗 -->
-<div class="modal-overlay" id="initGuideModal" style="z-index: 9998;">
-    <div class="modal-content" style="max-width: 540px;">
-        <div class="modal-title">欢迎使用 FN软仓</div>
-        <div style="font-size:14px;color:var(--text-secondary);line-height:1.8;">
-            首次启动，请选择你的使用模式。<br>
-            <span style="font-size:12px;color:var(--text-muted);">
+<!--pnid:3ejIOjQQKun6HveTrnzFAX--><!-- 首次启动引导弹窗 -->
+<div data-page-node-id="BVooBAqcbBihCrgO8c6tzW" class="modal-overlay" id="initGuideModal" style="z-index:9998">
+    <div data-page-node-id="ja7vzZdpON0zxTWgDGCQ5C" class="modal-content" style="max-width:540px">
+        <div data-page-node-id="zcMYrupLoZut1OFp2ShV66" class="modal-title"><!--pnid:vO85Ot2UNPGzkycfJYvp90-->欢迎使用 FN软仓</div>
+        <div data-page-node-id="LBIrmieoIlY1lkRcltrmPL" style="font-size:14px; color:var(--text-secondary); line-height:1.8"><!--pnid:tqzTHBAqzp2wIZIeUlVLgB-->
+            首次启动，请选择你的使用模式。<br data-page-node-id="27zFYbvCElT9601w2wTh1I">
+            <span data-page-node-id="k8F4QTpDxi1IhBN74u5LM2" style="font-size:12px; color:var(--text-muted)"><!--pnid:D06ixQTR2Kn0IQSn2390OU-->
                 该选择仅在首次启动时出现；之后可随时在「源管理」中调整。
             </span>
         </div>
 
-        <div class="init-mode-options">
-            <div class="init-mode-card" data-mode="user" onclick="selectInitMode('user')">
-                <div class="init-mode-title">用户模式</div>
-                <div class="init-mode-desc">
-                    使用内置官方源<br>
+        <div data-page-node-id="R2mwNDtoSVsM2RCeUg6g9t" class="init-mode-options">
+            <div data-page-node-id="W73sziy7v3tkvOY8H2qHFK" class="init-mode-card" data-mode="user" onclick="selectInitMode('user')">
+                <div data-page-node-id="Jbm4ND5HHyJQNuctUas2P2" class="init-mode-title"><!--pnid:DvU5N54UnuxLK2CfklvtIW-->用户模式</div>
+                <div data-page-node-id="fWu8fT7LrgksTRjbOuFsgI" class="init-mode-desc"><!--pnid:IRlbo2vvwhsaLQk69JH0uN-->
+                    使用内置官方源<br data-page-node-id="rzuoebYTXGk0ZYNhnJOWh6"><!--pnid:ZMZ3Ht8afwgW1n27TWZShR-->
                     开箱即用，无需配置
                 </div>
             </div>
-            <div class="init-mode-card" data-mode="geek" onclick="selectInitMode('geek')">
-                <div class="init-mode-title">极客模式</div>
-                <div class="init-mode-desc">
-                    禁用内置官方源<br>
+            <div data-page-node-id="x14EdcazAkUjCsStuXpBam" class="init-mode-card" data-mode="geek" onclick="selectInitMode('geek')">
+                <div data-page-node-id="8cs4RDOhmkghZm1wGzbfrW" class="init-mode-title"><!--pnid:vIS9xgWGcMLZd4axUCZrs0-->极客模式</div>
+                <div data-page-node-id="QernLVxmlJ5WI3O7jtGVru" class="init-mode-desc"><!--pnid:o7SYfqe2rJGZLKY2zPK6SY-->
+                    禁用内置官方源<br data-page-node-id="4vxX1dsJWLKUgzyETgZvaU"><!--pnid:D0kW1IlGnjJwWHaHtWcndI-->
                     自行添加自定义源地址
                 </div>
             </div>
         </div>
 
-        <div class="modal-actions" style="margin-top: 20px;">
-            <button class="modal-btn modal-btn-primary" id="initConfirmBtn"
-                    onclick="confirmInitMode()" disabled>确定</button>
+        <div data-page-node-id="tzKeltvDhf9YEQ7jDnFhEp" class="modal-actions" style="margin-top:20px">
+            <button data-page-node-id="MDSzZGLRMMfHqjziYro0xr" class="modal-btn modal-btn-primary" disabled id="initConfirmBtn" onclick="confirmInitMode()"><!--pnid:5X2EiGJnz9k5m1htaniUmt-->确定</button>
         </div>
     </div>
-</div>
+</div><!--pnid:ruBzC304KQlzlO9xy0kQYB-->
 {{end}}

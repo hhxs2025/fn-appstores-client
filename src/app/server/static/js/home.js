@@ -390,7 +390,7 @@ function renderQuickList(containerId, apps, type) {
     var display = apps.slice(0, 8);
     var html = '';
     display.forEach(function (app) {
-        var iconHtml = app.icon ? '<img src="' + wrapImageUrl(app.icon) + '" alt="" loading="lazy">' : '·';
+        var iconHtml = app.icon ? '<img src="' + wrapImageUrl(app.icon, 'icon') + '" alt="" loading="lazy">' : '·';
         var meta = type === 'hot' ? '↓ ' + (app.downloads || 0) :
             type === 'installed' ? 'v' + (app.installed_version || app.version) :
                 type === 'updatable' ? '⬆ ' + app.version :
