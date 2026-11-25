@@ -1,327 +1,507 @@
 <!DOCTYPE html>
-<html data-page-node-id="4Ttb54M1dhinWvBm9xPbxO" lang="zh-CN">
-<head data-page-node-id="EtrQFUabR2inz7ReRxhJSM">
-<script data-page-node-id="6wLyCd3BBmTkIzyk5dne98" src="/page/page_comm/inject.js"></script>
-    <meta data-page-node-id="XJhlohgyjZKmNkR9tUcFZr" charset="UTF-8">
-    <meta data-page-node-id="7Q68CwvXnGSAybDd0LOJIZ" content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta data-page-node-id="iJSt4zq4XXqRZgzZgOVhNo" content="light dark" name="color-scheme">
-    <title data-page-node-id="rVFu8hOP187VOtInSNL0Xe" data-pnid-children="8p0Q4cd123LEJHUmjeU7DN">FN软仓服务端 · 使用指南</title>
-    <style data-page-node-id="jYEGsTF5aDSdT82ueMohYY" data-pnid-children="NKfnnfjZ97z4kb2y25Y0Ji">
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #24292e;
-            background-color: #ffffff;
-            max-width: 860px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            font-size: 16px;
-        }
-        
-        h1, h2, h3 {
-            font-weight: 600;
-            margin-top: 24px;
-            margin-bottom: 16px;
-            line-height: 1.25;
-        }
-        
-        h1 { 
-            font-size: 2em; 
-            border-bottom: 1px solid #eaecef; 
-            padding-bottom: 0.3em; 
-            margin-top: 0;
-        }
-        
-        h2 { 
-            font-size: 1.5em; 
-            border-bottom: 1px solid #eaecef; 
-            padding-bottom: 0.3em; 
-            margin-top: 36px;
-        }
-        
-        h3 { 
-            font-size: 1.25em; 
-            margin-top: 24px;
-        }
-        
-        p { 
-            margin-top: 0;
-            margin-bottom: 16px; 
-        }
-        
-        a { 
-            color: #0366d6; 
-            text-decoration: none; 
-        }
-        
-        a:hover { 
-            text-decoration: underline; 
-        }
-        
-        code {
-            padding: 0.2em 0.4em;
-            margin: 0;
-            font-size: 85%;
-            background-color: rgba(27,31,35,0.05);
-            border-radius: 3px;
-            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-        }
-        
-        pre {
-            padding: 16px;
-            overflow: auto;
-            font-size: 85%;
-            line-height: 1.45;
-            background-color: #f6f8fa;
-            border-radius: 3px;
-            margin-bottom: 16px;
-        }
-        
-        pre code {
-            background-color: transparent;
-            padding: 0;
-            font-size: 100%;
-        }
-        
-        blockquote {
-            padding: 0 1em;
-            color: #6a737d;
-            border-left: 0.25em solid #dfe2e5;
-            margin: 0 0 16px 0;
-        }
-        
-        blockquote p {
-            margin-bottom: 0;
-        }
-        
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 16px;
-        }
-        
-        th, td {
-            padding: 6px 13px;
-            border: 1px solid #dfe2e5;
-            text-align: left;
-        }
-        
-        th {
-            font-weight: 600;
-            background-color: #f6f8fa;
-        }
-        
-        ul, ol {
-            padding-left: 2em;
-            margin-top: 0;
-            margin-bottom: 16px;
-        }
-        
-        li {
-            margin-bottom: 4px;
-        }
-        
-        hr {
-            height: 0.25em;
-            padding: 0;
-            margin: 24px 0;
-            background-color: #e1e4e8;
-            border: 0;
-        }
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="FN软仓是一个飞牛 fnOS 的三方应用商店部署系统：一个能自己部署的服务端，一个装在飞牛里的客户端。">
+<title>FN软仓：不是又一个商店，是开商店的工具</title>
+<style>
+:root{
+  --paper:#fbfaf7; --panel:#ffffff; --ink:#1d1c19; --ink2:#4a473f; --muted:#857f72;
+  --line:#e4e0d6; --line-soft:#efebe2; --accent:#a8452b; --accent-soft:#f5e8e2;
+  --code:#f3efe6; --hero:#1c1b18; --hero-ink:#f6f2e9; --hero-muted:#a8a196;
+  --shadow:0 1px 2px rgba(29,28,25,.05), 0 8px 24px -12px rgba(29,28,25,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#131210; --panel:#191815; --ink:#eae6dc; --ink2:#bcb6a9; --muted:#8d8779;
+    --line:#2c2a24; --line-soft:#232119; --accent:#e07a5c; --accent-soft:#2b1d17;
+    --code:#1e1c18; --hero:#0c0b09; --hero-ink:#f2eee4; --hero-muted:#948d80;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -16px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",-apple-system,"Segoe UI",sans-serif;
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent);color:#fff}
 
-        .meta {
-            color: #6a737d;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
+/* 顶部阅读进度 */
+#bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:99;transition:width .1s linear}
 
-        @media (prefers-color-scheme: dark) {
-            body { background-color: #0d1117; color: #c9d1d9; }
-            h1, h2 { border-bottom-color: #21262d; }
-            a { color: #58a6ff; }
-            code { background-color: rgba(110,118,129,0.4); }
-            pre { background-color: #161b22; }
-            blockquote { color: #8b949e; border-left-color: #30363d; }
-            th { background-color: #161b22; }
-            th, td { border-color: #30363d; }
-            hr { background-color: #21262d; }
-            .meta { color: #8b949e; }
-        }
-    </style>
+/* ---------- Hero ---------- */
+.hero{background:var(--hero);color:var(--hero-ink);padding:88px 0 76px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:56px 56px;mask-image:linear-gradient(180deg,#000,transparent 78%)}
+.hero .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 32px}
+.kicker{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--hero-muted);margin-bottom:26px}
+.kicker i{display:block;width:26px;height:1px;background:var(--accent);font-style:normal}
+.hero h1{margin:0;font-size:clamp(2rem,4.4vw,3.35rem);line-height:1.2;font-weight:800;letter-spacing:-.015em}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.lede{margin:28px 0 0;max-width:660px;font-size:clamp(15px,1.35vw,17.5px);line-height:1.85;color:#cfc8ba}
+.hero .meta{margin-top:34px;display:flex;flex-wrap:wrap;gap:10px 22px;font-size:13px;color:var(--hero-muted);letter-spacing:.03em}
+.hero .meta span{display:inline-flex;align-items:center;gap:7px}
+.hero .meta span::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--accent)}
+
+/* ---------- 布局 ---------- */
+.layout{max-width:1180px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:minmax(0,720px) 240px;gap:64px;justify-content:center}
+@media (min-width:1180px){.layout{justify-content:space-between}}
+
+/* ---------- 目录 ---------- */
+aside{position:relative}
+.toc{position:sticky;top:40px;max-height:calc(100vh - 80px);overflow:auto;padding:44px 0 40px;font-size:13px;scrollbar-width:thin}
+.toc-t{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;padding-left:12px}
+.toc a{display:block;color:var(--ink2);text-decoration:none;padding:5px 0 5px 12px;border-left:2px solid var(--line-soft);line-height:1.5;transition:.16s}
+.toc a.lv2{padding-left:26px;color:var(--muted);font-size:12.3px}
+.toc a .n{color:var(--accent);font-weight:700;font-size:11.5px;margin-right:6px;letter-spacing:.02em}
+.toc a:hover{color:var(--accent);border-left-color:var(--accent-soft)}
+.toc a.on{color:var(--accent);border-left-color:var(--accent);font-weight:600}
+details.toc-m{display:none}
+
+/* ---------- 正文 ---------- */
+article{padding:52px 0 96px;min-width:0}
+h2{margin:72px 0 26px;font-size:26px;line-height:1.35;font-weight:800;letter-spacing:-.01em;display:flex;align-items:baseline;gap:14px}
+h2 .num{flex:none;font-size:12px;font-weight:700;letter-spacing:.06em;color:#fff;background:var(--accent);
+  width:24px;height:24px;line-height:24px;text-align:center;border-radius:4px;transform:translateY(-3px)}
+article>section:first-of-type h2{margin-top:8px}
+h3{margin:40px 0 12px;font-size:18.5px;font-weight:700;line-height:1.5;padding-left:14px;position:relative;letter-spacing:-.005em}
+h3::before{content:"";position:absolute;left:0;top:.42em;bottom:.42em;width:3px;border-radius:2px;background:var(--accent-soft)}
+h3 .k{color:var(--accent);margin-right:8px;font-variant-numeric:tabular-nums}
+p{margin:15px 0}
+strong{font-weight:700;color:var(--ink)}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+a:hover{border-bottom-color:var(--accent)}
+code{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;font-size:.87em;
+  background:var(--code);padding:.16em .42em;border-radius:4px;word-break:break-word}
+ul,ol{margin:16px 0;padding-left:1.5em}
+li{margin:9px 0}
+li::marker{color:var(--accent)}
+ul li::marker{content:"▪ "}
+hr{border:0;border-top:1px solid var(--line);margin:56px 0 0}
+
+/* 表格 */
+.tbl{overflow-x:auto;margin:28px 0;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.65}
+th,td{padding:14px 18px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft)}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--line-soft)}
+tbody tr:last-child td{border-bottom:0}
+td:first-child{color:var(--ink);font-weight:600;white-space:nowrap}
+tbody tr:hover{background:var(--accent-soft)}
+
+/* 图片 */
+figure.shot{margin:26px 0;padding:0}
+figure.shot img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:var(--shadow)}
+figure.shot figcaption{margin-top:9px;font-size:12.5px;color:var(--muted);text-align:center;letter-spacing:.02em}
+
+/* 导语条 / 金句 */
+blockquote{margin:26px 0;padding:20px 24px;background:var(--accent-soft);border-radius:10px;
+  font-size:16px;line-height:1.8;color:var(--ink2)}
+blockquote p{margin:0}
+.end{margin-top:44px;padding-top:44px;border-top:1px solid var(--line);text-align:center}
+.end p{margin:0;font-size:clamp(19px,2.2vw,24px);font-weight:800;line-height:1.6;letter-spacing:-.01em}
+.end p strong{color:var(--accent)}
+
+/* 页脚 */
+footer{background:var(--hero);color:var(--hero-muted);padding:34px 32px;font-size:12.5px;letter-spacing:.04em}
+footer .wrap{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
+
+@media (max-width:980px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:0;padding:0 22px}
+  aside{display:none}
+  details.toc-m{display:block;margin:26px 0 0;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:0 16px}
+  details.toc-m summary{cursor:pointer;padding:13px 0;font-size:13.5px;font-weight:600;color:var(--ink2);list-style:none}
+  details.toc-m summary::-webkit-details-marker{display:none}
+  details.toc-m summary::after{content:"＋";float:right;color:var(--accent)}
+  details.toc-m[open] summary::after{content:"－"}
+  details.toc-m .inner{padding:4px 0 14px;border-top:1px solid var(--line-soft)}
+  details.toc-m a{display:block;padding:5px 0;font-size:13.5px;color:var(--ink2);text-decoration:none;border:0}
+  details.toc-m a.lv2{padding-left:16px;font-size:12.8px;color:var(--muted)}
+  details.toc-m a .n{color:var(--accent);font-weight:700;font-size:11.5px;margin-right:6px}
+  .hero{padding:56px 0 48px}
+  .hero .wrap{padding:0 22px}
+  article{padding:34px 0 70px}
+  h2{font-size:22px;margin-top:52px}
+  h3{font-size:17px}
+  body{font-size:16px}
+  th,td{padding:11px 13px}
+  td:first-child{white-space:normal}
+}
+
+/* ===== 表格统一边框与斑马纹 ===== */
+article table{
+  border-collapse:collapse;
+  width:100%;
+  font-size:14.5px;
+  line-height:1.65;
+  background:var(--panel);
+}
+article th,
+article td{
+  padding:14px 18px;
+  text-align:left;
+  vertical-align:top;
+  border:1px solid var(--line);
+}
+article th{
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:600;
+  background:var(--line-soft);
+  white-space:nowrap;
+}
+article tbody tr:nth-child(even){
+  background:var(--line-soft);
+}
+article tbody tr:hover{
+  background:var(--accent-soft);
+}
+
+/* .tbl 外层已有圆角和外框，内部避免双框 */
+.tbl table{
+  border:0;
+}
+.tbl th,
+.tbl td{
+  border:1px solid var(--line-soft);
+}
+.tbl tr:first-child th{
+  border-top:0;
+}
+.tbl tr:last-child td{
+  border-bottom:0;
+}
+.tbl th:first-child,
+.tbl td:first-child{
+  border-left:0;
+}
+.tbl th:last-child,
+.tbl td:last-child{
+  border-right:0;
+}
+
+@media (max-width:980px){
+  article th,
+  article td{
+    padding:10px 12px;
+    font-size:13.5px;
+  }
+}
+
+@media print{
+  #bar,.toc,details.toc-m,footer{display:none}
+  body{background:#fff;color:#000;font-size:11pt}
+  .hero{background:#fff;color:#000;padding:0 0 16pt;border-bottom:1px solid #000}
+  .hero h1{font-size:24pt}.lede{color:#333}.kicker,.hero .meta{color:#666}
+  .layout{display:block;padding:0}
+  h2{page-break-after:avoid}table,.tbl,blockquote,figure.shot{page-break-inside:avoid}
+}
+</style>
 </head>
-<body data-page-node-id="MRGbznrK1FSh0dBO2YfrWJ">
+<body>
+<div id="bar"></div>
 
-<h1 data-page-node-id="iOJkTVooj3ZvCd5KyxG35B"><!--pnid:VInZ5q5HbvyncFghTC2IMC-->FN软仓服务端 · 使用指南</h1>
-<p data-page-node-id="6NoSAOpENFuEo595QEFxFy" class="meta"><!--pnid:GqGC0Idukx383iv1DYbDm6-->版本 v2.10.3（Go 版） · 纯在线托管模式 · 应用级变更审核 · 推送与安全防护</p>
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker"><i></i>飞牛 fnOS · 应用商店部署系统</div>
+    <h1>FN软仓：不是又一个商店，<br>是<em>开商店的工具</em></h1>
+    <p class="lede">一个飞牛 NAS 系统（fnOS）的三方应用商店部署系统。它由两半组成：一个能自己部署的服务端，一个装在飞牛里的客户端。</p>
+    <div class="meta">
+      <span>服务端 + 客户端 双部件</span>
+      <span>两种模式 · 三种玩法</span>
+      <span>约 7 分钟读完</span>
+    </div>
+  </div>
+</header>
 
-<h2 data-page-node-id="kwBTnJV9GrZlrxXcvUvust" id="intro"><!--pnid:Ow7GMvnEOTPWeCLO0AlqBR-->项目简介</h2>
-<p data-page-node-id="8o3J3SwQEm2Lbx4OyRGeuP"><!--pnid:ExQFj7OOyViaKsZ1YtdNU2-->FN软仓服务端是 FN软仓的<strong data-page-node-id="6rpyVtHELJmq5DQFWCHRcm"><!--pnid:2QbuRWJ1zw0x0oVSQ3mCuh-->管理后端</strong><!--pnid:BSK8oLIBQVlpkDYHWZSo29-->。除提供 FN软仓自己的官方源给软仓客户端外，还内置了应用托管、变更审核、下载统计、外链加速、定向消息推送及完整的防刷安全机制。</p>
+<div class="layout">
+  <article>
+    <details class="toc-m"><summary>目录</summary><div class="inner">
+<a class="lv1" href="#s1"><span class="n">一</span>两个部件，可以只用一半</a>
+<a class="lv2" href="#s2">1 服务端</a>
+<a class="lv2" href="#s3">2 客户端</a>
+<a class="lv2" href="#s4">3 不用记组合</a>
+<a class="lv1" href="#s5"><span class="n">二</span>客户端有两个模式，这个选择决定一切</a>
+<a class="lv2" href="#s6">1 用户模式</a>
+<a class="lv2" href="#s7">2 极客模式</a>
+<a class="lv1" href="#s8"><span class="n">三</span>服务端里有什么</a>
+<a class="lv2" href="#s9">1 后台功能一览</a>
+<a class="lv2" href="#s10">2 上货：三种方式同时开着</a>
+<a class="lv2" href="#s11">3 分发：一次安装要过四道</a>
+<a class="lv2" href="#s12">4 开发者：一套完整的分账台</a>
+<a class="lv1" href="#s13"><span class="n">四</span>三种玩法</a>
+<a class="lv2" href="#s14">玩法一 自建服务端</a>
+<a class="lv2" href="#s15">玩法二 外部 json 型玩法</a>
+<a class="lv2" href="#s16">玩法三 服务端开发者系统子源玩法</a>
+<a class="lv1" href="#s17"><span class="n">五</span>跟友店是什么关系</a>
+<a class="lv1" href="#s18"><span class="n">六</span>从哪开始</a>
+</div></details>
 
-<blockquote data-page-node-id="B0HL8yuMmCBFqpyblUH1mP">
-    <strong data-page-node-id="Zyf3C97F7qWwa1dPgAqulw"><!--pnid:409cohMWX14APFXk7QC8MU-->v2.10.3 更新说明</strong><!--pnid:VefgdXdkO7hnz2RGYidbQI-->：新增定向消息推送（支持弹窗、强更）、异常行为告警（支持钉钉、飞书等）、设备黑名单封禁、管理员防爆破。同时客户端下载统计改为校验通过后主动上报，并进一步优化了外链加速器的故障切换逻辑。
-</blockquote>
+<section>
+<p><strong>服务端跑起来，你就有了一个「源」。</strong></p>
+<p><strong>客户端装进去，你就有了一个「前台」。</strong></p>
+<p>两半可以只用一半——不想折腾的人光装客户端就行，只想做后端的人服务器跑起来就能收工。</p>
+<p>下面按「有哪几个部件、各自能干什么、三种情况怎么用」来讲。</p>
+</section>
 
-<h2 data-page-node-id="WC1myYmCqceu8WfAIn2Auc" id="ways"><!--pnid:Joo8wVNlA5ziy5Seg2CoyT-->三种参与方式</h2>
+<section>
+<h2 id="s1"><span class="num">一</span><span class="txt">两个部件，可以只用一半</span></h2>
 
-<h3 data-page-node-id="wfrEy31MLdPw23wp3n7grI"><!--pnid:GHQgpei1D8mLir1Ai9qhra-->方式一 · 纯在线托管（推荐）</h3>
-<p data-page-node-id="bNjdK9SaFqcFBXvF9n1fV7"><!--pnid:vSokZCBAIMhigq65kvoE6V-->开发者<strong data-page-node-id="1YUXidxOzuf4vBG7BVggQz"><!--pnid:21KfMxBFY5VDTJuOTJmJFZ-->不需要懂 Git，不需要建仓库，不需要写 JSON</strong><!--pnid:BcLHJFNaMn81SChXF2bqUr-->。向源主申请开通后，直接在网页后台填写应用信息。</p>
-<ol data-page-node-id="xj0ivU2zDZ1nrst8s4Hqt0">
-    <li data-page-node-id="mKcWtRw8D9wztcSWHva2e8"><strong data-page-node-id="LWvR6IZKIFWmqW67GFSbon"><!--pnid:T6tVW72S4l1seRkWJPBjtO-->申请入驻</strong><!--pnid:Vck9sEBmOUJ7h5cE1jnomi-->：在软仓客户端或网页端提交入驻申请。源主审核通过后，发送专属管理后台链接。</li>
-    <li data-page-node-id="0fOPpBEWnQk9Zu159Rx3SI"><strong data-page-node-id="KvgWajqiQyFGcW49GoiXAK"><!--pnid:JKKs6FtnDtKc4polcjRNOT-->在线填表</strong><!--pnid:2nQTuBqFsYVGkPN8UZD9T1-->：在后台点「添加应用」，拖入 FPK 文件自动解析，填入下载直链。</li>
-    <li data-page-node-id="LF6SnCc0WXbtZsgokVomid"><strong data-page-node-id="iDLtgRClmxKR0Pq01wO1I5"><!--pnid:wbkQXnZh4ouBNzWyp9ohhc-->提交审核</strong><!--pnid:sxE304QpXoux86RESrXCag-->：点击「保存并提交审核」。源主通过后，客户端 30 秒内可见。</li>
+<p><strong>服务端是「源」，客户端是「前台」。</strong></p>
+<p>服务端跑起来，你就有了一个可被客户端连接的源；客户端装进去，你就有了逛和装应用的界面。两半可以只用一半：只想装应用，光装客户端；只想做源，服务端跑起来就能收工。</p>
+
+<h3 id="s2"><span class="k">1</span>服务端</h3>
+<p>默认是一个 Docker 镜像，5660 端口，IPv4/IPv6 双栈；也提供 <strong>docker 版 FPK</strong>，可以在飞牛应用中心直接安装，不必手敲 <code>docker run</code>。当前最新版是 <strong>2.12.0</strong>，新增了服务端 Webhook 通知和开发者后台 Webhook 通知。跑起来之后浏览器打开就是完整后台：上货、开发者、统计、加速线路、推送、邮件和 Webhook，全在里面。</p>
+
+<h3 id="s3"><span class="k">2</span>客户端</h3>
+<p>是一个 FPK，装到飞牛应用中心。它自己不带内容，内容全来自它连的「源」。</p>
+
+<h3 id="s4"><span class="k">3</span>不用记组合</h3>
+<p>实际只用记三种姿势：</p>
+<ul>
+<li><strong>只装客户端</strong>：用户模式接官方源，或极客模式接别人的源。</li>
+<li><strong>只跑服务端</strong>：得到一个纯后端源，谁的客户端都能连，开发者也能往上上货。</li>
+<li><strong>两个都上</strong>：自己的源加自己的前台；要对外开放，再把地址发出去。</li>
+</ul>
+<p>记住这三种姿势就够了，不需要把服务端和客户端拆成四种组合来背。</p>
+</section>
+
+<section>
+<h2 id="s5"><span class="num">二</span><span class="txt">客户端有两个模式，这个选择决定一切</span></h2>
+<p>第一次打开会让你选，之后按这个模式走。</p>
+
+<h3 id="s6"><span class="k">1</span>用户模式</h3>
+<p>预置官方源，且官方源是第一默认源、锁死删不掉。界面就是个正常商店：搜、看、装、更新。</p>
+<p>源管理里<strong>也可以自己加源</strong>，但加进来的源不是第一默认源，也<strong>不提供公告和轮播图</strong>——公告和轮播图只由第一默认源（官方源）下发。</p>
+<p>后台每次启动会把官方源地址强制覆盖成默认值，所以旧地址被换掉时你不需要手动改。</p>
+
+<h3 id="s7"><span class="k">2</span>极客模式</h3>
+<p>不预置任何源，启动时还会把残留的官方源槽位清掉，第一次进来是空的，要你自己填源地址。</p>
+<p>极客模式<strong>说白了就是另起炉灶建一个应用商店</strong>：官方源被清掉，你自己填的第一个源就是默认源，公告和轮播图由它下发——通常就是你自建的服务端。你填几个源都行，但<strong>只有第一个源负责公告和轮播图</strong>，跟用户模式里官方源的角色一样。</p>
+<p>所以两种模式的区别是：</p>
+<ul>
+<li><strong>用户模式</strong>是「官方给你一个商店」——官方源是默认主场，别的源能加，但公告和轮播图只认官方源。</li>
+<li><strong>极客模式</strong>是「你自己开一个商店」——官方源清掉，第一个源（一般是自建服务端）接管公告和轮播图，自己运营、自己掌控。</li>
+</ul>
+<p>能接自建的源，也能接友店的源，还能两家一起接。多个源并发拉取，合并时按「应用 ID + 平台」去重，同名同平台只留版本高的那个，所以接三个源不会看到三条重复记录。</p>
+</section>
+
+<section>
+<h2 id="s8"><span class="num">三</span><span class="txt">服务端里有什么</span></h2>
+
+<h3 id="s9"><span class="k">1</span>后台功能一览</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th style="text-align: left;">核心功能项</th>
+<th style="text-align: left;">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">公告管理</td>
+<td style="text-align: left;">轮播图管理（支持跳转应用详情、外部链接、应用分类标签页）；公告管理，支持优先级排序</td>
+</tr>
+<tr>
+<td style="text-align: left;">源管理</td>
+<td style="text-align: left;">聚合跑 FN软仓服务端搭建的三方源地址；聚合 fnrc.json 源地址</td>
+</tr>
+<tr>
+<td style="text-align: left;">应用明细</td>
+<td style="text-align: left;">本地源应用的架构、类型、版本及 JSON 预览，应用名和 id 搜索；三方源应用查看及按源筛查；服务端配置文件备份与恢复、孤儿文件清理</td>
+</tr>
+<tr>
+<td style="text-align: left;">应用编辑</td>
+<td style="text-align: left;">应用名称 / 版本 / 作者 / 类型 / 架构 / 描述 / 直链 / 预览图等信息编辑；应用新增、架构批量修改；应用删除、名称和 id 搜索</td>
+</tr>
+<tr>
+<td style="text-align: left;">应用上传</td>
+<td style="text-align: left;">拖入 fpk 自动解析元数据并写入 fn-appstores.json，支持全托管 / 半托管两种模式；应用截图管理（服务端托管或外链）</td>
+</tr>
+<tr>
+<td style="text-align: left;">仪表盘</td>
+<td style="text-align: left;">应用总数、不同架构应用数、源类型 / 数量统计；下载概览、设备统计；近 30 日下载趋势、今日 / 本周 TOP10；下载明细及 CSV 导出</td>
+</tr>
+<tr>
+<td style="text-align: left;">消息推送</td>
+<td style="text-align: left;">邮件通知（QQ / 163 / Gmail / 企业邮箱 / 自建）；2.12.0 新增 Webhook 通知（钉钉 / 企业微信 / 飞书 / 自定义）；定向消息推送（全量 / 按架构 / 按客户端版本 / 按客户端 ID）</td>
+</tr>
+<tr>
+<td style="text-align: left;">安全管理</td>
+<td style="text-align: left;">下载限速与 IP 封禁（仅对全托管分发平台模式下 fpk 下载请求有效）；设备明细与封禁、设备状态查看</td>
+</tr>
+<tr>
+<td style="text-align: left;">外链加速</td>
+<td style="text-align: left;">针对半托管模式下走 GitHub 直链的 fpk 下载进行加速，需自己配置；支持加速站健康检测定时设置和动态测速排序</td>
+</tr>
+<tr>
+<td style="text-align: left;">开发者管理</td>
+<td style="text-align: left;">新增开发者系统子源；开发者后台支持 Webhook 配置（2.12.0 新增），便于开发者及时接收审核结果；fpk 拖入自动解析写入开发者子源；应用更新审核后 manifest 字段对比；未审核超时提醒、审核记录清理</td>
+</tr>
+</tbody>
+</table></div>
+
+<figure class="shot">
+  <img src="https://f.hhxs2026.top:8888/f/imgs/fnrc-server.webp" alt="FN软仓服务端后台" loading="lazy">
+  <figcaption>服务端后台：上货、开发者、统计、加速线路、推送、邮件与 Webhook 都在这里</figcaption>
+</figure>
+
+<h3 id="s10"><span class="k">2</span>上货：三种方式同时开着</h3>
+<p><strong>自己传——服务端全托管模式。</strong> 选一个 FPK，服务端把 manifest 拆开，名字、版本、架构、简介、依赖、标签全读出来；图标从包里抽出来，转成 PNG 并压到 2048 以内；上传完应用就在列表里了，不用再填表。上限单包 512 MB，批量一次 2 GB，截图单独换，单次 64 MB。不想下载再上传，就贴个 URL 让服务端自己去拉。</p>
+<p><strong>挂外链——服务端半托管模式。</strong> 只登记元数据，下载地址填 FPK 直链。客户端点安装，服务端回 302 把请求甩过去，包不经你的机器。你 NAS 上只多一条记录，不多一个字节。<strong>外链建议优先选国内的 Git 类平台，如 GitCode、Gitee 等，也支持 OSS 存储</strong>；如果非要填 GitHub 直链，需要在后台配置加速站。</p>
+<p><strong>招商——开发者系统模式。</strong> 开发者申请入驻，你审批，系统发他一个 Token。之后他自己登后台传包、改简介、提版本，提交的改动进审核队列，你点了通过才生效，通过或驳回都会给他发通知。每个开发者自动汇总成一个独立子源，<strong>他不用建仓库、不用买服务器、也不用知道源文件该长什么样</strong>。</p>
+
+<h3 id="s11"><span class="k">3</span>分发：一次安装要过四道</h3>
+<p>客户端点「安装」之后，服务端要决定这个包从哪儿出去：</p>
+<ol>
+<li>本地有这个 FPK → 直接给文件</li>
+<li>只登记了外链 → 302 跳过去</li>
+<li><strong>半托管 + GitHub 外链才走加速</strong> → 仅当应用走半托管模式、且 FPK 下载地址是 GitHub 直链时，后台配置的加速站才参与：服务端定时探测（默认 10 分钟一轮，单次探测 10 秒、抓 0.5 MB），按实测速度排序，最多 10 条写进下发列表。全托管本地文件、非 GitHub 外链不走这条</li>
+<li>客户端逐条试 → 首包 5 秒没动静就换下一条，整轮 50 秒封顶</li>
+</ol>
+<p>下载地址是每次请求现算的，不是写死在包里。所以你换线路、加镜像、改目录，已经发出去的客户端不用动。</p>
+<p>运营后台还能看到：下载量按应用 / 按天 / 按平台分开记（同设备 60 秒内重复下载只算一次）、设备明细与在线离线、终端评分、定向推送、限速与封禁、<code>data/</code> 整包备份恢复。通知同时走邮件和 Webhook，覆盖开发者申请、待审、源状态变化、上架 / 下架 / 更新、每周周报；同类事件一轮检测合并，不刷屏。</p>
+
+<h3 id="s12"><span class="k">4</span>开发者：一套完整的分账台</h3>
+<p>申请 → 审批 → 发 Token → 自助提交 → 变更审核 → 通知 → 数据看板。</p>
+<p>开发者能看到自己应用的下载量、上架状态、被驳回的原因，也能自己撤回还没审的改动。</p>
+<p>2.12.0 起，开发者后台也可以配置 Webhook，应用上架 / 更新的审核通过或驳回会直接推给开发者，不用反复登后台看结果。</p>
+<p>这套东西的意义是：你想让别人往你的商店上货，不用先教他写 JSON。</p>
+</section>
+
+<section>
+<h2 id="s13"><span class="num">四</span><span class="txt">三种玩法</span></h2>
+
+<h3 id="s14"><span class="k">玩法一</span>自建服务端</h3>
+<p>适合：有一堆自己的包要发、想完全掌控自己的商店。</p>
+<ol>
+<li>安装 FN软仓服务端（docker 版 FPK），搭建自己的应用商店。</li>
+<li>安装时需设置 <strong>服务端外部访问地址</strong>（公网地址可以是穿透或反代的 IP 或域名）和 <strong>服务端后台管理密码</strong>（默认 <code>admin123</code>）。
+  <figure class="shot">
+    <img src="https://f.hhxs2026.top:8888/f/imgs/fnrc-server1.webp" alt="FN软仓服务端安装配置" loading="lazy">
+    <figcaption>安装时设置外部访问地址与后台管理密码</figcaption>
+  </figure>
+</li>
+<li>应用添加：拖入上传应用，根据实际确定是否勾选 <strong>托管 fpk 到服务端</strong> 和 <strong>托管 ICON 到服务端</strong>。若服务器或飞牛上行带宽有压力，建议不要勾选托管 fpk，fpk 改走外部直链。</li>
+<li>若选择 <strong>半托管模式</strong>，上传 fpk 自动写入 json 后，进入 <strong>应用编辑</strong> 检查表单信息，填入「下载地址」（fpk 直链）。<strong>建议优选国内 Git 类平台，如 GitCode 或 Gitee 等，也支持 OSS</strong>；如填 GitHub 直链，需配置加速站。</li>
+<li>轮播图：存到服务端 <code>data/previews/lunbotu/</code> 下，地址填 <code>http://xxx.yyy.com:5660/previews/lunbotu/xxx.webp</code>（推荐 webp 格式）。跳外部链接填 <code>...xxx.webp|url:https:yyy.zzz.com</code>；跳应用详情填 <code>...xxx.webp|app:应用id</code>。尺寸建议 <strong>880×405px</strong>，也可直接填外部图片直链。</li>
+</ol>
+<p><strong>接自己还是申请聚合，二选一：</strong></p>
+<ul>
+<li>要搭建<strong>完全独立的个人应用商店</strong>：服务端准备好后，安装 FN软仓客户端，<strong>首次</strong>进入选 <strong>极客模式</strong>，在 <strong>源管理</strong> 填入 <code>http://xxx.yyy.com:5660</code>，从服务端后台 <strong>刷新应用缓存</strong>，再在客户端「应用」里点 <strong>刷新</strong>。</li>
+<li><strong>不搭建独立商店</strong>：把 <code>http://xxx.yyy.com:5660</code> 发给 FN软仓官方主源管理员，<strong>申请聚合</strong>，用户打开官方客户端即可看到你的应用。</li>
+</ul>
+
+<h3 id="s15"><span class="k">玩法二</span>外部 json 型玩法</h3>
+<p>适合：不想跑服务端，只想把自己的包挂出来。</p>
+<ol>
+<li>从 FN软仓客户端安装 <strong>FN软仓助手 fpk</strong>，或从交流群下载 <strong>FN软仓助手 exe</strong>。</li>
+<li>拖入 fpk 应用，自动读取元数据、写 json，手动填入 fpk 直链、图标直链等，点击「下载」导出 <code>fnrc.json</code>，存放到能生成直链的平台（如 Gitee / OSS 等）或 FNOS 的应用里（如 file-vault、轻量应用存储等）。</li>
+<li>将 <code>fnrc.json</code> 告知 FN软仓服务端管理员，<strong>申请聚合</strong>。</li>
 </ol>
 
-<h3 data-page-node-id="9obhIaPY4PlxFvQjz1B3V6"><!--pnid:ylif92OwkRSDvIDccWUWn9-->方式二 · 自带 fnrc.json（传统模式）</h3>
-<p data-page-node-id="KVAHHlZ3wHQgocJCXEMpfI"><!--pnid:fc846NOEtu3EsVOzQDpDZr-->如果你有多个应用，或者希望数据完全独立，可以手写一份 <code data-page-node-id="4brzD7itoudSRjmBTseI5y" data-pnid-children="udLGjrRjGF83PAUJgWJcvm">fnrc.json</code><!--pnid:cXuYfSqWMDcHNF1UDmkZjK--> 并挂载在 Gitee/GitHub 上，然后将直链交给源主添加为“三方源”。此模式下一次审核后，后续更新只需修改 Gitee 里的 JSON 并 push，无需再找源主审核。</p>
+<figure class="shot">
+  <img src="https://f.hhxs2026.top:8888/f/imgs/fnrc-zhushou.webp" alt="FN软仓助手" loading="lazy">
+  <figcaption>FN软仓助手：拖入 fpk 自动读元数据、写 json、导出 fnrc.json</figcaption>
+</figure>
 
-<h3 data-page-node-id="1SOe8Dw4ruWTvAOF8thay5"><!--pnid:ZIyjL5ChQ9nw0PrrjVG7mK-->方式三 · 自建独立源（成为源主）</h3>
-<p data-page-node-id="7QMMH0IhdpSTItp1LhMayv"><!--pnid:J9SY779zNRQSrJcyopq4vP-->通过 Docker 部署 FN软仓服务端，自己当源主。你可以自己上传应用，也可以聚合其他服务端或 <code data-page-node-id="FvVJVIr3xqxNitaHls9ekg" data-pnid-children="zP1T2g0HfavXvhCgoFPZLh">fnrc.json</code><!--pnid:nbLlSO9DBTMMsSIDwoYQey-->。</p>
-
-<blockquote data-page-node-id="K0EbSoa12wvaxojsyORHk4">
-    <strong data-page-node-id="nUE1Iux5NeY2VSDJmmQKVs"><!--pnid:I3t0LJSOPReR5PmabnM7iL-->自建 API 说明</strong><!--pnid:8XAATXf1wM38pU7Kva5Akb-->：新版客户端在下载完成且校验通过后，会向服务端发送 <code data-page-node-id="sdZFjwizO8limfm8cwg20g" data-pnid-children="6youlWtQYkG0NLpP8N3K15">POST /api/download/report</code><!--pnid:VzYdQYsM1sbBdwPM7QbwCj-->（参数包含 <code data-page-node-id="HgV73q9UBk23TkTeJCGS0E" data-pnid-children="o3kom3SYKyWkF47OQH3Eom">app_id</code><!--pnid:yqwBQCvAfDrCTwEO7PjrA5--> 和 <code data-page-node-id="KpxmFNuKYoqZXWoKc0Xzrd" data-pnid-children="8HbWwcKWWWMMSr0GGBBbEw">platform</code><!--pnid:9HruicH1bjmk6wRfvcHyb1-->）以进行下载计数。如果您的自建服务端不是本套 Go 源码，请实现该路由以正常统计下载量。
-</blockquote>
-
-<h2 data-page-node-id="p1Or8TAAb43IWvmbQcM1Wk" id="deploy"><!--pnid:CtrY4Y9H9FJ7wwDsvzitad-->部署步骤</h2>
-
-<h3 data-page-node-id="wYwl9gYrhmSdO157yLXjXj"><!--pnid:q34hDtg5ZPs6JcQdYgMYam-->1. 准备环境</h3>
-<ul data-page-node-id="lNafdbZh8gldmD1Ljm476P">
-    <li data-page-node-id="3lDK26JwdU88xOWj62uIQR"><!--pnid:hCKSAgeS2x0HFXFSeeqUZV-->Docker 已安装</li>
-    <li data-page-node-id="bvgou1qeQg3CB6M8p3lvaa"><!--pnid:zPDRAh9nvy7NnAbgpBlwT5-->一个公网可访问的地址（域名或 IP）</li>
-    <li data-page-node-id="6pGnMrsYWEV5pYbU4SH5wJ"><!--pnid:fmArx8rj4mq5zbZEmSCORb-->安全组 + 防火墙放行 5660 端口</li>
-</ul>
-
-<h3 data-page-node-id="FhYNv2E8DYJJ0j58TKePv7"><!--pnid:NCzJqj4P3fs1zgDFNg5av2-->2. 准备数据目录</h3>
-<pre data-page-node-id="OvAmGbJrsOFdkR3ct49Keo"><code data-page-node-id="gyVxVPsrqI1rF2wVWIsYnK" data-pnid-children="vx1S5s0ZJUc4kBidAoWnTc">mkdir -p /vol1/1000/fn-appstores-server/data/{apps,icons,previews}</code></pre>
-
-<h3 data-page-node-id="VjBiVabdQEa08psCzQlSPC"><!--pnid:XkPNPtcA9wywKEKLbFsBPW-->3. 启动服务端</h3>
-<pre data-page-node-id="XZ3ZdZaKUpdpeeJf8BkXN0"><code data-page-node-id="LcfnxhJox7YqS20zASODRE" data-pnid-children="81paVGsOxDg4RXGXLKo7A3">docker run -d --name fn-appstores-server --restart unless-stopped \
-  --network host \
-  -e TZ=Asia/Shanghai \
-  -e BASE_URL="http://你的域名或IP:5660" \
-  -e ADMIN_PASSWORD="你的管理密码" \
-  -e NOTICE_PASSWORD="公告员密码" \
-  -e AUTO_CLEAN_DEV_UPSTREAM="false" \
-  -v /你的数据目录:/app/data \
-  ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.10.3</code></pre>
-
-<h3 data-page-node-id="MmwQ5ZKOoIaFSq3gjpjP7c"><!--pnid:ds7WFt0PgSHHXeUzLz1lzQ-->4. 验证</h3>
-<pre data-page-node-id="xB6ueJSHHGkYmqFaqMCdum"><code data-page-node-id="ZX11G4KeAWk613T4saoENh" data-pnid-children="D2qfV4G0c6jGYMHcFe8QHg">curl http://127.0.0.1:5660/health</code></pre>
-
-<blockquote data-page-node-id="lJBXpKc9WPk56GyyFf7wtk">
-    <strong data-page-node-id="3BygATYEpRwH4UEUrgc69Q"><!--pnid:26uJf74lz1hofBD11n9JLQ-->注意</strong><!--pnid:C4Ha8DAqrL21UQK9ceu4Y0-->：<code data-page-node-id="Ksnemvt2TQjCQau68Z8lNZ" data-pnid-children="vXJ5bVutShGOisE9DPr5oa">BASE_URL</code><!--pnid:ENEKJFYHSD7Sc3LUEZz44i--> 必须含端口，否则图标、截图、下载地址全都不可达。
-</blockquote>
-
-<h3 data-page-node-id="kolBv2UGHC6wJQGxqij2cs"><!--pnid:i8zy88mHPkeYpc8aC8iqOe-->5. 访问管理后台</h3>
-<pre data-page-node-id="liad6q8jsY7WC3g66e9Qaf"><code data-page-node-id="hlNFmc5qUaFEF8QTxQFEWR" data-pnid-children="hK40sPkL0FatrQMVR3qO1m">http://你的地址:5660/admin</code></pre>
-
-
-<h2 data-page-node-id="uOZFMkHJUK8xJ7vyYgRDXr" id="features"><!--pnid:0jncHoTW3TsXfsECwQD2VQ-->后台核心功能说明</h2>
-
-<table data-page-node-id="7dPbVKRT4mCXlgWFmzlwLu">
-    <thead data-page-node-id="rV6TiYbja58ERlHqFFzf8w">
-        <tr data-page-node-id="Bgg8Fvj1S9WA69TyhMKVJR">
-            <th data-page-node-id="wSjOVuC3WtZp3RLyWRKsbi"><!--pnid:dk0HhJ7auN5tj7u3W8cgKM-->模块</th>
-            <th data-page-node-id="C5KXRV89OMbCtHXR0MJZsM"><!--pnid:azHMAqXmPiyyGvMuZvkOgu-->说明</th>
-        </tr>
-    </thead>
-    <tbody data-page-node-id="qAsCg8XTAFKB1nB2AnCot6">
-        <tr data-page-node-id="xGUZufRBeMRXw09Y6WsAy9">
-            <td data-page-node-id="Y86TPzfmyJ3Q2MIPTxFPc3"><strong data-page-node-id="yuIkdnJGKXInIP2188ZBfZ"><!--pnid:P08NxhwkEfuUOqPVwI28DD-->消息推送</strong></td>
-            <td data-page-node-id="ZhCZoO4jqSIQm73NEEK2bL"><!--pnid:CeKLe3Xmy9pLXMpkShrHim-->支持轻提示、弹窗、强制更新三种类型。可按全量、版本、架构、Client ID 定向推送。强更支持配置最新版本号和 FPK 下载直链。</td>
-        </tr>
-        <tr data-page-node-id="nEPGxyN1zwctt6lYOasAG6">
-            <td data-page-node-id="vaiK5qc2BvC9pl4yIe02Dc"><strong data-page-node-id="9Qy4YtNC4hH9jDNCkC7B3g"><!--pnid:ELrtaLw6tvv0zikghFlfH6-->异常告警</strong></td>
-            <td data-page-node-id="G0RJOrzs8ksLnQt520DDcC"><!--pnid:zgusck8Ud7jnloj1SiV9Np-->支持钉钉、企业微信、飞书、Bark、ntfy、Server酱等。触发限速、密码爆破等安全事件时自动推送到手机。</td>
-        </tr>
-        <tr data-page-node-id="L0lUMllUadOKjcGlukqlkn">
-            <td data-page-node-id="vgldr5FT22Qao16trj74LT"><strong data-page-node-id="KtjDDR1GWClihIUZsIRwNm"><!--pnid:KY8zZAOD7p1l65EbI09wno-->访问限速</strong></td>
-            <td data-page-node-id="9QzDR82ZpPDNrgU4hgzGKY"><!--pnid:gW86EtUrHfIUfdptUGNIuj-->针对 <code data-page-node-id="RRqIzQjuBp1cI5sCUrfgIk" data-pnid-children="JmYOA5zcEQsGQym4fxjfGb">/apps/</code><!--pnid:i2wPC9cmyq0JSNMIC5G2UV--> 下载接口的 IP 滑动窗口限速。支持白名单。超限自动封禁指定秒数并触发告警。</td>
-        </tr>
-        <tr data-page-node-id="olgHSMN5pm6P9egyoqoPTs">
-            <td data-page-node-id="R8yGwvy36JsnTwLJfzlj5Q"><strong data-page-node-id="sEdtzGTCfJYMsh03gUNhmM"><!--pnid:EjmDVk6f28dtoEkfmogQAl-->安全防护</strong></td>
-            <td data-page-node-id="04wxonrjaVoAaqNId52jVS"><!--pnid:uzBynHOgTZUwHHiBCrMdFN-->管理后台密码连续错误 5 次自动锁定 IP 10 分钟。支持在仪表盘一键封禁异常设备的 Client ID 或 IP。</td>
-        </tr>
-        <tr data-page-node-id="Ltkxa6lHkqMRI4arb4RS0z">
-            <td data-page-node-id="iisljozbkBgDIdDKPNqbKq"><strong data-page-node-id="UCLPxeAxuTdBAc9j7YrCsf"><!--pnid:zyRodo1ye0kSIQdJVug4Ni-->外链加速 v4</strong></td>
-            <td data-page-node-id="rGKjQWKg0kJ5fC3cZgkcMT"><!--pnid:dbQkC9aO2zPbRJ1LvnPhiE-->自动测速排序 + 客户端候选切换。加速节点临时故障时会自动冷却降级，不影响客户端下载。</td>
-        </tr>
-        <tr data-page-node-id="LrIQxQYraeGqn9zw4zm86G">
-            <td data-page-node-id="OS7LRGVCOVavUlt4ao1nB2"><strong data-page-node-id="PSQN9zhQD56QSm81aUffVv"><!--pnid:ZIsPcpXBnvjjxf0s2AA2ji-->应用管理</strong></td>
-            <td data-page-node-id="XX8GCqd7GwB5Y8MbWs35bq"><!--pnid:uX8bRkhAGeotOqIvZDN3Om-->支持全托管（FPK 在本地）或半托管（外链）。一键清理残留的孤儿 FPK 和图标文件。</td>
-        </tr>
-    </tbody>
-</table>
-
-<h2 data-page-node-id="1LuTNoZABzI9UDmT0hd2Dw" id="dev"><!--pnid:nlba37KPErI16hUbVnYqbH-->开发者系统</h2>
-
-<p data-page-node-id="EfCCmBZV9iScXD96spNgiN"><strong data-page-node-id="j4aL9isFExFD1GOkUKL1OX"><!--pnid:N0paggqWjdcDKCrZ0lvxQm-->纯在线模式，无需依赖 Gitee。</strong><!--pnid:G3FTmV7tEa6k2HJm19hXLL-->开发者通过客户端或网页提交入驻申请 -> 源主一次审核开号 -> 开发者在线填表保存 -> 源主二次审核应用 -> 上线。整个过程无需接触任何外部代码仓库。</p>
-
-<h3 data-page-node-id="xZBafOs5zs0f0rUB1Rsevt"><!--pnid:wGikV9yQ6BUNczNHx9YQhJ-->入驻流程</h3>
-<ol data-page-node-id="889oslB9aKzaV3IFGn4Wrs">
-    <li data-page-node-id="ifs45qfAFkZLWL6JeZqOzK"><!--pnid:Ycc3Fjsj5Ftcqsuup3hKIi-->开发者在申请页填写源名称和联系方式提交。</li>
-    <li data-page-node-id="c0ynNEPUpP0KDwtRO8G3mp"><!--pnid:FiGkespVxTcDTi0Y5CVfZJ-->源主在 <code data-page-node-id="Lmh5T0DOrzCjtmARtNfyxG" data-pnid-children="iWXYnXOknhx2SlOciyKiy1">/admin-review</code><!--pnid:bR4Uob12lLIKSNMN5gWFCe--> 的「入驻申请」Tab 通过审核。</li>
-    <li data-page-node-id="o87SpxoY24QSFgNqPWoWQ6"><!--pnid:smgJkYrJlGTpqPbZrrQG7J-->系统自动生成 token 和空源，源主复制后台链接发给开发者。</li>
+<h3 id="s16"><span class="k">玩法三</span>服务端开发者系统子源玩法</h3>
+<p>适合：开发者只想发自己的包，不想建仓库、不想买服务器。</p>
+<ol>
+<li>从 FN软仓服务端管理员处获取开发者申请地址（<code>http://xxx.yyy.com:5660/dev/apply</code>）。</li>
+<li>填写源名称、作者名、联系方式，提交。</li>
+<li>管理员审核通过后，用管理员给的后台地址进入，上传 fpk 读取并写入应用信息，手动填 fpk 直链，<strong>保存</strong>，提交，等待审核。</li>
+<li>可在后台配置 Webhook（2.12.0 新增），应用上架 / 更新的审核结果会直接推给你，不用反复登后台看。</li>
 </ol>
 
-<h3 data-page-node-id="tK7cITXLPaWuVqmYvAoWN0"><!--pnid:GLNoUJShNwFcS2AMYvBAfs-->应用审核流程</h3>
-<p data-page-node-id="CcQ1SadEeGTX0LlluCgS5E"><!--pnid:7hkYXOHRj9wJvVm9vNdWYA-->开发者在后台填完应用信息点击保存后，会进入 <strong data-page-node-id="wh7eEelsFpkGokbNWIdulV"><!--pnid:IDpeVqsrwDMqX2bxoEVxS5-->Pending（待审核）</strong><!--pnid:zCIA7UJbLNaq3rhbGBSWAz--> 状态。源主在 <code data-page-node-id="89d8RF5g61B06jcM7ymJSD" data-pnid-children="nanvfxhthleg2RtlFgwOGS">/admin-review</code><!--pnid:FGf58hROTkuofI3GSTDt88--> 的「应用审核」Tab 看到变更记录。通过后，应用立即出现在客户端。</p>
+<figure class="shot">
+  <img src="https://f.hhxs2026.top:8888/f/imgs/fnrc-kfzht.webp" alt="FN软仓开发者后台" loading="lazy">
+  <figcaption>开发者后台：上传 fpk、填写直链、提交审核，并可配置 Webhook 接收审核结果</figcaption>
+</figure>
+</section>
 
-<blockquote data-page-node-id="2u4rtDNOB7i4X47fja4q4C">
-    <strong data-page-node-id="4HZTMy9fwnXKzGhUhUYH3l"><!--pnid:j6Vq8UcatcUTRjSkbJ6JVD-->严格审核机制</strong><!--pnid:B5Yzbb4EOynfOl4Uhv0BKP-->：由于源主负责托管开发者的数据，为了平台安全，开发者每次新增应用、修改版本、下架应用，都必须经过源主审核。
-</blockquote>
+<section>
+<h2 id="s17"><span class="num">五</span><span class="txt">跟友店是什么关系</span></h2>
+<p>不是竞品，是不同层。这话不是客套。</p>
+<p>友店做的是内容运营：把应用聚起来、维护源站、跟着版本更新、扛住流量。这活又累又不讨好，总得有人干。</p>
+<p>FN软仓做的是工具。友店愿意，可以拿它当后端；普通用户装了 FN软仓客户端，在极客模式里把友店的源加进来，照样逛、照样装。</p>
+<p>客户端连图标的地址都做了兼容——友店把加速前缀写死在图片地址里，它也能剥掉重找，图片不会白一片。</p>
+<p>所以你装它，不用卸掉别的。它更像个能同时看几家店的前台。</p>
+</section>
 
-<h3 data-page-node-id="fcGeBXYvKl78IqJJE5t4nv"><!--pnid:qpOq8kBaQXt9zFJej7k6K6-->被拒绝后</h3>
-<ul data-page-node-id="mdlyR1LDm2hHEoUtPEcf5Z">
-    <li data-page-node-id="fmFj8tUJy8THZwKfuJUcOY"><!--pnid:SvOiKAICffXrMNrH5VwHt9-->开发者在后台对应的应用卡片上会看到红色的「被拒绝」标签及具体原因。</li>
-    <li data-page-node-id="fEt3cLi1GdvarHHVXx6HbV"><!--pnid:Sv6RDUAC7rqvNVt7FnnFyC-->修改后重新点击保存即可再次提交审核。</li>
+<section>
+<h2 id="s18"><span class="num">六</span><span class="txt">从哪开始</span></h2>
+<p>想清楚你属于哪种人：</p>
+<ul>
+<li>只想装应用 → 装客户端，用户模式</li>
+<li>有自己的包要发 → 玩法一：自建服务端，客户端极客模式接自己，或申请聚合</li>
+<li>不想跑服务端、只想挂包 → 玩法二：FN软仓助手导出 <code>fnrc.json</code></li>
+<li>只想发自己的包 → 玩法三：找源主申请开发者账号</li>
+<li>想运营一个对外商店 → 玩法一 + 配 <code>BASE_URL</code> 和 <code>ADMIN_PASSWORD</code> + 加速线路 + 开放开发者入驻 + 邮件 / Webhook</li>
 </ul>
+<div class="end">
+<p><strong>商店可以有很多个。开商店的工具，之前没有。</strong></p>
+</div>
+</section>
+  </article>
 
-<h2 data-page-node-id="P48cEg4NOu9YqC6FtL1Qd2" id="upgrade"><!--pnid:QNCgHP1zpWCpEvJQltzUFV-->从 2.9.x / 2.10.0 升级到 2.10.3</h2>
+  <aside>
+    <nav class="toc">
+      <p class="toc-t">目录</p>
+      <a class="lv1" href="#s1"><span class="n">一</span>两个部件，可以只用一半</a>
+      <a class="lv2" href="#s2">1 服务端</a>
+      <a class="lv2" href="#s3">2 客户端</a>
+      <a class="lv2" href="#s4">3 不用记组合</a>
+      <a class="lv1" href="#s5"><span class="n">二</span>客户端有两个模式，这个选择决定一切</a>
+      <a class="lv2" href="#s6">1 用户模式</a>
+      <a class="lv2" href="#s7">2 极客模式</a>
+      <a class="lv1" href="#s8"><span class="n">三</span>服务端里有什么</a>
+      <a class="lv2" href="#s9">1 后台功能一览</a>
+      <a class="lv2" href="#s10">2 上货：三种方式同时开着</a>
+      <a class="lv2" href="#s11">3 分发：一次安装要过四道</a>
+      <a class="lv2" href="#s12">4 开发者：一套完整的分账台</a>
+      <a class="lv1" href="#s13"><span class="n">四</span>三种玩法</a>
+      <a class="lv2" href="#s14">玩法一 自建服务端</a>
+      <a class="lv2" href="#s15">玩法二 外部 json 型玩法</a>
+      <a class="lv2" href="#s16">玩法三 服务端开发者系统子源玩法</a>
+      <a class="lv1" href="#s17"><span class="n">五</span>跟友店是什么关系</a>
+      <a class="lv1" href="#s18"><span class="n">六</span>从哪开始</a>
+    </nav>
+  </aside>
+</div>
 
-<pre data-page-node-id="evdlo0xoqksOFL9raKLfpN"><code data-page-node-id="5YC93KqSdxT1MQXDoFlkzd" data-pnid-children="Pl3RlmoZmCGC52Kqn8Js94"># 1. 备份数据目录
-cp -a /你的数据目录 /你的数据目录_bak_$(date +%Y%m%d)
+<footer>
+  <div class="wrap">
+    <span>FN软仓 · 可自部署的三方应用商店</span>
+    <span>本文所述行为以 v2.12.0 服务端与客户端实现为准</span>
+  </div>
+</footer>
 
-# 2. 停旧容器并删除
-docker stop fn-appstores-server
-docker rm fn-appstores-server
-
-# 3. 拉新镜像
-docker pull ccr.ccs.tencentyun.com/hhxs2025/fn-appstores-server:2.10.3
-
-# 4. 用原数据目录启动（同上一条 docker run）</code></pre>
-
-<p data-page-node-id="9mIjUERQtC1v5UPUzLFc18"><strong data-page-node-id="u8PRFOSJjh8DGdz8tx64UP"><!--pnid:au6re91Dq9tOdMtOSLS2n4-->自动迁移机制</strong><!--pnid:prtGmY4VtQfMAJdjCpAlRJ-->：</p>
-<ul data-page-node-id="FgWTel40PC4ka75oTSnvqF">
-    <li data-page-node-id="vRbRtlXWhbzxVh1M3aXpZ7"><!--pnid:ap0kpfOW0qUxYVbhCezeKS-->服务端首次启动 2.10.3 时，会自动扫描旧的 <code data-page-node-id="WzS4I0Ng9HH2ESzf2ev6mq" data-pnid-children="oyRLNdn78CxUqTabZBj69B">dev-accounts.json</code><!--pnid:fy83PF1LKwK5zgCAb4srHg--> 和 <code data-page-node-id="CmEglWQ1zKR9QzJn77BxMg" data-pnid-children="FyUOZPS997FmqgmvVmSa9p">upstream.json</code><!--pnid:aBbai59HEh4gX2Ql4VELM6-->。</li>
-    <li data-page-node-id="BtJ9Iegd6IG5dH6zvY3Q7A"><!--pnid:EenknmYnjxlat2X5ISYVvy-->系统会自动拉取开发者曾经在 Gitee 上的 <code data-page-node-id="OObwAVF95GyxDpLulXtFzF" data-pnid-children="Q94cQYy5GGWoFGcHblwrdp">fnrc.json</code><!--pnid:9oPrJvFvGd8VzAhl3sO8TX-->，并将数据持久化保存到本地的 <code data-page-node-id="s1dOB3bTW8kDXHm2NkZhp4" data-pnid-children="Z0rRdCITaMtc4EqqXnulg8">data/dev-sources/</code><!--pnid:WhSVV8q3ahEg8PpyLMxIXQ--> 目录下。</li>
-    <li data-page-node-id="tJNevACgl0w2z6lsaQhFbQ"><!--pnid:7cYQXlptKRuHvVLRUK31o0-->迁移完成后，旧的 upstream 记录将被清理或禁用，系统全面转向本地托管。</li>
-</ul>
-
-<h2 data-page-node-id="FkuSxxu5yX5LV7xo7FSxP1" id="faq"><!--pnid:qjYJUPofjmnToOStP38F6v-->常见问题</h2>
-
-<h3 data-page-node-id="Nu9uukFPDbrnhXfrDlSz9Q"><!--pnid:gyw1JAzz7JV8x5lX58o2Ru-->Q1：客户端看不到新应用？</h3>
-<p data-page-node-id="FxyPWgfnZJSFAyJJ6Tc3je"><!--pnid:G1bkC9PvBRoy7CrewwVyoT-->如果是新上传的，去后台点「刷新应用缓存」；如果是刚审核通过的，等待 30 秒（客户端有缓存），或让用户在客户端清除本地缓存。</p>
-
-<h3 data-page-node-id="NyKLChzSg1odAgBohdPXAT"><!--pnid:ndOwPU2gM711Jz9OU3PGu0-->Q2：三方源或加速器显示「离线」？</h3>
-<p data-page-node-id="PlQ2DMYMzKeryJcPyvtfeu"><!--pnid:Lp4nR2snIxXutHSWAeHM58-->检查 URL 是否可访问，点「测试」看具体错误。加速器如果全部离线，服务端仍会强行下发原始直链或备用节点兜底，不会阻断下载。</p>
-
-<h3 data-page-node-id="cVs2ddfzSkfyXIterRjLin"><!--pnid:owRQRkZhfox58QSwxLqzoB-->Q3：强制更新（强更）怎么用？</h3>
-<p data-page-node-id="paqhzhLp2DnbRwKhLPLdxE"><!--pnid:6n9B1CdmW6kULEwnp6CA2H-->在「消息推送」中选择「强制更新」类型，填入最新版本号（如 <code data-page-node-id="8L4fANHOyTss6BvlkgWZIK" data-pnid-children="3QUn81kim1EeXjfSLNVrSz">2.10.4</code><!--pnid:BLrImz3ubsWx5lc8av73Nk-->）和对应的 FPK 下载链接。客户端收到后会阻断操作并提示下载。如果客户端版本已经大于等于目标版本，该消息会自动忽略。</p>
-
-<h3 data-page-node-id="clYr5hQyLaRrQzMjorlN7s"><!--pnid:xjZj2Gd6liAvk1H35hTwZy-->Q4：如何封禁恶意刷量的设备？</h3>
-<p data-page-node-id="Qc7LLhMJkNw7oyDlB5XM2u"><!--pnid:FEw50e8zJMrpIqBg0yKHuq-->在「仪表盘 -> 设备统计」中找到该设备，点击右侧的「封禁」按钮并设置时长（0 为永久）。系统会记录 Client ID 或 IP 到黑名单，后续请求直接返回 403。</p>
-
-<h3 data-page-node-id="DLVR9Sx98giwO2b5yJ7SSS"><!--pnid:7w8CwcZAwu2i1eZUuF9TV2-->Q5：如何配置应用的多架构（x86 / ARM）？</h3>
-<p data-page-node-id="A54BBzJM7Yauwwz7wSgNRF"><!--pnid:fhM4SijRbVBCJteqyr60x5-->在开发者后台添加应用时，保持两条记录的「应用 ID」相同，但「适用架构」分别选择 x86 和 arm。客户端会自动根据用户的设备架构展示对应版本。</p>
-
-<h3 data-page-node-id="I6cJlhjimzbub8VBzRrPHr"><!--pnid:sQnWkiERtPIhh46ivPcIha-->Q6：自建服务端如何对接官方源？</h3>
-<p data-page-node-id="n7afzRhgnXHo31yWM5Egeb"><!--pnid:0YmdkpVvdXhqxXNN8h8a6A-->如果你使用的是客户端的“极客模式”，初始化后源列表为空。请在「源管理」中点击添加，输入官方源地址 <code data-page-node-id="2jWMPRNqoriRVWadSrgJuP" data-pnid-children="xf4zKNzuhqhbSJuLDmcu9d">http://nas.hhxs2025.top:5660</code><!--pnid:hDF7Jrp6svMnDlR9CLOi14-->。如果你拥有自己的服务端，也可以在服务端的「三方源管理」中添加上游源进行聚合。</p>
-
-<hr data-page-node-id="gX8ez5R9Ok5pIgpEgcno5k">
-<p data-page-node-id="EWkgQRrUm22M0PNz7wLMXz" class="meta" style="text-align:center"><!--pnid:nAAkiUX8JozzQst9eS0hmu-->
-    FN软仓 · MIT License · 开发者：晦华先生<br data-page-node-id="kzF8BLYK1b11b9zZ06b9Vi"><!--pnid:nHSkUUvFEshqpsKTDIP54c-->
-    完整文档请访问 <a data-page-node-id="cRbBgGFmDmLzperNizG3f6" href="https://gitee.com/hhxs2025/fn-appstores" rel="noopener" target="_blank"><!--pnid:cleHluPmjaXXmf21ZeBbt0-->Gitee 仓库</a><!--pnid:bdis2SFMnJVKxdqbp2KM4P--> · 交流群QQ: 2154077576
-</p>
-
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  var links=[].slice.call(document.querySelectorAll('aside .toc a'));
+  var targets=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight||1);
+    bar.style.width=(p*100)+'%';
+    var idx=0;
+    for(var i=0;i<targets.length;i++){
+      if(targets[i]&&targets[i].getBoundingClientRect().top<=120) idx=i;
+    }
+    links.forEach(function(a,i){a.classList.toggle('on',i===idx);});
+  }
+  document.addEventListener('scroll',onScroll,{passive:true});
+  onScroll();
+})();
+</script>
 </body>
 </html>

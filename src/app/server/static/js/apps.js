@@ -784,9 +784,17 @@ async function doOfficialInstallOrUpdate(appId, isUpdate) {
             console.warn('依赖预检失败，继续走官方安装', checkErr);
         }
 
+        // ★ 判定应用类型，供安装进度文案分流（Docker 提镜像/容器，native 用中性描述）
+        var appTypeLower = String(app.type || '').toLowerCase();
+        var appTagsLower = (typeof getTagsArray === 'function' ? getTagsArray(app.tags) : [])
+            .map(function(t) { return String(t).toLowerCase(); });
+        var isDockerApp = appTypeLower === 'docker' || appTypeLower === '容器' ||
+            appTagsLower.some(function(t) { return t.indexOf('docker') !== -1 || t.indexOf('容器') !== -1; });
+
         await runOfficialInstallFlow(appId, fpkPath, {
             baseProgress: 40,
             maxProgress: 100,
+            isDocker: isDockerApp,
             onProgress: function(p) {
                 if (typeof updateInstallModalProgress === 'function') {
                     updateInstallModalProgress({ app_id: appId, msg: p.msg, progress: p.progress, stage: p.stage });

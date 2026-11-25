@@ -277,8 +277,85 @@ function clearAppsCache() {
 
 function exportLogs() {
     window.open(API_BASE + '/api/logs/export', '_blank');
-    showToast('正在导出日志...', 'info');
+    showToast('正在导出全部日志...（不受预览时段影响）', 'info');
 }
+
+// ===== 日志按时段预览（仅影响预览，导出始终全量） =====
+var _logRange = 'all';
+
+function openLogPreview() {
+    var modal = document.getElementById('logPreviewModal');
+    if (!modal) return;
+    modal.classList.add('active');
+    loadLogPreview();
+}
+
+function closeLogPreview() {
+    var modal = document.getElementById('logPreviewModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function setLogRange(btn) {
+    var chips = document.querySelectorAll('#logPreviewModal .log-chip');
+    for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
+    btn.classList.add('active');
+    _logRange = btn.getAttribute('data-range') || 'all';
+    var custom = document.getElementById('logCustomRange');
+    if (custom) custom.style.display = (_logRange === 'custom') ? 'inline-flex' : 'none';
+    if (_logRange !== 'custom') loadLogPreview();
+}
+
+function _logRangeParams() {
+    var now = new Date();
+    var fmt = function(d) {
+        var p = function(n) { return n < 10 ? '0' + n : '' + n; };
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+               'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+    };
+    if (_logRange === 'all') return '';
+    if (_logRange === 'custom') {
+        var f = (document.getElementById('logFromInput') || {}).value || '';
+        var t = (document.getElementById('logToInput') || {}).value || '';
+        if (!f && !t) { showToast('请选择起始或结束时间', 'warning'); return null; }
+        if (f && f.length === 16) f += ':00';
+        if (t && t.length === 16) t += ':00';
+        return (f ? '&from=' + encodeURIComponent(f) : '') + (t ? '&to=' + encodeURIComponent(t) : '');
+    }
+    var spanMs = { '1h': 3600e3, '6h': 6 * 3600e3, '24h': 24 * 3600e3, '7d': 7 * 24 * 3600e3 }[_logRange] || 0;
+    return '&from=' + encodeURIComponent(fmt(new Date(now.getTime() - spanMs))) +
+           '&to=' + encodeURIComponent(fmt(now));
+}
+
+function loadLogPreview() {
+    var body = document.getElementById('logPreviewBody');
+    var meta = document.getElementById('logPreviewMeta');
+    if (!body) return;
+    var params = _logRangeParams();
+    if (params === null) return;
+    body.textContent = '加载中...';
+    if (meta) meta.textContent = '正在读取日志...';
+    fetch(API_BASE + '/api/logs?t=' + Date.now() + params)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var lines = (d && d.data) || [];
+            var matched = (d && d.total_matched) != null ? d.total_matched : lines.length;
+            body.textContent = lines.length ? lines.join('\n') : '该时段暂无日志记录';
+            if (meta) {
+                var tip = '匹配 ' + matched + ' 行';
+                if (matched > lines.length) tip += '（预览仅显示最近 ' + lines.length + ' 行）';
+                meta.textContent = tip + ' · 筛选仅用于预览，导出请用设置页的「导出日志」。';
+            }
+        })
+        .catch(function(e) {
+            body.textContent = '日志加载失败：' + (e && e.message ? e.message : e);
+            if (meta) meta.textContent = '读取失败';
+        });
+}
+
+window.openLogPreview = openLogPreview;
+window.closeLogPreview = closeLogPreview;
+window.setLogRange = setLogRange;
+window.loadLogPreview = loadLogPreview;
 
 function clearCache() {
     if (!confirm('确定要清除所有本地缓存吗？\n\n清除后下次打开将重新加载数据。')) return;

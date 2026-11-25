@@ -75,6 +75,28 @@ function acThrowIfError(result) {
     return result;
 }
 
+// ★ v2.11.2：wizard 字段本地缓存。首次/重装弹向导填写后按 appName 存一份，
+// 覆盖安装时若 install/info 因"已安装"拿不到 wizardInfo，用它兜底，避免
+// install/task 报 "wizard required field xxx not found"。仅存向导里用户填的
+// 配置值（端口、管理员密码等），不含安装包本身，体积可忽略。
+const WIZARD_CACHE_KEY = 'fnsoft_wizard_fields';
+function saveWizardFields(appName, data) {
+    try {
+        let all = {};
+        try { all = JSON.parse(localStorage.getItem(WIZARD_CACHE_KEY) || '{}') || {}; } catch (_) {}
+        all[appName] = data;
+        localStorage.setItem(WIZARD_CACHE_KEY, JSON.stringify(all));
+    } catch (_) {}
+}
+function loadWizardFields(appName) {
+    try {
+        const all = JSON.parse(localStorage.getItem(WIZARD_CACHE_KEY) || '{}') || {};
+        return all[appName] || null;
+    } catch (_) {
+        return null;
+    }
+}
+
 const ERR_CODE_I18N_MAP = {
     10100: "任务尚未就绪",
     10236: "应用已安装",
@@ -225,7 +247,7 @@ async function uninstallWithProgress(appName, onProgress) {
 }
 
 async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
-    const { onProgress, onWizard, baseProgress = 40, maxProgress = 100 } = options;
+    const { onProgress, onWizard, baseProgress = 40, maxProgress = 100, isDocker = false } = options;
     const lang = 'zh-CN';
 
     onProgress({ msg: "正在解析安装包...", progress: baseProgress, stage: 'install' });
@@ -295,11 +317,28 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
         (Array.isArray(wizardInfo.steps) && wizardInfo.steps.length > 0)
     );
 
-    if (hasWizard && !isUpdate && !isOverwrite) {
+    // ★ v2.11.2 修复：覆盖安装（同版本重装，isOverwrite=true）也必须带上 wizard 字段。
+    // 旧逻辑只在"全新安装"时弹向导，重装时跳过 → customParameters 为空 → 飞牛 install/task
+    // 报 "wizard required field xxx not found"（如无忧客服通的 wizard_admin_password）。
+    // 典型触发链：首次装大镜像卡在 98% → 用户关闭客户端 → 重开后再装 → 系统判定已安装 →
+    // 走覆盖安装 → 旧逻辑跳过向导 → 报错。
+    // 双保险：
+    //   1) 能拿到 wizardInfo 时，覆盖安装也弹向导重新收集（去掉旧的 !isOverwrite）；
+    //   2) 覆盖安装时 install/info 可能因"已安装"返回 10236 而拿不到 wizardInfo，此时
+    //      向导弹不出，改为复用首次安装时缓存的 wizard 字段（见 saveWizardFields/loadWizardFields）。
+    // isUpdate 保持不弹（更新沿用飞牛系统侧旧配置，弹了反而多余）。
+    if (hasWizard && !isUpdate) {
         const items = wizardInfo.wizardContent || wizardInfo.steps || [];
         wizardData = await onWizard(appName, version, items);
         if (!wizardData) {
             throw new Error('USER_CANCELLED');
+        }
+        // 首次/重装弹向导填写后缓存，供后续 install/info 拿不到配置时兜底
+        saveWizardFields(appName, wizardData);
+    } else if (isOverwrite && !isUpdate) {
+        const cached = loadWizardFields(appName);
+        if (cached && Object.keys(cached).length > 0) {
+            wizardData = cached;
         }
     }
 
@@ -391,17 +430,49 @@ async function runOfficialInstallFlow(appId, fpkPath, options = {}) {
     const installTaskId = extractTaskId(installResult);
 
     let currentProgress = 60;
+    const installStartAt = Date.now();
+
+    // ★ 安装耗时提示（v2.11.2）：飞牛底层在部署阶段 install/status 可能长时间停留在
+    // 中间态（无进度推进），旧文案固定且进度爬到 98% 即停，弹窗看起来像"卡死"，
+    // 容易被误判为失败而手动干预导致真正失败。改为按等待时长切换分阶段文案 + 已用时。
+    // 文案按应用类型分流：Docker 应用提"镜像/容器"，native 应用只用中性的"组件/环境"，
+    // 避免给非容器应用显示错误的"拉取镜像"提示。类型由调用方 apps.js 依据 app.type/tags 判定后传入。
+    const DOCKER_STAGES = [
+        { at: 20,  msg: isUpdate ? "正在拉取镜像并重建容器（可能需要几分钟），请勿关闭页面..." : "正在拉取 Docker 镜像、创建容器（首次安装较慢），请勿关闭页面..." },
+        { at: 60,  msg: isUpdate ? "正在重建容器并恢复数据，首次更新耗时较长，请耐心等待..." : "正在初始化容器与应用环境，首次启动耗时较长，请耐心等待..." },
+        { at: 150, msg: "镜像拉取/容器构建耗时超出预期，仍在继续；请勿重复点击或离开页面，可留意系统日志..." }
+    ];
+    const NATIVE_STAGES = [
+        { at: 20,  msg: isUpdate ? "正在安装系统组件（可能需要几分钟），请勿关闭页面..." : "正在解压并安装应用组件（首次安装较慢），请勿关闭页面..." },
+        { at: 60,  msg: isUpdate ? "正在写入更新并恢复数据，耗时较长，请耐心等待..." : "正在初始化应用环境与配置，首次启动耗时较长，请耐心等待..." },
+        { at: 150, msg: "应用部署耗时超出预期，仍在继续；请勿重复点击或离开页面，可留意系统日志..." }
+    ];
+    const INSTALL_STAGES = isDocker ? DOCKER_STAGES : NATIVE_STAGES;
+    const stageMsg = (elapsedSec) => {
+        let msg = isUpdate ? "正在更新系统组件..." : "正在安装系统组件...";
+        for (let i = 0; i < INSTALL_STAGES.length; i++) {
+            if (elapsedSec >= INSTALL_STAGES[i].at && INSTALL_STAGES[i].msg) msg = INSTALL_STAGES[i].msg;
+        }
+        return msg;
+    };
+    const fmtElapsed = (sec) => {
+        if (sec < 60) return sec + ' 秒';
+        var m = Math.floor(sec / 60), s = sec % 60;
+        return m + ' 分 ' + (s < 10 ? '0' + s : s) + ' 秒';
+    };
     const fakeTimer = setInterval(() => {
+        const elapsedSec = Math.floor((Date.now() - installStartAt) / 1000);
         if (currentProgress < 98) {
             let step = (98 - currentProgress) * 0.05;
             if (step < 0.1) step = 0.1;
             currentProgress += step;
-            onProgress({
-                msg: isUpdate ? "正在更新系统组件..." : "正在安装系统组件...",
-                progress: currentProgress,
-                stage: 'install'
-            });
         }
+        onProgress({
+            msg: stageMsg(elapsedSec) + '（已用时 ' + fmtElapsed(elapsedSec) + '）',
+            progress: currentProgress,
+            stage: 'install',
+            elapsed_sec: elapsedSec
+        });
     }, 300);
 
     try {
